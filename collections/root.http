@@ -1,0 +1,20 @@
+@base = http://localhost:8080/api
+@contentType = application/json;charset=UTF-8
+
+
+##### Get User by ID
+GET {{base}}/user/1
+Content-Type: {{contentType}}
+
+##### Create User
+PUT {{base}}/user/
+Content-Type: {{contentType}}
+
+{
+    "country": "USA",
+    "firstname": "John",
+    "lastname": "Doe",
+    "password": "password123",
+    "role": "admin",
+    "username": "johndoe"
+}
