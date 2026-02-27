@@ -14,11 +14,17 @@ serde = { version = "1.0", features = ["derive"] }
 dotenvy = { version = "0.15.7"}
 sea-orm = { version = "1.1.19", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-chrono"]}
 validator = { version = "0.20.0", features = ["derive"] }
-jsonwebtoken = "10.2.0"
 log = "0.4"
-api-rate-limiter = "0.1.2"
 env_logger = "0.11.9"
+api-rate-limiter = "0.1.2"
+jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 chrono = { version = "0.4", features = ["serde"] }
+argon2 = "0.5.3"
+password-hash = "0.5.0"
+rand_core = { version = "0.9.5", features = ["std"] }
+regex = "1.7.1"
+lazy_static = "1.4.0"
+uuid = { version = "1.4.2", features = ["v4"] }
 
 
 schemas = { path = "./schemas" }

@@ -7,6 +7,7 @@ use validator::{ValidationError, ValidationErrors};
 use crate::api_utils::api_response;
 
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct ApiResponse<T> {
     pub data: T,
     pub message: String,
@@ -58,6 +59,7 @@ impl Field {
 
 const INVALID_DEFAULT_MESSAGE: Cow<'static, str> = Cow::Borrowed("Invalid information");
 
+// This module defines the structure of API responses and error handling for the application. It includes a generic `ApiResponse` struct for successful responses, a `ProblemDetails` struct for
 trait IntoFields {
     fn into_fields(self) -> Vec<Field>;
 }
@@ -79,6 +81,7 @@ impl IntoResponse for BadRequest {
         (StatusCode::BAD_REQUEST, Json(api_response)).into_response()
     }
 }
+/* Implementacion para integrar errores de Validacion  */
 
 impl IntoFields for ValidationErrors {
     fn into_fields(self) -> Vec<Field> {

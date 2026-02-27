@@ -10,6 +10,7 @@ pub enum ApiError {
     BadRequest,
     Validation(ValidationErrors),
     UnprocessableEntity(String),
+    Unauthorized,
 }
 
 impl IntoResponse for ApiError {
@@ -23,6 +24,7 @@ impl IntoResponse for ApiError {
             ApiError::BadRequest => (StatusCode::BAD_REQUEST, "Bad Request").into_response(),
             ApiError::Validation(errs) => BadRequest(errs).into_response(),
             ApiError::UnprocessableEntity(msg) => UnprocessableEntity(msg).into_response(),
+            ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized").into_response(),
         }
     }
 }

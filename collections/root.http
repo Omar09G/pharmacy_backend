@@ -1,20 +1,31 @@
 @base = http://localhost:8080/api
 @contentType = application/json;charset=UTF-8
 
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3MjI5NzE3OSwiaWF0IjoxNzcyMjEwNzc5LCJ1c2VyTmFtZSI6Im9tYXIwOTA3Iiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.QQ6QknD7EwNYThLq7J47mXVD3QtG2pKMq2IgNM4yck4
 
 ##### Get User by ID
-GET {{base}}/user/1
+GET {{base}}/user/3
 Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
 
 ##### Create User
-PUT {{base}}/user/
+PUT {{base}}/user
 Content-Type: {{contentType}}
 
 {
-    "country": "USA",
-    "firstname": "John",
-    "lastname": "Doe",
-    "password": "password123",
-    "role": "admin",
-    "username": "johndoe"
+    "country": "Mexico",
+    "firstname": "Omar",
+    "lastname": "Garcia",
+    "password": "omar1234",
+    "role": "ADMIN",
+    "username": "omar0907"
 }
+
+### Login User
+PUT {{base}}/login
+Content-Type: {{contentType}}
+
+{
+    "username": "omar0907",
+    "password": "omar1234"
+}   
