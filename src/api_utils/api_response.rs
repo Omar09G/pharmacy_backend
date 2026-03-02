@@ -114,3 +114,56 @@ impl IntoResponse for UnprocessableEntity {
         (StatusCode::UNPROCESSABLE_ENTITY, Json(problem_details)).into_response()
     }
 }
+
+#[derive(Serialize)]
+pub struct PaginationParams {
+    pub page: u64,
+    pub limit: u64,
+    pub total: u64,
+}
+
+impl PaginationParams {
+    pub fn new(page: u64, limit: u64, total: u64) -> Self {
+        Self { page, limit, total }
+    }
+}
+
+impl<T> ApiResponse<T> {
+    pub fn success(data: T, message: String) -> Self {
+        Self {
+            data,
+            message,
+            status: "success".to_string(),
+            code_error: 200,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+
+    pub fn with_error_details(data: T, message: String, code_error: u16) -> Self {
+        Self {
+            data,
+            message,
+            status: "error".to_string(),
+            code_error,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+    pub fn with_custom_status(data: T, message: String, status: String, code_error: u16) -> Self {
+        Self {
+            data,
+            message,
+            status,
+            code_error,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+    pub fn warring(data: T, message: String) -> Self {
+        Self {
+            data,
+            message,
+            status: "warning".to_string(),
+            code_error: 200,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+}

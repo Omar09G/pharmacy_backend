@@ -11,6 +11,7 @@ pub enum ApiError {
     Validation(ValidationErrors),
     UnprocessableEntity(String),
     Unauthorized,
+    Forbidden(String),
 }
 
 impl IntoResponse for ApiError {
@@ -20,10 +21,11 @@ impl IntoResponse for ApiError {
                 error!("Unexpected error: {}", e);
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
             }
-            ApiError::NotFound => (StatusCode::NOT_FOUND, "User not found").into_response(),
+            ApiError::NotFound => (StatusCode::NOT_FOUND, "Not found").into_response(),
             ApiError::BadRequest => (StatusCode::BAD_REQUEST, "Bad Request").into_response(),
             ApiError::Validation(errs) => BadRequest(errs).into_response(),
             ApiError::UnprocessableEntity(msg) => UnprocessableEntity(msg).into_response(),
+            ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg).into_response(),
             ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized").into_response(),
         }
     }

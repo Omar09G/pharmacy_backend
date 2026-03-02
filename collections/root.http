@@ -1,7 +1,7 @@
 @base = http://localhost:8080/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3MjI5NzE3OSwiaWF0IjoxNzcyMjEwNzc5LCJ1c2VyTmFtZSI6Im9tYXIwOTA3Iiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.QQ6QknD7EwNYThLq7J47mXVD3QtG2pKMq2IgNM4yck4
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3MjU1NzU2NCwiaWF0IjoxNzcyNDcxMTY0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3Iiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.6bJL_Y8Mw1apYt_dRgbQOsywX4m45brfwcdImiXjWxI
 
 ##### Get User by ID
 GET {{base}}/user/3
@@ -29,3 +29,17 @@ Content-Type: {{contentType}}
     "username": "omar0907",
     "password": "omar1234"
 }   
+
+###
+#Get Report List User Active
+GET {{base}}/report/user/active/ADMIN
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+
+###
+#Get Product by ID
+
+GET {{base}}/product/6
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
