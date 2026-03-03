@@ -2,6 +2,7 @@ use sea_orm::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 #[derive(Debug, Serialize, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductRequestDTO {
     pub product_id: i64,
     #[validate(length(min = 1, message = "Product name cannot be empty"))]
@@ -23,6 +24,23 @@ pub struct ProductRequestDTO {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductRequestPrice {
+    pub product_id: i64,
+    pub product_code_bar: String,
+    pub product_price: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductRequestCount {
+    pub product_id: i64,
+    pub product_code_bar: String,
+    pub product_count: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductResponse {
     pub product_id: i64,
     pub product_name: String,
@@ -30,6 +48,50 @@ pub struct ProductResponse {
     pub product_code_bar: String,
     pub product_price: f32,
     pub product_lastmdate: Option<Date>,
+}
+
+impl ProductRequestDTO {
+    pub fn new(
+        product_id: i64,
+        product_name: String,
+        product_catalog: i32,
+        product_count: i32,
+        product_code_bar: String,
+        product_price: f32,
+        product_desc: Option<String>,
+        product_lote: Option<String>,
+    ) -> Self {
+        Self {
+            product_id,
+            product_name,
+            product_catalog,
+            product_count,
+            product_code_bar,
+            product_price,
+            product_desc,
+            product_lote,
+        }
+    }
+}
+
+impl ProductResponse {
+    pub fn new(
+        product_id: i64,
+        product_name: String,
+        product_count: i32,
+        product_code_bar: String,
+        product_price: f32,
+        product_lastmdate: Option<Date>,
+    ) -> Self {
+        Self {
+            product_id,
+            product_name,
+            product_count,
+            product_code_bar,
+            product_price,
+            product_lastmdate,
+        }
+    }
 }
 
 impl From<schemas::product::ActiveModel> for ProductRequestDTO {

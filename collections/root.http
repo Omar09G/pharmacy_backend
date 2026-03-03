@@ -1,7 +1,7 @@
 @base = http://localhost:8080/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3MjU1NzU2NCwiaWF0IjoxNzcyNDcxMTY0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3Iiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.6bJL_Y8Mw1apYt_dRgbQOsywX4m45brfwcdImiXjWxI
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3MjY0ODc0NCwiaWF0IjoxNzcyNTYyMzQ0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3Iiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.eHWE3jMwEOJfLok-KsR54zo2O0epRv1TxWfSI9HSINQ
 
 ##### Get User by ID
 GET {{base}}/user/3
@@ -43,3 +43,49 @@ Authorization: Bearer {{accessToken}}
 GET {{base}}/product/6
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
+
+###
+GET {{base}}/product?page=0&limit=15&total=10
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+####
+PUT {{base}}/product
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+     "productId":0, 
+     "productName":"Plumon", 
+     "productCatalog":5,
+     "productCount":15,
+     "productCodeBar":"2198230912",
+     "productPrice":23.36,
+     "productDesc":"Plumon de Color",
+     "productLote":"4889"
+
+}
+
+
+#####
+DELETE  {{base}}/product/9
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+
+####
+PATCH {{base}}/product/10
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+     "product_id":10, 
+     "productName":"Plumon", 
+     "productCatalog":5,
+     "productCount":15,
+     "productCodeBar":"2198230912",
+     "productPrice":23.36,
+     "productDesc":"Plumon de Color",
+     "productLote":"4889"
+
+}

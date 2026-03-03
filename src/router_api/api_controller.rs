@@ -1,10 +1,12 @@
 use axum::Extension;
-use axum::routing::put;
+use axum::routing::{delete, patch, put};
 use axum::{Router, middleware::from_fn, routing::get};
 use log::info;
 
 use crate::api_handlers::login::login_handler::get_login;
-use crate::api_handlers::product::service::product_service::get_product_by_id;
+use crate::api_handlers::product::service::product_service::{
+    create_new_product, delete_product, get_all_product, get_product_by_id, update_product,
+};
 use crate::api_handlers::report::report_handler::get_report_list_user_active;
 use crate::api_handlers::user::user_handler::{create_user_handler, get_user_handler};
 use crate::config::config_database::config_db_context::AppContext;
@@ -21,6 +23,10 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
             get(get_report_list_user_active),
         )
         .route("/api/product/{product_id}", get(get_product_by_id))
+        .route("/api/product", get(get_all_product))
+        .route("/api/product", put(create_new_product))
+        .route("/api/product/{product_id}", delete(delete_product))
+        .route("/api/product/{product_id}", patch(update_product))
         .with_state(app_ctx.clone())
         .layer(Extension(app_ctx.clone()))
         .layer(from_fn(auth_middleware));

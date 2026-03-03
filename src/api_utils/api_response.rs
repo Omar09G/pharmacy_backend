@@ -115,7 +115,7 @@ impl IntoResponse for UnprocessableEntity {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationParams {
     pub page: u64,
     pub limit: u64,
