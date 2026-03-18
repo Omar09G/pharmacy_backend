@@ -89,3 +89,8 @@ Authorization: Bearer {{accessToken}}
      "productLote":"4889"
 
 }
+
+###
+GET {{base}}/product/code/052454842321
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}

@@ -44,13 +44,7 @@ pub async fn auth_middleware(req: Request<Body>, next: Next) -> Result<Response,
 
     // Validar token usando la implementación existente
     match validate_token(&token).await {
-        Ok(claims) => {
-            info!("Valida que exista Usuario");
-
-            info!("Token validado para usuario: {}", claims.sub);
-
-            Ok(next.run(req).await)
-        }
+        Ok(_) => Ok(next.run(req).await),
         Err(e) => {
             error!(
                 "Error validando token de acceso: {}. Intentando validar como refresh token...",

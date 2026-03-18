@@ -26,6 +26,8 @@ pub struct LoginRequest {
 #[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginResponseDTO {
+    pub id: i64,
+    pub name: String,
     pub username: String,
     pub role: String,
     pub token: String,
@@ -33,8 +35,17 @@ pub struct LoginResponseDTO {
 }
 
 impl LoginResponseDTO {
-    pub fn new(username: String, role: String, token: String, token_refresh: String) -> Self {
+    pub fn new(
+        id: i64,
+        name: String,
+        username: String,
+        role: String,
+        token: String,
+        token_refresh: String,
+    ) -> Self {
         Self {
+            id,
+            name,
             username,
             role,
             token,

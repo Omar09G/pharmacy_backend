@@ -1,10 +1,9 @@
-use sea_orm::prelude::*;
+use sea_orm::{FromQueryResult, prelude::*};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 #[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductRequestDTO {
-    pub product_id: i64,
     #[validate(length(min = 1, message = "Product name cannot be empty"))]
     pub product_name: String,
     #[validate(range(min = 0, message = "Product catalog must be a non-negative integer"))]
@@ -23,6 +22,12 @@ pub struct ProductRequestDTO {
     pub product_lote: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, FromQueryResult)]
+#[serde(rename_all = "camelCase")]
+pub struct TotalProducts {
+    pub total: i64,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductRequestPrice {
@@ -39,7 +44,7 @@ pub struct ProductRequestCount {
     pub product_count: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromQueryResult)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductResponse {
     pub product_id: i64,
@@ -52,7 +57,6 @@ pub struct ProductResponse {
 
 impl ProductRequestDTO {
     pub fn new(
-        product_id: i64,
         product_name: String,
         product_catalog: i32,
         product_count: i32,
@@ -62,7 +66,6 @@ impl ProductRequestDTO {
         product_lote: Option<String>,
     ) -> Self {
         Self {
-            product_id,
             product_name,
             product_catalog,
             product_count,
@@ -97,7 +100,6 @@ impl ProductResponse {
 impl From<schemas::product::ActiveModel> for ProductRequestDTO {
     fn from(product: schemas::product::ActiveModel) -> Self {
         ProductRequestDTO {
-            product_id: product.product_id.unwrap(),
             product_name: product.product_name.unwrap(),
             product_catalog: product.product_catalog.unwrap(),
             product_count: product.product_count.unwrap(),
@@ -112,7 +114,6 @@ impl From<schemas::product::ActiveModel> for ProductRequestDTO {
 impl From<schemas::product::Model> for ProductRequestDTO {
     fn from(product: schemas::product::Model) -> Self {
         ProductRequestDTO {
-            product_id: product.product_id,
             product_name: product.product_name,
             product_catalog: product.product_catalog,
             product_count: product.product_count,

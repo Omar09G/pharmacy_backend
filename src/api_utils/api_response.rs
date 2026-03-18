@@ -10,6 +10,7 @@ use crate::api_utils::api_response;
 #[serde(rename_all = "camelCase")]
 pub struct ApiResponse<T> {
     pub data: T,
+    pub total: i32,
     pub message: String,
     pub status: String,
     pub code_error: u16,
@@ -19,6 +20,7 @@ pub struct ApiResponse<T> {
 impl<T> ApiResponse<T> {
     pub fn new(
         data: T,
+        total: i32,
         message: String,
         status: String,
         code_error: u16,
@@ -26,6 +28,7 @@ impl<T> ApiResponse<T> {
     ) -> Self {
         Self {
             data,
+            total,
             message,
             status,
             code_error,
@@ -72,6 +75,7 @@ impl IntoResponse for BadRequest {
 
         let api_response = api_response::ApiResponse {
             data: fields_with_errors,
+            total: 10,
             message: "Validation failed".to_string(),
             status: "error".to_string(),
             code_error: 400,
@@ -128,10 +132,31 @@ impl PaginationParams {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginationParamsProductName {
+    pub page: u64,
+    pub limit: u64,
+    pub total: u64,
+    pub product_name: String,
+}
+
+impl PaginationParamsProductName {
+    pub fn new(page: u64, limit: u64, total: u64, product_name: String) -> Self {
+        Self {
+            page,
+            limit,
+            total,
+            product_name,
+        }
+    }
+}
+
 impl<T> ApiResponse<T> {
-    pub fn success(data: T, message: String) -> Self {
+    pub fn success(data: T, message: String, total: i32) -> Self {
         Self {
             data,
+            total,
             message,
             status: "success".to_string(),
             code_error: 200,
@@ -142,6 +167,7 @@ impl<T> ApiResponse<T> {
     pub fn with_error_details(data: T, message: String, code_error: u16) -> Self {
         Self {
             data,
+            total: 10,
             message,
             status: "error".to_string(),
             code_error,
@@ -151,6 +177,7 @@ impl<T> ApiResponse<T> {
     pub fn with_custom_status(data: T, message: String, status: String, code_error: u16) -> Self {
         Self {
             data,
+            total: 10,
             message,
             status,
             code_error,
@@ -160,6 +187,7 @@ impl<T> ApiResponse<T> {
     pub fn warring(data: T, message: String) -> Self {
         Self {
             data,
+            total: 10,
             message,
             status: "warning".to_string(),
             code_error: 200,

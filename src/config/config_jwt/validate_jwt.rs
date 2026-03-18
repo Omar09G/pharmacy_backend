@@ -20,14 +20,18 @@ pub async fn generate_jwt(
     username: String,
     role: String,
     jwt_type: String,
+    id_user: i64,
+    name_user: String,
 ) -> Result<String, String> {
-    get_jwt_token_with_role(username, role, jwt_type).await
+    get_jwt_token_with_role(username, role, jwt_type, id_user, name_user).await
 }
 
 pub async fn get_jwt_token_with_role(
     username: String,
     role: String,
     jwt_type: String,
+    id_user: i64,
+    name_user: String,
 ) -> Result<String, String> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
@@ -41,6 +45,8 @@ pub async fn get_jwt_token_with_role(
         company: "Pharmacy".to_string(),
         role: role.clone(),
         user_name: username.clone(),
+        id: id_user,
+        name: name_user,
     };
 
     info!("Generating {} JWT for user: {}", jwt_type, claims.sub);
@@ -90,7 +96,7 @@ pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
     )
     .map_err(|e| e.to_string())?;
 
-    info!("Validated JWT for user: {}", token.claims.sub);
+    info!("Validated JWT Refresh for user: {}", token.claims.sub);
 
     Ok(token.claims)
 }

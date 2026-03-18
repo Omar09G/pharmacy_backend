@@ -7,6 +7,8 @@ pub struct Claims {
     pub exp: usize,  // Expiration
     pub iat: usize,  // Issued At
     pub user_name: String,
+    pub id: i64,
+    pub name: String,
     pub role: String,
     pub company: String,
 }

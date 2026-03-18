@@ -1,10 +1,10 @@
 use crate::{
     api_handlers::product::dto::product_dto::{
-        ProductRequestCount, ProductRequestDTO, ProductRequestPrice, ProductResponse,
+        ProductRequestCount, ProductRequestDTO, ProductRequestPrice, ProductResponse, TotalProducts,
     },
     api_utils::{
         api_error::ApiError,
-        api_response::{ApiResponse, PaginationParams},
+        api_response::{ApiResponse, PaginationParams, PaginationParamsProductName},
     },
     config::config_database::config_db_context::AppContext,
 };
@@ -13,9 +13,10 @@ use axum::{
     extract::{Path, Query, State},
 };
 use log::info;
+
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, ModelTrait, PaginatorTrait,
-    QueryOrder,
+    ActiveModelTrait, ActiveValue, ColumnTrait, DbBackend, EntityTrait, FromQueryResult,
+    IntoActiveModel, ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, Statement,
 };
 use validator::Validate;
 
@@ -35,6 +36,30 @@ pub async fn get_product_by_id(
         Ok(product_response) => Ok(Json(ApiResponse::success(
             product_response,
             "Product retrieved successfully".to_string(),
+            1,
+        ))),
+        Err(_) => Err(ApiError::NotFound),
+    }
+}
+
+pub async fn get_product_by_cod_bar(
+    State(app_context): State<AppContext>,
+    Path(codigo_bar): Path<String>,
+) -> Result<Json<ApiResponse<ProductResponse>>, ApiError> {
+    info!("Fetching product with COD BAR: {}", codigo_bar);
+
+    let product = schemas::product::Entity::find()
+        .filter(schemas::product::Column::ProductCodeBar.eq(codigo_bar.clone()))
+        .one(&app_context.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+        .ok_or_else(|| ApiError::NotFound)?;
+
+    match ProductResponse::try_from(product) {
+        Ok(product_response) => Ok(Json(ApiResponse::success(
+            product_response,
+            "Product retrieved successfully".to_string(),
+            1,
         ))),
         Err(_) => Err(ApiError::NotFound),
     }
@@ -53,9 +78,21 @@ pub async fn get_all_product(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let total_products = TotalProducts::find_by_statement(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT count(product_id) as total FROM product"#,
+        [],
+    ))
+    .one(&app_context.conn)
+    .await
+    .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let max_total_product = total_products.map(|t| t.total).unwrap_or(0);
+
     Ok(Json(ApiResponse::success(
         product_list.into_iter().map(Into::into).collect(),
         "Product retrieved successfully".to_string(),
+        max_total_product as i32,
     )))
 }
 
@@ -85,6 +122,7 @@ pub async fn create_new_product(
     Ok(Json(ApiResponse::success(
         new_user.into(),
         "message".to_string(),
+        1,
     )))
 }
 
@@ -108,6 +146,7 @@ pub async fn delete_product(
     Ok(Json(ApiResponse::success(
         (),
         "Product delete correct".to_string(),
+        1,
     )))
 }
 
@@ -135,6 +174,7 @@ pub async fn update_product(
     Ok(Json(ApiResponse::success(
         new_update_product.into(),
         "Update Correcto".to_string(),
+        1,
     )))
 }
 
@@ -160,6 +200,7 @@ pub async fn update_product_price(
     Ok(Json(ApiResponse::success(
         new_update_product.into(),
         "Update Correcto".to_string(),
+        1,
     )))
 }
 
@@ -185,5 +226,103 @@ pub async fn update_product_count(
     Ok(Json(ApiResponse::success(
         new_update_product.into(),
         "Update Correcto".to_string(),
+        1,
+    )))
+}
+
+pub async fn update_product_count_details(
+    State(app_context): State<AppContext>,
+    Path(product_id): Path<i64>,
+    Json(payload): Json<ProductRequestCount>,
+) -> Result<Json<ApiResponse<ProductResponse>>, ApiError> {
+    info!("fn update_product_price by id: {} ", product_id);
+
+    let product = schemas::product::Entity::find_by_id(product_id)
+        .one(&app_context.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+        .ok_or_else(|| ApiError::NotFound)?;
+
+    //Validar si es Venta o Update para actulizar el numero de items
+    let product_count_actual = if payload.product_code_bar == "0000000" {
+        product.product_count + payload.product_count
+    } else {
+        payload.product_count
+    };
+
+    let mut update_product = product.into_active_model();
+
+    update_product.product_count = ActiveValue::Set(product_count_actual);
+
+    let new_update_product = update_product.save(&app_context.conn).await?;
+
+    Ok(Json(ApiResponse::success(
+        new_update_product.into(),
+        "Update Correcto".to_string(),
+        1,
+    )))
+}
+
+/* Get Report de Lista de Usarios  */
+pub async fn get_list_products(
+    State(app_ctx): State<AppContext>,
+    Path(product_name): Path<String>,
+) -> Result<Json<ApiResponse<Vec<ProductResponse>>>, ApiError> {
+    let report: Vec<ProductResponse> =
+        ProductResponse::find_by_statement(Statement::from_sql_and_values(
+            DbBackend::Postgres,
+            r#"select product_id, product_name, product_count, product_code_bar, product_price, product_lastmdate from pharmacy.product where lower(product_name) like lower('$1%') "#,
+            [
+                    product_name.into(),
+            ],
+        ))
+        .all(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    //SI esta vacio activar ApiError Data no encontrado
+
+    let api_response = ApiResponse::new(
+        report,
+        1,
+        "Report generated successfully".to_string(),
+        "success".to_string(),
+        200,
+        chrono::Utc::now().to_rfc3339(),
+    );
+
+    Ok(Json(api_response))
+}
+
+pub async fn get_product_by_name_details(
+    State(app_context): State<AppContext>,
+    Query(pagination): Query<PaginationParamsProductName>,
+) -> Result<Json<ApiResponse<Vec<ProductResponse>>>, ApiError> {
+    info!(
+        "Fetching product with product_name: {}",
+        pagination.product_name
+    );
+
+    // Use the paginator to fetch the requested page and obtain a consistent total
+    // count for pagination (num_items) using the same filter.
+    let paginator = schemas::product::Entity::find()
+        .filter(schemas::product::Column::ProductName.starts_with(pagination.product_name.clone()))
+        .order_by_asc(schemas::product::Column::ProductId)
+        .paginate(&app_context.conn, pagination.limit);
+
+    let product = paginator
+        .fetch_page(pagination.page)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let max_total_product = paginator
+        .num_items()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    Ok(Json(ApiResponse::success(
+        product.into_iter().map(Into::into).collect(),
+        "Product retrieved successfully".to_string(),
+        max_total_product as i32,
     )))
 }

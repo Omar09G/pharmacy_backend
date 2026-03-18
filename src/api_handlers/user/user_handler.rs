@@ -43,6 +43,7 @@ pub async fn get_user_handler(
 
     let response = ApiResponse {
         data: user.into(),
+        total: 1,
         message: "User retrieved successfully".to_string(),
         status: "success".to_string(),
         code_error: 200,
@@ -125,6 +126,7 @@ pub async fn create_user_handler(
 
     let response = ApiResponse {
         data: user_model.into(),
+        total: 1,
         message: "User created successfully".to_string(),
         status: "success".to_string(),
         code_error: 201,
@@ -160,6 +162,7 @@ pub async fn delete_user_handler(
 
     let response = ApiResponse {
         data: (),
+        total: 0,
         message: "User deleted successfully".to_string(),
         status: "success".to_string(),
         code_error: 200,
@@ -192,8 +195,11 @@ pub async fn get_all_users_handler(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let num_user = users.len();
+
     let response = ApiResponse {
         data: users.into_iter().map(Into::into).collect(),
+        total: num_user as i32,
         message: "Users retrieved successfully".to_string(),
         status: "success".to_string(),
         code_error: 200,
@@ -245,8 +251,11 @@ pub async fn update_user_handler(
     let active_user = user.into_active_model();
     let updated_user = active_user.save(&app_ctx.conn).await?;
 
+    let num_user = 1;
+
     let response = ApiResponse {
         data: updated_user.into(),
+        total: num_user,
         message: "User updated successfully".to_string(),
         status: "success".to_string(),
         code_error: 200,
@@ -312,6 +321,7 @@ pub async fn partial_update_user_handler(
 
     let response = ApiResponse {
         data: updated_user.into(),
+        total: 1,
         message: "User partially updated successfully".to_string(),
         status: "success".to_string(),
         code_error: 200,

@@ -38,6 +38,7 @@ pub async fn get_report_list_user_active(
 
     let api_response = ApiResponse::new(
         report,
+        1,
         "Report generated successfully".to_string(),
         "success".to_string(),
         200,
