@@ -44,25 +44,32 @@ pub async fn get_product_by_id(
 
 pub async fn get_product_by_cod_bar(
     State(app_context): State<AppContext>,
-    Path(codigo_bar): Path<String>,
-) -> Result<Json<ApiResponse<ProductResponse>>, ApiError> {
-    info!("Fetching product with COD BAR: {}", codigo_bar);
+    Query(codigo_bar): Query<PaginationParamsProductName>,
+) -> Result<Json<ApiResponse<Vec<ProductResponse>>>, ApiError> {
+    info!("Fetching product with COD BAR: {}", codigo_bar.product_name);
 
     let product = schemas::product::Entity::find()
-        .filter(schemas::product::Column::ProductCodeBar.eq(codigo_bar.clone()))
-        .one(&app_context.conn)
+        .filter(schemas::product::Column::ProductCodeBar.eq(codigo_bar.product_name.clone()))
+        .all(&app_context.conn)
         .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-        .ok_or_else(|| ApiError::NotFound)?;
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    match ProductResponse::try_from(product) {
-        Ok(product_response) => Ok(Json(ApiResponse::success(
-            product_response,
-            "Product retrieved successfully".to_string(),
-            1,
-        ))),
-        Err(_) => Err(ApiError::NotFound),
-    }
+    let total_products = TotalProducts::find_by_statement(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT count(product_id) as total FROM product where product_code_bar = $1"#,
+        [codigo_bar.product_name.clone().into()],
+    ))
+    .one(&app_context.conn)
+    .await
+    .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let product_response: Vec<ProductResponse> = product.into_iter().map(Into::into).collect();
+
+    Ok(Json(ApiResponse::success(
+        product_response,
+        "Product retrieved successfully".to_string(),
+        total_products.map(|t| t.total).unwrap_or(0) as i32,
+    )))
 }
 
 pub async fn get_all_product(
@@ -303,6 +310,10 @@ pub async fn get_product_by_name_details(
         pagination.product_name
     );
 
+    if pagination.product_name.len() == 0 {
+        return Err(ApiError::NotFound);
+    }
+
     // Use the paginator to fetch the requested page and obtain a consistent total
     // count for pagination (num_items) using the same filter.
     let paginator = schemas::product::Entity::find()
@@ -319,6 +330,10 @@ pub async fn get_product_by_name_details(
         .num_items()
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    if product.is_empty() {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::success(
         product.into_iter().map(Into::into).collect(),

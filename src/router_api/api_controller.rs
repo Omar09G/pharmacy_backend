@@ -31,10 +31,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route("/api/product", put(create_new_product))
         .route("/api/product/{product_id}", delete(delete_product))
         .route("/api/product/{product_id}", patch(update_product))
-        .route(
-            "/api/product/code/{codigo_bar}",
-            get(get_product_by_cod_bar),
-        )
+        .route("/api/product/code", get(get_product_by_cod_bar))
         .route("/api/product/details", get(get_product_by_name_details))
         .with_state(app_ctx.clone())
         .layer(Extension(app_ctx.clone()))
