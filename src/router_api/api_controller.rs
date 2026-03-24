@@ -11,7 +11,9 @@ use crate::api_handlers::product::service::product_service::{
     get_product_by_name_details, update_product,
 };
 use crate::api_handlers::report::report_handler::get_report_list_user_active;
-use crate::api_handlers::user::user_handler::{create_user_handler, get_user_handler};
+use crate::api_handlers::user::user_handler::{
+    create_user_handler, get_all_users_handler, get_user_handler,
+};
 use crate::config::config_database::config_db_context::AppContext;
 use crate::config::config_middleware::auth_jwt::auth_middleware;
 
@@ -19,6 +21,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()
         .route("/api/user/{user_id}", get(get_user_handler))
+        .route("/api/user", get(get_all_users_handler))
         .route("/api/user", put(create_user_handler))
         .route("/api/login", post(get_login))
         .route("/api/auth/profile", get(get_profile))

@@ -191,7 +191,7 @@ pub async fn get_all_users_handler(
 
     let users = schemas::user::Entity::find()
         .paginate(&app_ctx.conn, pagination.limit)
-        .fetch_page(pagination.page - 1)
+        .fetch_page(pagination.page)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 

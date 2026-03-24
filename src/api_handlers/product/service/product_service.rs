@@ -270,7 +270,12 @@ pub async fn update_product_count_details(
     )))
 }
 
-/* Get Report de Lista de Usarios  */
+/* Get Report de Lista de Usarios
+Param: app_ctx: AppContext, tipo_user: String
+Return: Json<ApiResponse<Vec<ReportListUserActive>>>
+
+*/
+
 pub async fn get_list_products(
     State(app_ctx): State<AppContext>,
     Path(product_name): Path<String>,

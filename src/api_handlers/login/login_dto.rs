@@ -14,9 +14,9 @@ pub struct LoginRequest {
     pub username: String,
     #[validate(
         length(
-            min = 6,
-            max = 50,
-            message = "Password must be at least 6 characters long"
+            min = 4,
+            max = 25,
+            message = "Password must be at least 4 characters long"
         ),
         custom(function = "crate::api_utils::api_utils_fun::validate_special_chars")
     )]
