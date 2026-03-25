@@ -600,3 +600,36 @@ pub async fn cancel_sale_handler(
         chrono::Utc::now().to_rfc3339(),
     )))
 }
+
+pub async fn delete_sale_handler(
+    State(app_ctx): State<AppContext>,
+    Path(sale_id): Path<i64>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("Deleting sale with ID: {}", sale_id);
+
+    let venta = schemas::sale::Entity::find_by_id(sale_id)
+        .one(&app_ctx.conn)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    venta.delete(&app_ctx.conn).await?;
+
+    /*Eliminar venta detalle por ID de la venta */
+    let detalles = schemas::saledetal::Entity::find()
+        .filter(schemas::saledetal::Column::IdSale.eq(sale_id))
+        .all(&app_ctx.conn)
+        .await?;
+
+    for detalle in detalles {
+        detalle.delete(&app_ctx.conn).await?;
+    }
+
+    Ok(Json(ApiResponse::new(
+        (),
+        0,
+        "Sale deleted successfully".to_string(),
+        "success".to_string(),
+        200,
+        chrono::Utc::now().to_rfc3339(),
+    )))
+}
