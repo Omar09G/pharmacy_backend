@@ -112,7 +112,7 @@ Authorization: Bearer {{accessToken}}
 
     {
         "id": 0,
-        "dateSale": "2024-06-22",
+        "dateSale": "2024-06-30",
         "discount": 1.25,
         "idSaleDetl": 0,
         "iva": 16.0,
@@ -127,7 +127,7 @@ Authorization: Bearer {{accessToken}}
         "details": [
             {
             "id": 0,
-            "dateSale": "2024-06-22",
+            "dateSale": "2024-06-30",
             "productCodeBar":"185154",
             "productCount": 5,
             "productId": 10,
@@ -151,3 +151,14 @@ Authorization: Bearer {{accessToken}}
 GET {{base}}/sale/1
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
+
+###
+GET {{base}}/sale/detail?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+###
+GET {{base}}/sale/detail/total?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+

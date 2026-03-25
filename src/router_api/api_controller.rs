@@ -3,7 +3,10 @@ use axum::routing::{delete, patch, post, put};
 use axum::{Router, middleware::from_fn, routing::get};
 use log::info;
 
-use crate::api_handlers::sales::sales_handler::{create_sale_handler, get_sales_by_id_handler};
+use crate::api_handlers::sales::sales_handler::{
+    create_sale_handler, get_sales_by_date_ini_fin_handler, get_sales_by_id_handler,
+    get_sum_sales_by_date_ini_fin_handler,
+};
 use crate::config::config_middleware::cors::cors_middleware;
 
 use crate::api_handlers::login::login_handler::{get_login, get_profile};
@@ -43,6 +46,14 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route("/v1/api/product/details", get(get_product_by_name_details))
         .route("/v1/api/sale", put(create_sale_handler))
         .route("/v1/api/sale/{sale_id}", get(get_sales_by_id_handler))
+        .route(
+            "/v1/api/sale/detail",
+            get(get_sales_by_date_ini_fin_handler),
+        )
+        .route(
+            "/v1/api/sale/detail/total",
+            get(get_sum_sales_by_date_ini_fin_handler),
+        )
         .with_state(app_ctx.clone())
         .layer(Extension(app_ctx.clone()))
         // CORS middleware must be the outermost layer so it runs before auth
