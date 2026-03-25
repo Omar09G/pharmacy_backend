@@ -1,5 +1,5 @@
 use crate::{
-    api_handlers::user::user_dto::{UserRequestDTO, UserResponseDTO},
+    api_handlers::user::user_dto::{UserRequestDTO, UserRequestPasswordDTO, UserResponseDTO},
     api_utils::{
         api_error::ApiError,
         api_response::{ApiResponse, PaginationParams},
@@ -164,6 +164,62 @@ pub async fn delete_user_handler(
         data: (),
         total: 0,
         message: "User deleted successfully".to_string(),
+        status: "success".to_string(),
+        code_error: 200,
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+
+    Ok(Json(response))
+}
+/*
+######################################################################################################
+fn update_pass_user_handler
+   - Description: Handler to update a user's password by ID.
+   - Parameters:
+       - State(app_ctx): The application context containing the database connection.
+       - Path(user_id): The ID of the user whose password is to be updated.
+       - Json(payload): The new password data sent in the request body.
+   - Returns: A JSON response containing the updated user data or an error message.
+######################################################################################################
+ */
+
+pub async fn update_pass_user_handler(
+    State(app_ctx): State<AppContext>,
+    Path(user_id): Path<i64>,
+    Json(payload): Json<UserRequestPasswordDTO>,
+) -> Result<Json<ApiResponse<UserResponseDTO>>, ApiError> {
+    info!(
+        "Received request to update password for user with ID: {}",
+        user_id
+    );
+
+    payload.validate().map_err(ApiError::Validation)?;
+
+    let user = schemas::user::Entity::find_by_id(user_id)
+        .one(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+        .ok_or_else(|| ApiError::NotFound)?;
+
+    let password_hash: Option<String> = if let Some(password) = &payload.password {
+        Some(generate_hash(password).map_err(|s| {
+            ApiError::Unexpected(Box::new(std::io::Error::new(std::io::ErrorKind::Other, s)))
+        })?)
+    } else {
+        None
+    };
+
+    let mut active_user = user.into_active_model();
+    if let Some(password) = password_hash {
+        active_user.password = ActiveValue::Set(password.into());
+    }
+
+    let updated_user = active_user.save(&app_ctx.conn).await?;
+
+    let response = ApiResponse {
+        data: updated_user.into(),
+        total: 1,
+        message: "User password updated successfully".to_string(),
         status: "success".to_string(),
         code_error: 200,
         timestamp: chrono::Utc::now().to_rfc3339(),

@@ -36,9 +36,11 @@ pub async fn get_report_list_user_active(
         false => (),
     }
 
+    let total_registros = report.len() as i32;
+
     let api_response = ApiResponse::new(
         report,
-        1,
+        total_registros,
         "Report generated successfully".to_string(),
         "success".to_string(),
         200,

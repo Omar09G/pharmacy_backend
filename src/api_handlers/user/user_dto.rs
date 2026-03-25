@@ -42,6 +42,19 @@ pub struct UserRequestDTO {
     pub username: String,
 }
 
+#[derive(Deserialize, Validate, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserRequestPasswordDTO {
+    #[validate(length(min = 6, message = "Password must be at least 6 characters long"))]
+    pub password: Option<String>,
+    #[validate(length(
+        min = 3,
+        max = 15,
+        message = "Username must be at least 3 characters long"
+    ))]
+    pub username: String,
+}
+
 impl From<schemas::user::ActiveModel> for UserResponseDTO {
     fn from(active_model: schemas::user::ActiveModel) -> Self {
         UserResponseDTO {

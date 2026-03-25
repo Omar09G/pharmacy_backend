@@ -14,6 +14,7 @@ pub struct Model {
     #[sea_orm(column_type = "Float")]
     pub product_price: f32,
     pub time_sale: Option<Time>,
+    pub id_sale: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

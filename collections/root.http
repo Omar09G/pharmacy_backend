@@ -1,7 +1,7 @@
-@base = http://localhost:8080/api
+@base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3MjY0ODc0NCwiaWF0IjoxNzcyNTYyMzQ0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3Iiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.eHWE3jMwEOJfLok-KsR54zo2O0epRv1TxWfSI9HSINQ
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NDQ3ODY3OCwiaWF0IjoxNzc0MzkyMjc4LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjMsIm5hbWUiOiJPbWFyIiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.XFMPytGdsM_zmp-DStcYPqV6qOObfLxbKjkrp_TwNkg
 
 ##### Get User by ID
 GET {{base}}/user/3
@@ -22,12 +22,12 @@ Content-Type: {{contentType}}
 }
 
 ### Login User
-PUT {{base}}/login
+POST  {{base}}/login
 Content-Type: {{contentType}}
 
 {
     "username": "omar0907",
-    "password": "omar1234"
+    "password": "omar0907"
 }   
 
 ###
@@ -92,5 +92,62 @@ Authorization: Bearer {{accessToken}}
 
 ###
 GET {{base}}/product/code/052454842321
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+#### 
+PATCH {{base}}/user/pass/3
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+    "username": "omar0907",
+    "password": "omar0907"
+}  
+
+###
+PUT {{base}}/sale
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+    {
+        "id": 0,
+        "dateSale": "2024-06-22",
+        "discount": 1.25,
+        "idSaleDetl": 0,
+        "iva": 16.0,
+        "msg": "Venta realizada con exito",
+        "paymentMethod": "Efectivo",
+        "paymentStatus": "Pagado",
+        "status": "OK",
+        "subTotal": 100.0,
+        "timeSale": "14:30:00",
+        "total": 116.0,
+        "username": "omar0907",
+        "details": [
+            {
+            "id": 0,
+            "dateSale": "2024-06-22",
+            "productCodeBar":"185154",
+            "productCount": 5,
+            "productId": 10,
+            "productPrice": 2,
+            "timeSale": "14:30:00",
+            "idSale": 0
+            },
+            {
+            "id": 0,
+            "dateSale": "2024-06-22",
+            "productCodeBar":"822555",
+            "productCount": 2,
+            "productId": 1,
+            "productPrice": 2.55,
+            "timeSale": "14:30:00",
+            "idSale": 0
+            }        ]
+    }
+
+###
+GET {{base}}/sale/1
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
