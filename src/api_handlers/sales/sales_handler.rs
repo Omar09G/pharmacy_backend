@@ -94,23 +94,6 @@ pub async fn get_sales_by_id_handler(
         .all(&app_ctx.conn)
         .await?;
 
-    let response_dto = SalesRequestDTO {
-        id: venta.id,
-        date_sale: venta.date_sale,
-        discount: venta.discount,
-        id_sale_detl: venta.id_sale_detl,
-        iva: venta.iva,
-        msg: venta.msg.clone(),
-        payment_method: venta.payment_method.clone(),
-        payment_status: venta.payment_status.clone(),
-        status: venta.status.clone(),
-        sub_total: venta.sub_total,
-        time_sale: venta.time_sale,
-        total: venta.total,
-        username: venta.username.clone(),
-        details: detalles.into_iter().map(SalesDetailDTO::from).collect(),
-    };
-
     Ok(Json(ApiResponse::new(
         response_dto,
         1,
