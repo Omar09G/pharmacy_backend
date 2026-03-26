@@ -4,7 +4,7 @@ use axum::{
 };
 use log::info;
 
-use sea_orm::{IntoActiveModel, entity::prelude::*};
+use sea_orm::{DatabaseTransaction, IntoActiveModel, entity::prelude::*};
 
 use crate::{
     api_handlers::sales::sales_dto::{
@@ -17,10 +17,133 @@ use crate::{
 
 use validator::Validate;
 
+use sea_orm::QueryOrder;
+use sea_orm::TransactionTrait;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter,
 };
 
+// ---------------------- Helpers ----------------------
+/// Name: `parse_date_str`
+/// Description: Parse a `YYYY-MM-DD` string into a `sea_orm::Date`.
+/// Parameters: `date_str` - string slice with date in `YYYY-MM-DD` format.
+/// Outputs: `Ok(Date)` on success or `Err(ApiError::ValidationError)` on parse failure.
+fn parse_date_str(date_str: &str) -> Result<Date, ApiError> {
+    let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
+    match naive {
+        Ok(d) => {
+            let date: Date = d;
+            Ok(date)
+        }
+        Err(e) => Err(ApiError::ValidationError(format!("Invalid date: {}", e))),
+    }
+}
+
+/// Name: `to_page_index`
+/// Description: Convert client 1-based `page` to 0-based page index used by paginators.
+/// Parameters: `page` - page number from client (u64).
+/// Outputs: 0-based `usize` page index.
+fn to_page_index(page: u64) -> u64 {
+    if page == 0 {
+        0
+    } else {
+        (page.saturating_sub(1)) as u64
+    }
+}
+
+/// Name: `ventas_to_responses`
+/// Description: Given a list of `sale` models, fetches their detail lines and converts
+///              each sale into a `SalesResponse` DTO.
+/// Parameters: `app_ctx` - application context with DB connection; `ventas` - vector of sales models.
+/// Outputs: `Ok(Vec<SalesResponse>)` or `Err(ApiError)` on DB errors.
+async fn ventas_to_responses(
+    app_ctx: &AppContext,
+    ventas: Vec<schemas::sale::Model>,
+) -> Result<Vec<SalesResponse>, ApiError> {
+    let mut response_dtos = Vec::new();
+
+    for venta in ventas {
+        let detalles = schemas::saledetal::Entity::find()
+            .order_by_asc(schemas::saledetal::Column::Id)
+            .filter(schemas::saledetal::Column::IdSale.eq(venta.id))
+            .all(&app_ctx.conn)
+            .await?;
+
+        response_dtos.push(SalesResponse::from((venta, detalles)));
+    }
+
+    Ok(response_dtos)
+}
+
+/// Name: `fetch_sales_between_dates`
+/// Description: Paginates sales between two dates.
+/// Parameters: `app_ctx` - application context; `start`/`end` - date range; `page`/`limit` - pagination.
+/// Outputs: `Ok((Vec<sale::Model>, usize))` where usize is total items, or `Err(ApiError)`.
+async fn fetch_sales_between_dates(
+    app_ctx: &AppContext,
+    start: Date,
+    end: Date,
+    page: u64,
+    limit: u64,
+) -> Result<(Vec<schemas::sale::Model>, u64), ApiError> {
+    let paginator = schemas::sale::Entity::find()
+        .order_by_asc(schemas::sale::Column::Id)
+        .filter(schemas::sale::Column::DateSale.between(start.clone(), end.clone()))
+        .paginate(&app_ctx.conn, limit);
+
+    let total_items = paginator
+        .num_items()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let ventas = paginator
+        .fetch_page(to_page_index(page))
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    Ok((ventas, total_items))
+}
+
+/// Name: `sum_sales_between_dates_username`
+/// Description: Computes the total `total` value for sales in a date range, optionally
+///              filtering by username and always excluding cancelled sales when requested.
+/// Parameters: `app_ctx`, `start`, `end`, `username` (Option<String>), `exclude_cancel` (bool)
+/// Outputs: `Ok(f32)` with the summed total or `Err(ApiError)`.
+async fn sum_sales_between_dates_username(
+    app_ctx: &AppContext,
+    start: Date,
+    end: Date,
+    username: Option<String>,
+    exclude_cancel: bool,
+) -> Result<f32, ApiError> {
+    let mut query = schemas::sale::Entity::find()
+        .filter(schemas::sale::Column::DateSale.between(start.clone(), end.clone()))
+        .order_by_asc(schemas::sale::Column::Id);
+
+    if let Some(u) = username {
+        query = query.filter(schemas::sale::Column::Username.eq(u));
+    }
+
+    if exclude_cancel {
+        query = query.filter(schemas::sale::Column::Status.ne("CANCEL".to_string()));
+    }
+
+    let total: f32 = query
+        .all(&app_ctx.conn)
+        .await?
+        .into_iter()
+        .map(|venta| venta.total)
+        .sum();
+
+    Ok(total)
+}
+
+// -----------------------------------------------------
+
+/// Name: create_sale_handler
+/// Description: Create a new sale (parent and details), update product counts.
+/// Parameters: `app_ctx` - app context; `payload` - `SalesRequestDTO` with sale and details.
+/// Outputs: `ApiResponse<SalesResponseIdDTO>` containing created sale id.
 pub async fn create_sale_handler(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SalesRequestDTO>,
@@ -28,6 +151,19 @@ pub async fn create_sale_handler(
     info!("Creating a new sale with payload: {:?}", payload);
 
     payload.validate().map_err(ApiError::Validation)?;
+
+    if payload.details.is_empty() {
+        return Err(ApiError::ValidationError(
+            "Sale must have at least one detail line".to_string(),
+        ));
+    }
+
+    // Begin a DB transaction so we can rollback on any error
+    let txn: DatabaseTransaction = app_ctx
+        .conn
+        .begin()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     let venta_padre = schemas::sale::ActiveModel {
         id: ActiveValue::NotSet,
@@ -45,7 +181,14 @@ pub async fn create_sale_handler(
         username: ActiveValue::Set(payload.username.clone()),
     };
 
-    let venta_guardada = venta_padre.save(&app_ctx.conn).await?;
+    // Save parent using transaction
+    let venta_guardada = match venta_padre.save(&txn).await {
+        Ok(v) => v,
+        Err(e) => {
+            let _ = txn.rollback().await;
+            return Err(ApiError::Unexpected(Box::new(e)));
+        }
+    };
 
     let venta_id = match venta_guardada.id {
         ActiveValue::Set(v) => v,
@@ -72,15 +215,28 @@ pub async fn create_sale_handler(
             detalle.product_count.unwrap_or_default()
         );
 
-        detalle_hijo.save(&app_ctx.conn).await?;
+        if let Err(e) = detalle_hijo.save(&txn).await {
+            let _ = txn.rollback().await;
+            return Err(ApiError::Unexpected(Box::new(e)));
+        }
 
         /*Actualizar contador de productos de la tabla product, por cada venta  */
         let product_id = detalle.product_id;
         if product_id != 0 {
-            let producto = schemas::product::Entity::find_by_id(product_id)
-                .one(&app_ctx.conn)
-                .await?
-                .ok_or(ApiError::NotFound)?;
+            let producto = match schemas::product::Entity::find_by_id(product_id)
+                .one(&txn)
+                .await
+            {
+                Ok(Some(p)) => p,
+                Ok(None) => {
+                    let _ = txn.rollback().await;
+                    return Err(ApiError::NotFound);
+                }
+                Err(e) => {
+                    let _ = txn.rollback().await;
+                    return Err(ApiError::Unexpected(Box::new(e)));
+                }
+            };
 
             let current_count: i32 = producto.product_count;
             let sold_count: i32 = detalle.product_count.unwrap_or_default() as i32;
@@ -90,8 +246,16 @@ pub async fn create_sale_handler(
 
             producto_active.product_count = ActiveValue::Set(new_count);
 
-            producto_active.save(&app_ctx.conn).await?;
+            if let Err(e) = producto_active.save(&txn).await {
+                let _ = txn.rollback().await;
+                return Err(ApiError::Unexpected(Box::new(e)));
+            }
         }
+    }
+
+    // Commit transaction
+    if let Err(e) = txn.commit().await {
+        return Err(ApiError::Unexpected(Box::new(e)));
     }
 
     Ok(Json(ApiResponse::new(
@@ -104,6 +268,10 @@ pub async fn create_sale_handler(
     )))
 }
 
+/// Name: get_sales_by_id_handler
+/// Description: Fetch a sale (parent) and its details by sale ID.
+/// Parameters: `app_ctx` - app context; `sale_id` - sale identifier.
+/// Outputs: `ApiResponse<SalesResponse>` containing sale and its details.
 pub async fn get_sales_by_id_handler(
     State(app_ctx): State<AppContext>,
     Path(sale_id): Path<i64>,
@@ -120,6 +288,10 @@ pub async fn get_sales_by_id_handler(
         .all(&app_ctx.conn)
         .await?;
 
+    if detalles.is_empty() {
+        return Err(ApiError::NotFound);
+    }
+
     Ok(Json(ApiResponse::new(
         SalesResponse::from((venta, detalles)),
         1,
@@ -132,31 +304,38 @@ pub async fn get_sales_by_id_handler(
 
 pub async fn get_sales_by_date_handler(
     State(app_ctx): State<AppContext>,
-    Path(date_sale): Path<String>,
+    Query(payload): Query<PaginationParamsSales>,
 ) -> Result<Json<ApiResponse<Vec<SalesResponse>>>, ApiError> {
+    let date_sale = payload.date_inicio.clone().unwrap_or_default();
+
     info!("Fetching sales for date: {}", date_sale);
 
-    let ventas = schemas::sale::Entity::find()
-        .filter(schemas::sale::Column::DateSale.eq(date_sale))
-        .all(&app_ctx.conn)
-        .await?;
+    let date_date = parse_date_str(&date_sale)?;
 
-    let mut response_dtos = Vec::new();
+    let paginator = schemas::sale::Entity::find()
+        .filter(schemas::sale::Column::DateSale.eq(date_date.clone()))
+        .order_by_asc(schemas::sale::Column::Id)
+        .paginate(&app_ctx.conn, payload.limit);
 
-    for venta in ventas {
-        let detalles = schemas::saledetal::Entity::find()
-            .filter(schemas::saledetal::Column::IdSale.eq(venta.id))
-            .all(&app_ctx.conn)
-            .await?;
+    let total_items = paginator
+        .num_items()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        let response_dto = SalesResponse::from((venta, detalles));
+    let ventas = paginator
+        .fetch_page(to_page_index(payload.page))
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        response_dtos.push(response_dto);
+    let response_dtos = ventas_to_responses(&app_ctx, ventas).await?;
+
+    if response_dtos.is_empty() {
+        return Err(ApiError::NotFound);
     }
 
     Ok(Json(ApiResponse::new(
         response_dtos.clone(),
-        response_dtos.len() as i32,
+        total_items as i32,
         "Sales fetched successfully".to_string(),
         "success".to_string(),
         200,
@@ -166,30 +345,35 @@ pub async fn get_sales_by_date_handler(
 
 pub async fn get_sales_by_username_handler(
     State(app_ctx): State<AppContext>,
-    Path(username): Path<String>,
+    Query(payload): Query<PaginationParamsSales>,
 ) -> Result<Json<ApiResponse<Vec<SalesResponse>>>, ApiError> {
+    let username = payload.username.clone().unwrap_or_default();
     info!("Fetching sales for username: {}", username);
 
-    let ventas = schemas::sale::Entity::find()
+    let paginator = schemas::sale::Entity::find()
         .filter(schemas::sale::Column::Username.eq(username.clone()))
-        .all(&app_ctx.conn)
-        .await?;
+        .order_by_asc(schemas::sale::Column::Id)
+        .paginate(&app_ctx.conn, payload.limit);
 
-    let mut response_dtos = Vec::new();
+    let total_items = paginator
+        .num_items()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    for venta in ventas {
-        let detalles = schemas::saledetal::Entity::find()
-            .filter(schemas::saledetal::Column::IdSale.eq(venta.id))
-            .all(&app_ctx.conn)
-            .await?;
+    let ventas = paginator
+        .fetch_page(to_page_index(payload.page))
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        let response_dto = SalesResponse::from((venta, detalles));
-        response_dtos.push(response_dto);
+    let response_dtos = ventas_to_responses(&app_ctx, ventas).await?;
+
+    if response_dtos.is_empty() {
+        return Err(ApiError::NotFound);
     }
 
     Ok(Json(ApiResponse::new(
         response_dtos.clone(),
-        response_dtos.len() as i32,
+        total_items as i32,
         "Sales fetched successfully".to_string(),
         "success".to_string(),
         200,
@@ -201,31 +385,17 @@ pub async fn get_sales_by_date_ini_fin_handler(
     State(app_ctx): State<AppContext>,
     Query(payload): Query<PaginationParamsSales>,
 ) -> Result<Json<ApiResponse<Vec<SalesResponse>>>, ApiError> {
+    let date_inicio_str = payload.date_inicio.clone().unwrap_or_default();
+    let date_fin_str = payload.date_fin.clone().unwrap_or_default();
+
     info!(
         "Fetching sales between dates: {} and {}",
-        payload.date_inicio, payload.date_fin
+        date_inicio_str, date_fin_str
     );
 
     // parse date_inicio/date_fin (expecting YYYY-MM-DD)
-    let date_inicio = match chrono::NaiveDate::parse_from_str(&payload.date_inicio, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_inicio: {}",
-                e
-            )));
-        }
-    };
-
-    let date_fin = match chrono::NaiveDate::parse_from_str(&payload.date_fin, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_fin: {}",
-                e
-            )));
-        }
-    };
+    let date_inicio = parse_date_str(&date_inicio_str)?;
+    let date_fin = parse_date_str(&date_fin_str)?;
 
     if date_inicio > date_fin {
         return Err(ApiError::ValidationError(
@@ -233,48 +403,18 @@ pub async fn get_sales_by_date_ini_fin_handler(
         ));
     }
 
-    // convert to sea_orm::Date (chrono::NaiveDate)
-    let date_inicio_date: Date = date_inicio;
-    let date_fin_date: Date = date_fin;
-
-    // paginator: convert client 1-based page to 0-based page index
-    let page_index = if payload.page == 0 {
-        0
-    } else {
-        payload.page.saturating_sub(1)
-    };
-
-    let paginator = schemas::sale::Entity::find()
-        .filter(
-            schemas::sale::Column::DateSale
-                .between(date_inicio_date.clone(), date_fin_date.clone()),
-        )
-        .paginate(&app_ctx.conn, payload.limit);
-
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-    let ventas = paginator
-        .fetch_page(page_index)
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-    let mut response_dtos = Vec::new();
-
-    for venta in ventas {
-        let detalles = schemas::saledetal::Entity::find()
-            .filter(schemas::saledetal::Column::IdSale.eq(venta.id))
-            .all(&app_ctx.conn)
+    // convert to sea_orm::Date (chrono::NaiveDate) and paginate
+    let (ventas, total_items) =
+        fetch_sales_between_dates(&app_ctx, date_inicio, date_fin, payload.page, payload.limit)
             .await?;
 
-        let response_dto = SalesResponse::from((venta, detalles));
-
-        response_dtos.push(response_dto);
-    }
+    let response_dtos = ventas_to_responses(&app_ctx, ventas).await?;
 
     let total_i32 = total_items as i32;
+
+    if response_dtos.is_empty() {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         response_dtos,
@@ -292,13 +432,13 @@ pub async fn get_sum_sales_by_date_handler(
 ) -> Result<Json<ApiResponse<f32>>, ApiError> {
     info!("Calculating total sales for date: {}", date_sale);
 
-    let total_sales = schemas::sale::Entity::find()
-        .filter(schemas::sale::Column::DateSale.eq(date_sale))
-        .all(&app_ctx.conn)
-        .await?
-        .into_iter()
-        .map(|venta| venta.total)
-        .sum();
+    let date = parse_date_str(&date_sale)?;
+
+    let total_sales = sum_sales_between_dates_username(&app_ctx, date, date, None, false).await?;
+
+    if total_sales == 0.0 {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         total_sales,
@@ -314,31 +454,15 @@ pub async fn get_sum_sales_by_date_ini_fin_handler(
     State(app_ctx): State<AppContext>,
     Query(payload): Query<PaginationParamsSales>,
 ) -> Result<Json<ApiResponse<f32>>, ApiError> {
+    let date_inicio_str = payload.date_inicio.clone().unwrap_or_default();
+    let date_fin_str = payload.date_fin.clone().unwrap_or_default();
     info!(
         "Calculating total sales between dates: {} and {}",
-        payload.date_inicio, payload.date_fin
+        date_inicio_str, date_fin_str
     );
-
     // parse date_inicio/date_fin (expecting YYYY-MM-DD)
-    let date_inicio = match chrono::NaiveDate::parse_from_str(&payload.date_inicio, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_inicio: {}",
-                e
-            )));
-        }
-    };
-
-    let date_fin = match chrono::NaiveDate::parse_from_str(&payload.date_fin, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_fin: {}",
-                e
-            )));
-        }
-    };
+    let date_inicio = parse_date_str(&date_inicio_str)?;
+    let date_fin = parse_date_str(&date_fin_str)?;
 
     if date_inicio > date_fin {
         return Err(ApiError::ValidationError(
@@ -346,20 +470,12 @@ pub async fn get_sum_sales_by_date_ini_fin_handler(
         ));
     }
 
-    // convert to sea_orm::Date (chrono::NaiveDate)
-    let date_inicio_date: Date = date_inicio;
-    let date_fin_date: Date = date_fin;
+    let total_sales =
+        sum_sales_between_dates_username(&app_ctx, date_inicio, date_fin, None, false).await?;
 
-    let total_sales = schemas::sale::Entity::find()
-        .filter(
-            schemas::sale::Column::DateSale
-                .between(date_inicio_date.clone(), date_fin_date.clone()),
-        )
-        .all(&app_ctx.conn)
-        .await?
-        .into_iter()
-        .map(|venta| venta.total)
-        .sum();
+    if total_sales == 0.0 {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         total_sales,
@@ -379,11 +495,16 @@ pub async fn get_sum_sales_by_username_handler(
 
     let total_sales = schemas::sale::Entity::find()
         .filter(schemas::sale::Column::Username.eq(username.clone()))
+        .order_by_asc(schemas::sale::Column::Id)
         .all(&app_ctx.conn)
         .await?
         .into_iter()
         .map(|venta| venta.total)
         .sum();
+
+    if total_sales == 0.0 {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         total_sales,
@@ -399,33 +520,17 @@ pub async fn get_sum_sales_by_date_ini_fin_username_handler(
     State(app_ctx): State<AppContext>,
     Query(payload): Query<PaginationParamsSales>,
 ) -> Result<Json<ApiResponse<f32>>, ApiError> {
+    let date_inicio_str = payload.date_inicio.clone().unwrap_or_default();
+    let date_fin_str = payload.date_fin.clone().unwrap_or_default();
+    let username = payload.username.clone().unwrap_or_default();
     info!(
         "Calculating total sales for username: {} between dates: {} and {}",
-        payload.username.clone().unwrap_or_default(),
-        payload.date_inicio,
-        payload.date_fin
+        username, date_inicio_str, date_fin_str
     );
 
     // parse date_inicio/date_fin (expecting YYYY-MM-DD)
-    let date_inicio = match chrono::NaiveDate::parse_from_str(&payload.date_inicio, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_inicio: {}",
-                e
-            )));
-        }
-    };
-
-    let date_fin = match chrono::NaiveDate::parse_from_str(&payload.date_fin, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_fin: {}",
-                e
-            )));
-        }
-    };
+    let date_inicio = parse_date_str(&date_inicio_str)?;
+    let date_fin = parse_date_str(&date_fin_str)?;
 
     if date_inicio > date_fin {
         return Err(ApiError::ValidationError(
@@ -433,22 +538,13 @@ pub async fn get_sum_sales_by_date_ini_fin_username_handler(
         ));
     }
 
-    // convert to sea_orm::Date (chrono::NaiveDate)
-    let date_inicio_date: Date = date_inicio;
-    let date_fin_date: Date = date_fin;
+    let total_sales =
+        sum_sales_between_dates_username(&app_ctx, date_inicio, date_fin, Some(username), true)
+            .await?;
 
-    let total_sales = schemas::sale::Entity::find()
-        .filter(
-            schemas::sale::Column::DateSale
-                .between(date_inicio_date.clone(), date_fin_date.clone()),
-        )
-        .filter(schemas::sale::Column::Username.eq(payload.username.clone().unwrap_or_default()))
-        .filter(schemas::sale::Column::Status.ne("CANCEL".to_string()))
-        .all(&app_ctx.conn)
-        .await?
-        .into_iter()
-        .map(|venta| venta.total)
-        .sum();
+    if total_sales == 0.0 {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         total_sales,
@@ -465,31 +561,17 @@ pub async fn get_sales_detail_by_date_ini_fin_handler(
     State(app_ctx): State<AppContext>,
     Query(payload): Query<PaginationParamsSales>,
 ) -> Result<Json<ApiResponse<Vec<SalesResponseDTO>>>, ApiError> {
+    let date_inicio_str = payload.date_inicio.clone().unwrap_or_default();
+    let date_fin_str = payload.date_fin.clone().unwrap_or_default();
     info!(
-        "Fetching sale details between dates: {} and {}",
-        payload.date_inicio, payload.date_fin
+        "Fetching sale details for between dates: {} and {}",
+        date_inicio_str, date_fin_str
     );
 
     // parse date_inicio/date_fin (expecting YYYY-MM-DD)
-    let date_inicio = match chrono::NaiveDate::parse_from_str(&payload.date_inicio, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_inicio: {}",
-                e
-            )));
-        }
-    };
+    let date_inicio = parse_date_str(&date_inicio_str)?;
 
-    let date_fin = match chrono::NaiveDate::parse_from_str(&payload.date_fin, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(e) => {
-            return Err(ApiError::ValidationError(format!(
-                "Invalid date_fin: {}",
-                e
-            )));
-        }
-    };
+    let date_fin = parse_date_str(&date_fin_str)?;
 
     if date_inicio > date_fin {
         return Err(ApiError::ValidationError(
@@ -501,23 +583,37 @@ pub async fn get_sales_detail_by_date_ini_fin_handler(
     let date_inicio_date: Date = date_inicio;
     let date_fin_date: Date = date_fin;
 
-    let ventas = schemas::sale::Entity::find()
+    // paginator: convert client 1-based page to 0-based page index
+    let page_index = to_page_index(payload.page);
+
+    let paginator = schemas::sale::Entity::find()
         .filter(
             schemas::sale::Column::DateSale
                 .between(date_inicio_date.clone(), date_fin_date.clone()),
         )
-        .filter(schemas::sale::Column::Status.ne("CANCEL".to_string()))
-        .all(&app_ctx.conn)
-        .await?;
+        .order_by_asc(schemas::sale::Column::Id)
+        .paginate(&app_ctx.conn, payload.limit);
 
-    let total = ventas.len() as i32;
+    let total_items = paginator
+        .num_items()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let ventas = paginator
+        .fetch_page(page_index)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    if ventas.is_empty() {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         ventas
             .into_iter()
             .map(SalesResponseDTO::from)
             .collect::<Vec<_>>(),
-        total,
+        total_items as i32,
         "Sales details fetched successfully".to_string(),
         "success".to_string(),
         200,
@@ -534,10 +630,15 @@ pub async fn get_sales_detail_by_id_handler(
 
     let detalles = schemas::saledetal::Entity::find()
         .filter(schemas::saledetal::Column::IdSale.eq(sale_id))
+        .order_by_asc(schemas::saledetal::Column::Id)
         .all(&app_ctx.conn)
         .await?;
 
     let total = detalles.len() as i32;
+
+    if detalles.is_empty() {
+        return Err(ApiError::NotFound);
+    }
 
     Ok(Json(ApiResponse::new(
         detalles

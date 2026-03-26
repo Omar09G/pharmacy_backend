@@ -1,11 +1,13 @@
-use axum::Extension;
 use axum::routing::{delete, patch, post, put};
 use axum::{Router, middleware::from_fn, routing::get};
 use log::info;
 
 use crate::api_handlers::sales::sales_handler::{
-    create_sale_handler, get_sales_by_date_ini_fin_handler, get_sales_by_id_handler,
-    get_sum_sales_by_date_ini_fin_handler,
+    cancel_sale_handler, create_sale_handler, delete_sale_handler, get_sales_by_date_handler,
+    get_sales_by_date_ini_fin_handler, get_sales_by_id_handler, get_sales_by_username_handler,
+    get_sales_detail_by_date_ini_fin_handler, get_sales_detail_by_id_handler,
+    get_sum_sales_by_date_handler, get_sum_sales_by_date_ini_fin_handler,
+    get_sum_sales_by_date_ini_fin_username_handler, get_sum_sales_by_username_handler,
 };
 use crate::config::config_middleware::cors::cors_middleware;
 
@@ -21,41 +23,86 @@ use crate::api_handlers::user::user_handler::{
 use crate::config::config_database::config_db_context::AppContext;
 use crate::config::config_middleware::auth_jwt::auth_middleware;
 
+// API route constants
+// Base API prefix and helper macro to compose routes at compile time.
+
+macro_rules! route {
+    ($p:literal) => {
+        concat!("/v1/api", $p)
+    };
+}
+
+const USER_ID: &str = route!("/user/{user_id}");
+const USER: &str = route!("/user");
+const USER_PASS: &str = route!("/user/pass/{user_id}");
+const LOGIN: &str = route!("/login");
+const PROFILE: &str = route!("/auth/profile");
+const REPORT_ACTIVE: &str = route!("/report/user/active/{tipo_user}");
+const PRODUCT_ID: &str = route!("/product/{product_id}");
+const PRODUCT: &str = route!("/product");
+const PRODUCT_CODE: &str = route!("/product/code");
+const PRODUCT_DETAILS: &str = route!("/product/details");
+const SALE: &str = route!("/sale");
+const SALE_ID: &str = route!("/sale/{sale_id}");
+const SALE_CANCEL: &str = route!("/sale/cancel/{sale_id}");
+const SALE_DATE: &str = route!("/sale/date");
+const SALE_USER: &str = route!("/sale/user/");
+// search/paginated sales between dates
+const SALE_SEARCH: &str = route!("/sale/search");
+// detailed parent-only list between dates (no child rows)
+const SALE_DETAILS_RANGE: &str = route!("/sale/details");
+// sale child details by parent sale id
+const SALE_DETAIL_BY_ID: &str = route!("/sale/detail/{sale_id}");
+const SALE_SUM_DATE: &str = route!("/sale/sum/{date}");
+const SALE_SUM_RANGE: &str = route!("/sale/sum"); // expects query params date range
+const SALE_SUM_USER: &str = route!("/sale/sum/user/{username}");
+const SALE_SUM_USER_RANGE: &str = route!("/sale/sum/user"); // expects query params and optional username
+
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()
-        .route("/v1/api/user/{user_id}", get(get_user_handler))
-        .route("/v1/api/user", get(get_all_users_handler))
-        .route("/v1/api/user", put(create_user_handler))
+        .route(USER_ID, get(get_user_handler))
+        .route(USER, get(get_all_users_handler))
+        .route(USER, put(create_user_handler))
+        .route(USER_PASS, patch(update_pass_user_handler))
+        .route(LOGIN, post(get_login))
+        .route(PROFILE, get(get_profile))
+        .route(REPORT_ACTIVE, get(get_report_list_user_active))
+        .route(PRODUCT_ID, get(get_product_by_id))
+        .route(PRODUCT, get(get_all_product))
+        .route(PRODUCT, put(create_new_product))
+        .route(PRODUCT_ID, delete(delete_product))
+        .route(PRODUCT_ID, patch(update_product))
+        .route(PRODUCT_CODE, get(get_product_by_cod_bar))
+        .route(PRODUCT_DETAILS, get(get_product_by_name_details))
+        // Sales endpoints
+        .route(SALE, put(create_sale_handler))
+        // single sale operations: get and delete
         .route(
-            "/v1/api/user/pass/{user_id}",
-            patch(update_pass_user_handler),
+            SALE_ID,
+            get(get_sales_by_id_handler).delete(delete_sale_handler),
         )
-        .route("/v1/api/login", post(get_login))
-        .route("/v1/api/auth/profile", get(get_profile))
+        // cancel sale (status update)
+        .route(SALE_CANCEL, patch(cancel_sale_handler))
+        // fetch sales by exact date or by username
+        .route(SALE_DATE, get(get_sales_by_date_handler))
+        .route(SALE_USER, get(get_sales_by_username_handler))
+        // sale detail / search endpoints
+        .route(SALE_SEARCH, get(get_sales_by_date_ini_fin_handler))
+        .route(SALE_DETAIL_BY_ID, get(get_sales_detail_by_id_handler))
         .route(
-            "/v1/api/report/user/active/{tipo_user}",
-            get(get_report_list_user_active),
+            SALE_DETAILS_RANGE,
+            get(get_sales_detail_by_date_ini_fin_handler),
         )
-        .route("/v1/api/product/{product_id}", get(get_product_by_id))
-        .route("/v1/api/product", get(get_all_product))
-        .route("/v1/api/product", put(create_new_product))
-        .route("/v1/api/product/{product_id}", delete(delete_product))
-        .route("/v1/api/product/{product_id}", patch(update_product))
-        .route("/v1/api/product/code", get(get_product_by_cod_bar))
-        .route("/v1/api/product/details", get(get_product_by_name_details))
-        .route("/v1/api/sale", put(create_sale_handler))
-        .route("/v1/api/sale/{sale_id}", get(get_sales_by_id_handler))
+        // sum/aggregation endpoints
+        .route(SALE_SUM_DATE, get(get_sum_sales_by_date_handler))
+        .route(SALE_SUM_RANGE, get(get_sum_sales_by_date_ini_fin_handler))
+        .route(SALE_SUM_USER, get(get_sum_sales_by_username_handler))
         .route(
-            "/v1/api/sale/detail",
-            get(get_sales_by_date_ini_fin_handler),
-        )
-        .route(
-            "/v1/api/sale/detail/total",
-            get(get_sum_sales_by_date_ini_fin_handler),
+            SALE_SUM_USER_RANGE,
+            get(get_sum_sales_by_date_ini_fin_username_handler),
         )
         .with_state(app_ctx.clone())
-        .layer(Extension(app_ctx.clone()))
         // CORS middleware must be the outermost layer so it runs before auth
         .layer(from_fn(auth_middleware))
         .layer(from_fn(cors_middleware));

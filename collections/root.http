@@ -129,8 +129,8 @@ Authorization: Bearer {{accessToken}}
             "id": 0,
             "dateSale": "2024-06-30",
             "productCodeBar":"185154",
-            "productCount": 5,
-            "productId": 10,
+            "productCount": 2,
+            "productId": 20,
             "productPrice": 2,
             "timeSale": "14:30:00",
             "idSale": 0
@@ -140,7 +140,7 @@ Authorization: Bearer {{accessToken}}
             "dateSale": "2024-06-22",
             "productCodeBar":"822555",
             "productCount": 2,
-            "productId": 1,
+            "productId": 21,
             "productPrice": 2.55,
             "timeSale": "14:30:00",
             "idSale": 0
@@ -153,12 +153,30 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 ###
-GET {{base}}/sale/detail?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+GET {{base}}/sale/search?page=0&limit=15&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 ###
-GET {{base}}/sale/detail/total?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+GET {{base}}/sale/sum?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+###
+GET {{base}}/sale/details?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+###
+GET {{base}}/sale/detail/1
+Authorization: Bearer {{accessToken}}
+####
+GET {{base}}/sale/sum/user/omar0907
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+###
+GET {{base}}/sale/sum/user?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30&username=omar0907
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 

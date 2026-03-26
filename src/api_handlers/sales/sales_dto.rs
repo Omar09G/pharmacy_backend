@@ -185,8 +185,8 @@ pub struct PaginationParamsSales {
     pub page: u64,
     pub limit: u64,
     pub total: u64,
-    pub date_inicio: String,
-    pub date_fin: String,
+    pub date_inicio: Option<String>,
+    pub date_fin: Option<String>,
     pub username: Option<String>,
 }
 
@@ -195,8 +195,8 @@ impl PaginationParamsSales {
         page: u64,
         limit: u64,
         total: u64,
-        date_inicio: String,
-        date_fin: String,
+        date_inicio: Option<String>,
+        date_fin: Option<String>,
         username: Option<String>,
     ) -> Self {
         Self {
