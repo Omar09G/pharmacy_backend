@@ -1,7 +1,7 @@
 @base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NDQ3ODY3OCwiaWF0IjoxNzc0MzkyMjc4LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjMsIm5hbWUiOiJPbWFyIiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.XFMPytGdsM_zmp-DStcYPqV6qOObfLxbKjkrp_TwNkg
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NDY1NjMwMCwiaWF0IjoxNzc0NTY5OTAwLCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjMsIm5hbWUiOiJPbWFyIiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.2ZX6Sa2K68YTDLpFZ11RUowfW76fjc2LqoNMEjqje3E
 
 ##### Get User by ID
 GET {{base}}/user/3
@@ -153,17 +153,17 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 ###
-GET {{base}}/sale/search?page=0&limit=15&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+GET {{base}}/sale/search?page=0&limit=200&total=100&dateInicio=2024-06-01&dateFin=2026-06-30
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 ###
-GET {{base}}/sale/sum?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+GET {{base}}/sale/sum?page=0&limit=100&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 ###
-GET {{base}}/sale/details?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30
+GET {{base}}/sale/details?page=0&limit=100&total=0&dateInicio=2024-06-01&dateFin=2026-06-30
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
@@ -177,6 +177,32 @@ Authorization: Bearer {{accessToken}}
 
 ###
 GET {{base}}/sale/sum/user?page=0&limit=10&total=100&dateInicio=2024-06-01&dateFin=2024-06-30&username=omar0907
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### 
+PUT {{base}}/client
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+    "clientId": 0,
+    "clientAddress": "Calle Falsa 268",
+    "clientCity": "Ciudad de México",
+    "clientCountry": "México",
+    "clientDate": "2024-06-30",
+    "clientEmail": "bautista@example.com",
+    "clientLastName": "Bautista",
+    "clientName": "Noemi",
+    "clientStatus": false,
+    "clientType": "A",
+    "clientPostalCode": "12345",
+    "clientPhone": "1111-1234",
+    "clientState": "CDMX"
+}
+
+###
+GET {{base}}/client?page=0&limit=10&total=100
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 

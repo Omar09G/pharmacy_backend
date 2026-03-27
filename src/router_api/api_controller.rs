@@ -2,6 +2,10 @@ use axum::routing::{delete, patch, post, put};
 use axum::{Router, middleware::from_fn, routing::get};
 use log::info;
 
+use crate::api_handlers::client::client_handler::{
+    create_client_handler, delete_client_handler, get_all_clients_handler,
+    get_client_by_id_handler, update_client_handler,
+};
 use crate::api_handlers::sales::sales_handler::{
     cancel_sale_handler, create_sale_handler, delete_sale_handler, get_sales_by_date_handler,
     get_sales_by_date_ini_fin_handler, get_sales_by_id_handler, get_sales_by_username_handler,
@@ -58,6 +62,9 @@ const SALE_SUM_RANGE: &str = route!("/sale/sum"); // expects query params date r
 const SALE_SUM_USER: &str = route!("/sale/sum/user/{username}");
 const SALE_SUM_USER_RANGE: &str = route!("/sale/sum/user"); // expects query params and optional username
 
+const CLIENT: &str = route!("/client");
+const CLIENT_ID: &str = route!("/client/{client_id}");
+
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()
@@ -102,6 +109,11 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
             SALE_SUM_USER_RANGE,
             get(get_sum_sales_by_date_ini_fin_username_handler),
         )
+        .route(CLIENT, get(get_all_clients_handler))
+        .route(CLIENT, put(create_client_handler))
+        .route(CLIENT_ID, get(get_client_by_id_handler))
+        .route(CLIENT_ID, delete(delete_client_handler))
+        .route(CLIENT_ID, patch(update_client_handler))
         .with_state(app_ctx.clone())
         // CORS middleware must be the outermost layer so it runs before auth
         .layer(from_fn(auth_middleware))

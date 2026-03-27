@@ -1,3 +1,5 @@
+pub mod client;
+pub mod inventory;
 pub mod login;
 pub mod product;
 pub mod report;
