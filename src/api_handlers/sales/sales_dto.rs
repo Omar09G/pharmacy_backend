@@ -239,6 +239,7 @@ pub struct SalesDetailResponseDTO {
     pub product_price: f32,
     pub time_sale: Option<Time>,
     pub id_sale: i64,
+    pub product_name: Option<String>,
 }
 
 impl From<schemas::sale::Model> for SalesResponseDTO {
@@ -272,6 +273,7 @@ impl From<schemas::saledetal::Model> for SalesDetailResponseDTO {
             product_price: model.product_price,
             time_sale: model.time_sale,
             id_sale: model.id_sale,
+            product_name: None,
         }
     }
 }

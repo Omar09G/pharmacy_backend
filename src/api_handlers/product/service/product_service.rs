@@ -65,6 +65,10 @@ pub async fn get_product_by_cod_bar(
 
     let product_response: Vec<ProductResponse> = product.into_iter().map(Into::into).collect();
 
+    if product_response.is_empty() {
+        return Err(ApiError::NotFound);
+    }
+
     Ok(Json(ApiResponse::success(
         product_response,
         "Product retrieved successfully".to_string(),

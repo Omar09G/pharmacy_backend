@@ -636,15 +636,36 @@ pub async fn get_sales_detail_by_id_handler(
 
     let total = detalles.len() as i32;
 
-    if detalles.is_empty() {
+    let mut detalles_con_nombre_producto = Vec::new();
+
+    //Buscar el ID de producto para consultar el nombre del producto y agregarlo al response DTO
+    for detalle in &detalles {
+        let product_id = detalle.product_id;
+
+        let producto = schemas::product::Entity::find_by_id(product_id)
+            .one(&app_ctx.conn)
+            .await?
+            .ok_or(ApiError::NotFound)?;
+
+        detalles_con_nombre_producto.push(SalesDetailResponseDTO {
+            id: detalle.id,
+            date_sale: detalle.date_sale,
+            product_code_bar: detalle.product_code_bar.clone(),
+            product_count: detalle.product_count,
+            product_id: detalle.product_id,
+            product_price: detalle.product_price,
+            time_sale: detalle.time_sale,
+            id_sale: detalle.id_sale,
+            product_name: Some(producto.product_name),
+        });
+    }
+
+    if detalles_con_nombre_producto.is_empty() {
         return Err(ApiError::NotFound);
     }
 
     Ok(Json(ApiResponse::new(
-        detalles
-            .into_iter()
-            .map(SalesDetailResponseDTO::from)
-            .collect(),
+        detalles_con_nombre_producto,
         total,
         "Sale details fetched successfully".to_string(),
         "success".to_string(),
