@@ -1,7 +1,7 @@
 pub mod api_module;
 pub mod api_utils;
 pub mod config;
-pub mod router_api;
+pub mod controller;
 use axum::serve;
 use flexi_logger::{Duplicate, Logger};
 use log::{error, info};
@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 
 use crate::{
     config::config_database::config_db::get_db_context,
-    router_api::api_controller::get_config_router,
+    controller::api_controller::get_config_router,
 };
 #[tokio::main]
 async fn main() {
