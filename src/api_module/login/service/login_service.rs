@@ -1,4 +1,4 @@
-use crate::api_handlers::login::dto::login_dto::{LoginRequest, LoginResponseDTO};
+use crate::api_module::login::dto::login_dto::{LoginRequest, LoginResponseDTO};
 use crate::api_utils::api_const::JWT_TYPE_ACCESS;
 use crate::config::config_jwt::validate_jwt::{generate_jwt, validate_token};
 use crate::{

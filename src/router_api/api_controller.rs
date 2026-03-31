@@ -2,7 +2,7 @@ use axum::routing::{get, post};
 use axum::{Router, middleware::from_fn};
 use log::info;
 
-use crate::api_handlers::login::service::login_service::{get_login, get_profile};
+use crate::api_module::login::service::login_service::{get_login, get_profile};
 use crate::config::config_database::config_db_context::AppContext;
 use crate::config::config_middleware::auth_jwt::auth_middleware;
 use crate::config::config_middleware::cors::cors_middleware;
