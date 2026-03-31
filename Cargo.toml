@@ -31,3 +31,4 @@ schemas = { path = "./schemas" }
 
 # CORS support for Axum
 tower-http = { version = "0.3", features = ["cors"] }
+flexi_logger = "0.31.8"

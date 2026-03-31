@@ -3,6 +3,7 @@
 pub mod prelude;
 
 pub mod client;
+pub mod client_orden;
 pub mod product;
 pub mod sale;
 pub mod saledetal;

@@ -328,9 +328,8 @@ pub async fn get_product_by_name_details(
     // count for pagination (num_items) using the same filter.
     let paginator = schemas::product::Entity::find()
         .filter(
-            Expr::col(schemas::product::Column::ProductName)
-                .upper()
-                .like(format!("{}%", pagination.product_name.to_uppercase())),
+            Expr::cust("LOWER(product_name)")
+                .like(format!("{}%", pagination.product_name.to_lowercase())),
         )
         .order_by_asc(schemas::product::Column::ProductId)
         .paginate(&app_context.conn, pagination.limit);

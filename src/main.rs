@@ -3,6 +3,7 @@ pub mod api_utils;
 pub mod config;
 pub mod router_api;
 use axum::serve;
+use flexi_logger::{Duplicate, Logger};
 use log::{error, info};
 use std::net::SocketAddr;
 
@@ -13,7 +14,18 @@ use crate::{
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-    env_logger::init();
+    use flexi_logger::FileSpec;
+    Logger::try_with_str("info")
+        .unwrap()
+        .log_to_file(
+            FileSpec::default()
+                .directory("/tmp/log/pharmacy_backend")
+                .basename("app")
+                .suffix("log"),
+        )
+        .duplicate_to_stdout(Duplicate::All)
+        .start()
+        .unwrap();
 
     info!("Starting Pharmacy Backend API...");
 
