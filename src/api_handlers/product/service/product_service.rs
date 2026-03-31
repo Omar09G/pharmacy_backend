@@ -17,6 +17,7 @@ use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DbBackend, EntityTrait, FromQueryResult,
     IntoActiveModel, ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, Statement,
+    sea_query::Expr,
 };
 use validator::Validate;
 
@@ -326,7 +327,11 @@ pub async fn get_product_by_name_details(
     // Use the paginator to fetch the requested page and obtain a consistent total
     // count for pagination (num_items) using the same filter.
     let paginator = schemas::product::Entity::find()
-        .filter(schemas::product::Column::ProductName.starts_with(pagination.product_name.clone()))
+        .filter(
+            Expr::col(schemas::product::Column::ProductName)
+                .upper()
+                .like(format!("{}%", pagination.product_name.to_uppercase())),
+        )
         .order_by_asc(schemas::product::Column::ProductId)
         .paginate(&app_context.conn, pagination.limit);
 
