@@ -14,7 +14,7 @@ pub async fn auth_middleware(req: Request<Body>, next: Next) -> Result<Response,
     let method = req.method();
 
     // Permitir acceso público a login y creación de usuario
-    if path == "/v1/api/login" || (path == "/v1/api/user" && method == Method::PUT) {
+    if path == "/v1/api/auth/login" || (path == "/v1/api/user" && method == Method::PUT) {
         return Ok(next.run(req).await);
     }
 

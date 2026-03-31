@@ -26,8 +26,9 @@ regex = "1.7.1"
 lazy_static = "1.4.0"
 uuid = { version = "1.4.2", features = ["v4"] }
 
+# Local workspace crate
+schemas = { path = "schemas" }
 
-schemas = { path = "./schemas" }
 
 # CORS support for Axum
 tower-http = { version = "0.3", features = ["cors"] }

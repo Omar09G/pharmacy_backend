@@ -119,39 +119,6 @@ impl IntoResponse for UnprocessableEntity {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PaginationParams {
-    pub page: u64,
-    pub limit: u64,
-    pub total: u64,
-}
-
-impl PaginationParams {
-    pub fn new(page: u64, limit: u64, total: u64) -> Self {
-        Self { page, limit, total }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct PaginationParamsProductName {
-    pub page: u64,
-    pub limit: u64,
-    pub total: u64,
-    pub product_name: String,
-}
-
-impl PaginationParamsProductName {
-    pub fn new(page: u64, limit: u64, total: u64, product_name: String) -> Self {
-        Self {
-            page,
-            limit,
-            total,
-            product_name,
-        }
-    }
-}
-
 impl<T> ApiResponse<T> {
     pub fn success(data: T, message: String, total: i32) -> Self {
         Self {
@@ -193,5 +160,18 @@ impl<T> ApiResponse<T> {
             code_error: 200,
             timestamp: chrono::Utc::now().to_rfc3339(),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PaginationParams {
+    pub page: u64,
+    pub limit: u64,
+    pub total: u64,
+}
+
+impl PaginationParams {
+    pub fn new(page: u64, limit: u64, total: u64) -> Self {
+        Self { page, limit, total }
     }
 }

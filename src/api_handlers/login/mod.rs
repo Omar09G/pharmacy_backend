@@ -1,2 +1,2 @@
-pub mod login_dto;
-pub mod login_handler;
+pub mod dto;
+pub mod service;
