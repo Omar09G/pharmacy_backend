@@ -13,3 +13,132 @@ DELETE {{base}}/role_permissions/1/2
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
+##### Products - Create
+PUT {{base}}/product
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+	"id": 0,
+	"sku": "P-001",
+	"name": "Aspirina 500mg",
+	"description": "Pain reliever",
+	"brand": "PharmaCo",
+	"categoryId": 1,
+	"unitId": 1,
+	"isSellable": true,
+	"trackBatches": false,
+	"taxProfileId": null,
+	"defaultCost": 1.50,
+	"purchasePrice": 2.00,
+	"wholesalePrice": 2.50,
+	"salePrice": 3.00,
+	"defaultPrice": 3.00,
+	"createdAt": "2026-04-01T00:00:00Z",
+	"updatedAt": null,
+	"deletedAt": null
+}
+
+##### Products - Get by ID
+GET {{base}}/product/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Products - List (pagination)
+GET {{base}}/products?page=1&limit=20
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Products - Update
+PATCH {{base}}/product
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+	"id": 1,
+	"name": "Aspirina 500mg - Nueva",
+	"description": "Pain reliever updated"
+}
+
+##### Products - Delete
+DELETE {{base}}/product/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Categories - Create
+PUT {{base}}/category
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+	"id": 0,
+	"name": "Analgésicos",
+	"parentId": null,
+	"description": "Medicines for pain relief"
+}
+
+##### Categories - List
+GET {{base}}/categories?page=1&limit=20
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Categories - Get by ID
+GET {{base}}/category/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Customers - Create
+PUT {{base}}/customer
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+	"id": 0,
+	"name": "Juan Perez",
+	"documentId": "12345678",
+	"phone": "+59170000000",
+	"email": "juan.perez@example.com",
+	"billingAddress": "Calle Falsa 123",
+	"creditLimit": 1000.00,
+	"termsDays": 30,
+	"status": "active",
+	"createdAt": "2026-04-01T00:00:00Z"
+}
+
+##### Customers - List
+GET {{base}}/customers?page=1&limit=20
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Customers - Get by ID
+GET {{base}}/customer/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Suppliers - Create
+PUT {{base}}/supplier
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+	"id": 0,
+	"name": "Distribuidora S.A.",
+	"taxId": "ABC-123456",
+	"contactPerson": "María López",
+	"phone": "+59170123456",
+	"email": "contact@distribuidora.example",
+	"address": "Av. Central 456",
+	"notes": "Main supplier",
+	"createdAt": "2026-04-01T00:00:00Z"
+}
+
+##### Suppliers - List
+GET {{base}}/suppliers?page=1&limit=20
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+##### Suppliers - Get by ID
+GET {{base}}/supplier/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+

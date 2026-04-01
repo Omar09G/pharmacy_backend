@@ -4,7 +4,6 @@ use validator::Validate;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct RolePermissionsDto {
-    pub id: i64,
     pub role_id: i64,
     pub permission_id: i64,
 }
@@ -12,7 +11,6 @@ pub struct RolePermissionsDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct RolePermissionsRequest {
-    pub id: i64,
     #[validate(range(min = 1, message = "Role ID must be a positive integer"))]
     pub role_id: i64,
     #[validate(range(min = 1, message = "Permission ID must be a positive integer"))]
