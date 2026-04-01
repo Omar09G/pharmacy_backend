@@ -73,9 +73,11 @@ impl IntoResponse for BadRequest {
     fn into_response(self) -> axum::response::Response {
         let fields_with_errors = self.0.into_fields();
 
+        let total_errors = fields_with_errors.len() as i32;
+
         let api_response = api_response::ApiResponse {
             data: fields_with_errors,
-            total: 10,
+            total: total_errors,
             message: "Validation failed".to_string(),
             status: "error".to_string(),
             code_error: 400,
@@ -164,14 +166,14 @@ impl<T> ApiResponse<T> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct PaginationParams {
     pub page: u64,
     pub limit: u64,
     pub total: u64,
-}
-
-impl PaginationParams {
-    pub fn new(page: u64, limit: u64, total: u64) -> Self {
-        Self { page, limit, total }
-    }
+    pub date_init: Option<String>,
+    pub date_end: Option<String>,
+    pub username: Option<String>,
+    pub client_id: Option<i64>,
+    pub user_id: Option<i64>,
 }

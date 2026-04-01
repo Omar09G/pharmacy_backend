@@ -41,6 +41,8 @@ pub async fn get_login(
         return Err(ApiError::Unauthorized);
     }
 
+    info!("Password verified for user: {}", payload.username);
+
     let roles = user
         .find_related(schemas::roles::Entity)
         .all(&app_ctx.conn)

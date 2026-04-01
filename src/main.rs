@@ -2,6 +2,7 @@ pub mod api_module;
 pub mod api_utils;
 pub mod config;
 pub mod controller;
+
 use axum::serve;
 use flexi_logger::{Duplicate, Logger};
 use log::{error, info};
