@@ -176,4 +176,7 @@ pub struct PaginationParams {
     pub username: Option<String>,
     pub client_id: Option<i64>,
     pub user_id: Option<i64>,
+    pub name: Option<String>,
+    pub role_id: Option<i64>,
+    pub permission_id: Option<i64>,
 }
