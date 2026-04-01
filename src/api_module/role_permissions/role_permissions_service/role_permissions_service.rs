@@ -112,8 +112,7 @@ pub async fn get_role_permissions(
 
 pub async fn delete_role_permissions(
     State(app_ctx): State<AppContext>,
-    Path(role_id): Path<i64>,
-    Path(permission_id): Path<i64>,
+    Path((role_id, permission_id)): Path<(i64, i64)>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
     let role_permission = schemas::role_permissions::Entity::find()
         .filter(schemas::role_permissions::Column::RoleId.eq(role_id))
@@ -143,8 +142,7 @@ pub async fn delete_role_permissions(
 
 pub async fn update_role_permissions(
     State(app_ctx): State<AppContext>,
-    Path(role_id): Path<i64>,
-    Path(permission_id): Path<i64>,
+    Path((role_id, permission_id)): Path<(i64, i64)>,
     Json(payload): Json<RolePermissionsRequest>,
 ) -> Result<Json<ApiResponse<RolePermissionsResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
