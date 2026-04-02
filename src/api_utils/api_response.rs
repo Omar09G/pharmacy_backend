@@ -1,7 +1,7 @@
-use std::borrow::Cow;
-
 use axum::{Json, http::StatusCode, response::IntoResponse};
+use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use validator::{ValidationError, ValidationErrors};
 
 use crate::api_utils::api_response;
@@ -178,6 +178,9 @@ pub struct PaginationParams {
     pub user_id: Option<i64>,
     pub name: Option<String>,
     pub id: Option<i64>,
+    pub document_id: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
     pub sku: Option<String>,
     pub barcode: Option<String>,
     pub lot_number: Option<String>,
@@ -185,14 +188,23 @@ pub struct PaginationParams {
     pub permission_id: Option<i64>,
     pub product_id: Option<i64>,
     pub category_id: Option<i64>,
+    pub parent_id: Option<i64>,
     pub supplier_id: Option<i64>,
+    pub invoice_no: Option<String>,
     pub customer_id: Option<i64>,
     pub unit_id: Option<i64>,
     pub tax_profile_id: Option<i64>,
+    pub method_id: Option<i64>,
     pub brand: Option<String>,
+    pub reference: Option<String>,
     pub status: Option<String>,
     pub is_sellable: Option<bool>,
     pub track_batches: Option<bool>,
     pub inventory_location_name: Option<String>,
     pub inits_name: Option<String>,
+    pub price_min: Option<Decimal>,
+    pub price_max: Option<Decimal>,
+    pub price_type: Option<String>,
+    pub purchase_id: Option<i64>,
+    pub purchase_item_id: Option<i64>,
 }

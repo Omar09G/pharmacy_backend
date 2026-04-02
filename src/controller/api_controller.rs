@@ -16,6 +16,49 @@ use crate::api_module::role_permissions::role_permissions_service::role_permissi
     get_role_permissions_by_id, update_role_permissions,
 };
 
+use crate::api_module::categories::categories_service::categories_service::{
+    create_category, delete_category, get_categories, get_categories_by_name, get_category_by_id,
+    update_category,
+};
+use crate::api_module::customers::customers_service::customers_service::{
+    create_customer, delete_customer, get_customer_by_id, get_customers, get_customers_by_name,
+    update_customer,
+};
+use crate::api_module::product_barcodes::product_barcodes_service::product_barcodes_service::{
+    create_product_barcode, delete_product_barcode, get_product_barcode_by_id,
+    get_product_barcodes, get_product_barcodes_by_barcode, update_product_barcode,
+};
+use crate::api_module::product_lots::product_lots_service::product_lots_service::{
+    create_product_lot, delete_product_lot, get_product_lot_by_id, get_product_lots,
+    update_product_lot,
+};
+use crate::api_module::product_prices::product_prices_service::product_prices_service::{
+    create_product_price, delete_product_price, get_product_price_by_id, get_product_prices,
+    update_product_price,
+};
+use crate::api_module::products::products_service::products_service::{
+    create_product, delete_product, get_product_by_id, get_products, get_products_by_name,
+    update_product,
+};
+use crate::api_module::purchase_items::purchase_items_service::purchase_items_service::{
+    create_purchase_item, delete_purchase_item, get_purchase_item_by_id, get_purchase_items,
+    update_purchase_item,
+};
+use crate::api_module::purchase_payments::purchase_payments_service::purchase_payments_service::{
+    create_purchase_payment, delete_purchase_payment, get_purchase_payment_by_id,
+    get_purchase_payments, update_purchase_payment,
+};
+use crate::api_module::purchases::purchases_service::purchases_service::{
+    create_purchase, delete_purchase, get_purchase_by_id, get_purchases, update_purchase,
+};
+use crate::api_module::sales::sales_service::sales_service::{
+    create_sale, delete_sale, get_sale_by_id, get_sales, update_sale,
+};
+use crate::api_module::suppliers::suppliers_service::suppliers_service::{
+    create_supplier, delete_supplier, get_supplier_by_id, get_suppliers, get_suppliers_by_name,
+    update_supplier,
+};
+
 use crate::api_module::user::service::user_service::{
     change_user_password, change_user_status, create_user, delete_user, get_all_users,
     get_user_by_id, update_user,
@@ -104,16 +147,6 @@ const PURCHASES_LIST: &str = route!("/purchases");
 const PURCHASE_DELETE: &str = route!("/purchase");
 const PURCHASE_UPDATE: &str = route!("/purchase");
 
-/*Metodos PURCHASE_ITEM  */
-const PURCHASE_ITEM: &str = route!("/purchase_item");
-const PURCHASE_ITEM_BY_ID: &str = route!("/purchase_item/{:id}");
-const PURCHASE_ITEM_DELETE: &str = route!("/purchase_item");
-
-/*Metodos PURCHASE_PAYMENT  */
-const PURCHASE_PAYMENT: &str = route!("/purchase_payment");
-const PURCHASE_PAYMENT_BY_ID: &str = route!("/purchase_payment/{:id}");
-const PURCHASE_PAYMENT_DELETE: &str = route!("/purchase_payment");
-
 /*Metodos SALE  */
 const SALE: &str = route!("/sale");
 const SALE_BY_ID: &str = route!("/sale/{:id}");
@@ -121,32 +154,33 @@ const SALES_LIST: &str = route!("/sales");
 const SALE_DELETE: &str = route!("/sale");
 const SALE_UPDATE: &str = route!("/sale");
 
-/*Metodos SALE_ITEM  */
-const SALE_ITEM: &str = route!("/sale_item");
-const SALE_ITEM_BY_ID: &str = route!("/sale_item/{:id}");
-const SALE_ITEM_DELETE: &str = route!("/sale_item");
-
-/*Metodos SALE_PAYMENT  */
-const SALE_PAYMENT: &str = route!("/sale_payment");
-const SALE_PAYMENT_BY_ID: &str = route!("/sale_payment/{:id}");
-const SALE_PAYMENTS_LIST: &str = route!("/sale_payments");
-const SALE_PAYMENT_DELETE: &str = route!("/sale_payment");
-
-/*Metodos INVENTORY_MOVEMENT  */
-const INVENTORY_MOVEMENT: &str = route!("/inventory_movement");
-const INVENTORY_MOVEMENT_BY_ID: &str = route!("/inventory_movement/{:id}");
-const INVENTORY_MOVEMENTS_LIST: &str = route!("/inventory_movements");
-const INVENTORY_MOVEMENT_DELETE: &str = route!("/inventory_movement");
-
 /*Metodos PRODUCT_LOT  */
 const PRODUCT_LOT: &str = route!("/product_lot");
 const PRODUCT_LOT_BY_ID: &str = route!("/product_lot/{:id}");
 const PRODUCT_LOT_DELETE: &str = route!("/product_lot");
 
+/*Metodos PURCHASE_ITEM */
+const PURCHASE_ITEM: &str = route!("/purchase_item");
+const PURCHASE_ITEM_BY_ID: &str = route!("/purchase_item/{:id}");
+const PURCHASE_ITEM_DELETE: &str = route!("/purchase_item");
+
+/*Metodos PURCHASE_PAYMENT  */
+const PURCHASE_PAYMENT: &str = route!("/purchase_payment");
+const PURCHASE_PAYMENT_BY_ID: &str = route!("/purchase_payment/{:id}");
+const PURCHASE_PAYMENTS_LIST: &str = route!("/purchase_payments");
+const PURCHASE_PAYMENT_DELETE: &str = route!("/purchase_payment");
+
 /*Metodos PRODUCT_BARCODE  */
 const PRODUCT_BARCODE: &str = route!("/product_barcode");
 const PRODUCT_BARCODE_BY_ID: &str = route!("/product_barcode/{:id}");
 const PRODUCT_BARCODE_DELETE: &str = route!("/product_barcode");
+
+/*Metodos PRODUCT_PRICE */
+const PRODUCT_PRICE: &str = route!("/product_price");
+const PRODUCT_PRICE_BY_ID: &str = route!("/product_price/{:id}");
+const PRODUCT_PRICES_LIST: &str = route!("/product_prices");
+const PRODUCT_PRICE_DELETE: &str = route!("/product_price");
+const PRODUCT_PRICE_UPDATE: &str = route!("/product_price");
 
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
@@ -182,6 +216,73 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(ROLE_PERMISSIONS_LIST, get(get_role_permissions))
         .route(ROLE_PERMISSIONS_DELETE, delete(delete_role_permissions))
         .route(ROLE_PERMISSIONS_UPDATE, patch(update_role_permissions))
+        // Product routes
+        .route(PRODUCT, put(create_product))
+        .route(PRODUCT_BY_ID, get(get_product_by_id))
+        .route(PRODUCTS_LIST, get(get_products))
+        .route(PRODUCT_DELETE, delete(delete_product))
+        .route(PRODUCT_UPDATE, patch(update_product))
+        .route(PRODUCT_BY_NAME, get(get_products_by_name))
+        // Category routes
+        .route(CATEGORY, put(create_category))
+        .route(CATEGORY_BY_ID, get(get_category_by_id))
+        .route(CATEGORY_LIST, get(get_categories))
+        .route(CATEGORY_DELETE, delete(delete_category))
+        .route(CATEGORY_UPDATE, patch(update_category))
+        // Customer routes
+        .route(CUSTOMER, put(create_customer))
+        .route(CUSTOMER_BY_ID, get(get_customer_by_id))
+        .route(CUSTOMER_LIST, get(get_customers))
+        .route(CUSTOMER_DELETE, delete(delete_customer))
+        .route(CUSTOMER_UPDATE, patch(update_customer))
+        // Supplier routes
+        .route(SUPPLIER, put(create_supplier))
+        .route(SUPPLIER_BY_ID, get(get_supplier_by_id))
+        .route(SUPPLIER_LIST, get(get_suppliers))
+        .route(SUPPLIER_DELETE, delete(delete_supplier))
+        .route(SUPPLIER_UPDATE, patch(update_supplier))
+        // Product Barcode routes
+        .route(PRODUCT_BARCODE, put(create_product_barcode))
+        .route(PRODUCT_BARCODE_BY_ID, get(get_product_barcode_by_id))
+        .route(PRODUCT_BARCODE_DELETE, delete(delete_product_barcode))
+        .route(PRODUCT_BARCODE, get(get_product_barcodes))
+        .route(PRODUCT_BARCODE, patch(update_product_barcode))
+        // Product Price routes
+        .route(PRODUCT_PRICE, put(create_product_price))
+        .route(PRODUCT_PRICE_BY_ID, get(get_product_price_by_id))
+        .route(PRODUCT_PRICE_DELETE, delete(delete_product_price))
+        .route(PRODUCT_PRICE, get(get_product_prices))
+        .route(PRODUCT_PRICE, patch(update_product_price))
+        // Product Lot routes
+        .route(PRODUCT_LOT, put(create_product_lot))
+        .route(PRODUCT_LOT_BY_ID, get(get_product_lot_by_id))
+        .route(PRODUCT_LOT_DELETE, delete(delete_product_lot))
+        .route(PRODUCT_LOT, get(get_product_lots))
+        .route(PRODUCT_LOT, patch(update_product_lot))
+        // Purchase Item routes
+        .route(PURCHASE_ITEM, put(create_purchase_item))
+        .route(PURCHASE_ITEM_BY_ID, get(get_purchase_item_by_id))
+        .route(PURCHASE_ITEM_DELETE, delete(delete_purchase_item))
+        .route(PURCHASE_ITEM, get(get_purchase_items))
+        .route(PURCHASE_ITEM, patch(update_purchase_item))
+        // Purchase Payment routes
+        .route(PURCHASE_PAYMENT, put(create_purchase_payment))
+        .route(PURCHASE_PAYMENT_BY_ID, get(get_purchase_payment_by_id))
+        .route(PURCHASE_PAYMENTS_LIST, get(get_purchase_payments))
+        .route(PURCHASE_PAYMENT_DELETE, delete(delete_purchase_payment))
+        .route(PURCHASE_PAYMENT, patch(update_purchase_payment))
+        // Purchase routes
+        .route(PURCHASE, put(create_purchase))
+        .route(PURCHASE_BY_ID, get(get_purchase_by_id))
+        .route(PURCHASES_LIST, get(get_purchases))
+        .route(PURCHASE_DELETE, delete(delete_purchase))
+        .route(PURCHASE_UPDATE, patch(update_purchase))
+        // Sale routes
+        .route(SALE, put(create_sale))
+        .route(SALE_BY_ID, get(get_sale_by_id))
+        .route(SALES_LIST, get(get_sales))
+        .route(SALE_DELETE, delete(delete_sale))
+        .route(SALE_UPDATE, patch(update_sale))
         .with_state(app_ctx.clone())
         // CORS middleware must be the outermost layer so it runs before auth
         //.layer(from_fn(auth_middleware))
