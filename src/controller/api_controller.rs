@@ -271,7 +271,8 @@ const INVENTORY_MOVEMENT_DELETE: &str = route!("/inventory_movement/{:id}");
 const PRODUCT_BARCODE: &str = route!("/product_barcode");
 const PRODUCT_BARCODE_BY_ID: &str = route!("/product_barcode/{:id}");
 const PRODUCT_BARCODE_DELETE: &str = route!("/product_barcode/{:id}");
-const PRODUCT_BARCODE_BY_BARCODE: &str = route!("/product_barcode/barcode/{:barcode}");
+const PRODUCT_BARCODE_BY_BARCODE: &str = route!("/product_barcode/barcode");
+const PRODUCT_BARCODE_UPDATE: &str = route!("/product_barcode/{:id}");
 
 /*Metodos PRODUCT_PRICE */
 const PRODUCT_PRICE: &str = route!("/product_price");
@@ -390,7 +391,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(PRODUCT_BARCODE_BY_ID, get(get_product_barcode_by_id))
         .route(PRODUCT_BARCODE_DELETE, delete(delete_product_barcode))
         .route(PRODUCT_BARCODE, get(get_product_barcodes))
-        .route(PRODUCT_BARCODE, patch(update_product_barcode))
+        .route(PRODUCT_BARCODE_UPDATE, patch(update_product_barcode))
         .route(
             PRODUCT_BARCODE_BY_BARCODE,
             get(get_product_barcodes_by_barcode),

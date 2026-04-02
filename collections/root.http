@@ -541,19 +541,19 @@ Content-Type: application/json;charset=UTF-8
 
 {
     "id": 1,
-    "sku": "SKU123",
-    "name": "Paracetamol 500mg",
-    "description": "Analgésico y antipirético",
+    "sku": "SKU124",
+    "name": "Paracetamol 750mg",
+    "description": "Analgésico",
     "brand": "Marca A",
     "categoryId": 1,
     "unitId": 1,
     "isSellable": true,
     "trackBatches": false,
     "taxProfileId": 1,
-    "defaultCost": 100.00,
-    "purchasePrice": 120.00,
-    "wholesalePrice": 150.00,
-    "salePrice": 200.00,
+    "defaultCost": 150.00,
+    "purchasePrice": 170.00,
+    "wholesalePrice": 155.00,
+    "salePrice": 250.00,
     "defaultPrice": 250.00,
     "createdAt": "2024-06-01T12:00:00Z",
     "updatedAt": null,
@@ -576,7 +576,7 @@ Content-Type: application/json;charset=UTF-8
 {
 	"id": 1,
 	"sku": "SKU123",
-	"name": "Paracetamol 500mg",
+	"name": "Paracetamol 750mg",
 	"description": "Analgésico y antipirético actualizado",
 	"brand": "Marca A",
 	"categoryId": 1,
@@ -593,3 +593,52 @@ Content-Type: application/json;charset=UTF-8
 	"updatedAt": "2024-06-02T12:00:00Z",
 	"deletedAt": null
 }
+####### Delete Product
+DELETE  {{base}}/product/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+######### PRODUCT_BARCODES##########################
+### Create Product Barcode
+PUT {{base}}/product_barcode
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"productId": 1,
+	"barcode": "1234567890123",
+	"barcodeType": "EAN-13",
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Get Product Barcode by ID
+GET  {{base}}/product_barcode/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Product Barcodes
+GET  {{base}}/product_barcode?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Product Barcode
+PATCH {{base}}/product_barcode/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"productId": 1,
+	"barcode": "9876543210987",
+	"barcodeType": "EAN-13",
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+
+### Get Product Barcode by Barcode
+GET  {{base}}/product_barcode/barcode?barcode=9876543210987&page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Delete Product Barcode
+DELETE  {{base}}/product_barcode/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+

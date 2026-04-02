@@ -182,11 +182,12 @@ pub async fn get_product_barcodes_by_barcode(
 
 pub async fn update_product_barcode(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<ProductBarcodeRequest>,
 ) -> Result<Json<ApiResponse<ProductBarcodeIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pb = schemas::product_barcodes::Entity::find_by_id(payload.id)
+    let pb = schemas::product_barcodes::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -195,7 +196,6 @@ pub async fn update_product_barcode(
         Some(pb) => {
             let mut pb_active_model = pb.into_active_model();
 
-            pb_active_model.product_id = ActiveValue::Set(payload.product_id);
             pb_active_model.barcode = ActiveValue::Set(payload.barcode);
             pb_active_model.barcode_type = ActiveValue::Set(payload.barcode_type);
 

@@ -3,6 +3,10 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::{
+    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
+};
+
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductBarcodeDto {
@@ -46,7 +50,7 @@ impl From<ProductBarcodeRequest> for schemas::product_barcodes::ActiveModel {
             product_id: ActiveValue::Set(request.product_id),
             barcode: ActiveValue::Set(request.barcode),
             barcode_type: ActiveValue::Set(request.barcode_type),
-            created_at: ActiveValue::Set(request.created_at),
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
         }
     }
 }
@@ -58,7 +62,7 @@ impl From<schemas::product_barcodes::Model> for ProductBarcodeDetailResponse {
             product_id: model.product_id,
             barcode: model.barcode,
             barcode_type: model.barcode_type,
-            created_at: model.created_at,
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
         }
     }
 }
@@ -70,7 +74,7 @@ impl From<schemas::product_barcodes::ActiveModel> for ProductBarcodeDetailRespon
             product_id: model.product_id.unwrap(),
             barcode: model.barcode.unwrap(),
             barcode_type: model.barcode_type.unwrap(),
-            created_at: model.created_at.unwrap(),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
         }
     }
 }
