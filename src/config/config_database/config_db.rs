@@ -19,7 +19,7 @@ pub async fn configure_database() -> Result<DatabaseConnection, String> {
         .idle_timeout(Duration::from_secs(8))
         .max_lifetime(Duration::from_secs(8))
         .sqlx_logging(false)
-        .sqlx_logging_level(log::LevelFilter::Info)
+        .sqlx_logging_level(log::LevelFilter::Off)
         .set_schema_search_path("pharmacy"); // set default Postgres schema
 
     let db = sea_orm::Database::connect(&db_url)

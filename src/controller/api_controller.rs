@@ -24,6 +24,10 @@ use crate::api_module::customers::customers_service::customers_service::{
     create_customer, delete_customer, get_customer_by_id, get_customers, get_customers_by_name,
     update_customer,
 };
+use crate::api_module::customer_credit_accounts::customer_credit_accounts_service::customer_credit_accounts_service::{
+    create_customer_credit_account, delete_customer_credit_account, get_customer_credit_account_by_id,
+    get_customer_credit_accounts, update_customer_credit_account,
+};
 use crate::api_module::product_barcodes::product_barcodes_service::product_barcodes_service::{
     create_product_barcode, delete_product_barcode, get_product_barcode_by_id,
     get_product_barcodes, get_product_barcodes_by_barcode, update_product_barcode,
@@ -40,6 +44,10 @@ use crate::api_module::products::products_service::products_service::{
     create_product, delete_product, get_product_by_id, get_products, get_products_by_name,
     update_product,
 };
+use crate::api_module::inventory_movements::inventory_movements_service::inventory_movements_service::{
+    create_inventory_movement, delete_inventory_movement, get_inventory_movement_by_id,
+    get_inventory_movements, update_inventory_movement,
+};
 use crate::api_module::purchase_items::purchase_items_service::purchase_items_service::{
     create_purchase_item, delete_purchase_item, get_purchase_item_by_id, get_purchase_items,
     update_purchase_item,
@@ -48,11 +56,31 @@ use crate::api_module::purchase_payments::purchase_payments_service::purchase_pa
     create_purchase_payment, delete_purchase_payment, get_purchase_payment_by_id,
     get_purchase_payments, update_purchase_payment,
 };
+use crate::api_module::cash_entries::cash_entries_service::cash_entries_service::{
+    create_cash_entry, delete_cash_entry, get_cash_entry_by_id, get_cash_entries, update_cash_entry,
+};
+use crate::api_module::cash_journals::cash_journals_service::cash_journals_service::{
+    create_cash_journal, delete_cash_journal, get_cash_journal_by_id, get_cash_journals,
+    update_cash_journal,
+};
+use crate::api_module::audit_log::audit_log_service::audit_log_service::{
+    create_audit_log, delete_audit_log, get_audit_log_by_id, get_audit_logs, update_audit_log,
+};
 use crate::api_module::purchases::purchases_service::purchases_service::{
     create_purchase, delete_purchase, get_purchase_by_id, get_purchases, update_purchase,
 };
+use crate::api_module::sale_items::sale_items_service::sale_items_service::{
+    create_sale_item, delete_sale_item, get_sale_item_by_id, get_sale_items, update_sale_item,
+};
+use crate::api_module::sale_payments::sale_payments_service::sale_payments_service::{
+    create_sale_payment, delete_sale_payment, get_sale_payment_by_id, get_sale_payments,
+    update_sale_payment,
+};
 use crate::api_module::sales::sales_service::sales_service::{
     create_sale, delete_sale, get_sale_by_id, get_sales, update_sale,
+};
+use crate::api_module::discounts::discounts_service::discounts_service::{
+    create_discount, delete_discount, get_discount_by_id, get_discounts, update_discount,
 };
 use crate::api_module::suppliers::suppliers_service::suppliers_service::{
     create_supplier, delete_supplier, get_supplier_by_id, get_suppliers, get_suppliers_by_name,
@@ -125,6 +153,12 @@ const CUSTOMER_BY_ID: &str = route!("/customer/{:id}");
 const CUSTOMER_LIST: &str = route!("/customers");
 const CUSTOMER_DELETE: &str = route!("/customer");
 const CUSTOMER_UPDATE: &str = route!("/customer");
+/*Metodos CUSTOMER CREDIT ACCOUNT */
+const CUSTOMER_CREDIT_ACCOUNT: &str = route!("/customer_credit_account");
+const CUSTOMER_CREDIT_ACCOUNT_BY_ID: &str = route!("/customer_credit_account/{:id}");
+const CUSTOMER_CREDIT_ACCOUNTS_LIST: &str = route!("/customer_credit_accounts");
+const CUSTOMER_CREDIT_ACCOUNT_DELETE: &str = route!("/customer_credit_account");
+const CUSTOMER_CREDIT_ACCOUNT_UPDATE: &str = route!("/customer_credit_account");
 
 /*Metodos SUPPLIER  */
 const SUPPLIER: &str = route!("/supplier");
@@ -163,12 +197,52 @@ const PRODUCT_LOT_DELETE: &str = route!("/product_lot");
 const PURCHASE_ITEM: &str = route!("/purchase_item");
 const PURCHASE_ITEM_BY_ID: &str = route!("/purchase_item/{:id}");
 const PURCHASE_ITEM_DELETE: &str = route!("/purchase_item");
+/*Metodos SALE_ITEM */
+const SALE_ITEM: &str = route!("/sale_item");
+const SALE_ITEM_BY_ID: &str = route!("/sale_item/{:id}");
+const SALE_ITEMS_LIST: &str = route!("/sale_items");
+const SALE_ITEM_DELETE: &str = route!("/sale_item");
 
 /*Metodos PURCHASE_PAYMENT  */
 const PURCHASE_PAYMENT: &str = route!("/purchase_payment");
 const PURCHASE_PAYMENT_BY_ID: &str = route!("/purchase_payment/{:id}");
 const PURCHASE_PAYMENTS_LIST: &str = route!("/purchase_payments");
 const PURCHASE_PAYMENT_DELETE: &str = route!("/purchase_payment");
+/*Metodos CASH_ENTRY */
+const CASH_ENTRY: &str = route!("/cash_entry");
+const CASH_ENTRY_BY_ID: &str = route!("/cash_entry/{:id}");
+const CASH_ENTRIES_LIST: &str = route!("/cash_entries");
+const CASH_ENTRY_DELETE: &str = route!("/cash_entry");
+
+/*Metodos CASH_JOURNAL */
+const CASH_JOURNAL: &str = route!("/cash_journal");
+const CASH_JOURNAL_BY_ID: &str = route!("/cash_journal/{:id}");
+const CASH_JOURNALS_LIST: &str = route!("/cash_journals");
+const CASH_JOURNAL_DELETE: &str = route!("/cash_journal");
+
+/*Metodos AUDIT_LOG */
+const AUDIT_LOG: &str = route!("/audit_log");
+const AUDIT_LOG_BY_ID: &str = route!("/audit_log/{:id}");
+const AUDIT_LOGS_LIST: &str = route!("/audit_logs");
+const AUDIT_LOG_DELETE: &str = route!("/audit_log");
+
+/*Metodos SALE_PAYMENT  */
+const SALE_PAYMENT: &str = route!("/sale_payment");
+const SALE_PAYMENT_BY_ID: &str = route!("/sale_payment/{:id}");
+const SALE_PAYMENTS_LIST: &str = route!("/sale_payments");
+const SALE_PAYMENT_DELETE: &str = route!("/sale_payment");
+
+/*Metodos DISCOUNT */
+const DISCOUNT: &str = route!("/discount");
+const DISCOUNT_BY_ID: &str = route!("/discount/{:id}");
+const DISCOUNTS_LIST: &str = route!("/discounts");
+const DISCOUNT_DELETE: &str = route!("/discount");
+
+/*Metodos INVENTORY_MOVEMENT */
+const INVENTORY_MOVEMENT: &str = route!("/inventory_movement");
+const INVENTORY_MOVEMENT_BY_ID: &str = route!("/inventory_movement/{:id}");
+const INVENTORY_MOVEMENTS_LIST: &str = route!("/inventory_movements");
+const INVENTORY_MOVEMENT_DELETE: &str = route!("/inventory_movement");
 
 /*Metodos PRODUCT_BARCODE  */
 const PRODUCT_BARCODE: &str = route!("/product_barcode");
@@ -178,9 +252,7 @@ const PRODUCT_BARCODE_DELETE: &str = route!("/product_barcode");
 /*Metodos PRODUCT_PRICE */
 const PRODUCT_PRICE: &str = route!("/product_price");
 const PRODUCT_PRICE_BY_ID: &str = route!("/product_price/{:id}");
-const PRODUCT_PRICES_LIST: &str = route!("/product_prices");
 const PRODUCT_PRICE_DELETE: &str = route!("/product_price");
-const PRODUCT_PRICE_UPDATE: &str = route!("/product_price");
 
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
@@ -235,6 +307,24 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(CUSTOMER_LIST, get(get_customers))
         .route(CUSTOMER_DELETE, delete(delete_customer))
         .route(CUSTOMER_UPDATE, patch(update_customer))
+        // Customer Credit Account routes
+        .route(CUSTOMER_CREDIT_ACCOUNT, put(create_customer_credit_account))
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT_BY_ID,
+            get(get_customer_credit_account_by_id),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNTS_LIST,
+            get(get_customer_credit_accounts),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT_DELETE,
+            delete(delete_customer_credit_account),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT_UPDATE,
+            patch(update_customer_credit_account),
+        )
         // Supplier routes
         .route(SUPPLIER, put(create_supplier))
         .route(SUPPLIER_BY_ID, get(get_supplier_by_id))
@@ -271,6 +361,24 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(PURCHASE_PAYMENTS_LIST, get(get_purchase_payments))
         .route(PURCHASE_PAYMENT_DELETE, delete(delete_purchase_payment))
         .route(PURCHASE_PAYMENT, patch(update_purchase_payment))
+        // Cash Entry routes
+        .route(CASH_ENTRY, put(create_cash_entry))
+        .route(CASH_ENTRY_BY_ID, get(get_cash_entry_by_id))
+        .route(CASH_ENTRIES_LIST, get(get_cash_entries))
+        .route(CASH_ENTRY_DELETE, delete(delete_cash_entry))
+        .route(CASH_ENTRY, patch(update_cash_entry))
+        // Cash Journal routes
+        .route(CASH_JOURNAL, put(create_cash_journal))
+        .route(CASH_JOURNAL_BY_ID, get(get_cash_journal_by_id))
+        .route(CASH_JOURNALS_LIST, get(get_cash_journals))
+        .route(CASH_JOURNAL_DELETE, delete(delete_cash_journal))
+        .route(CASH_JOURNAL, patch(update_cash_journal))
+        // Audit Log routes
+        .route(AUDIT_LOG, put(create_audit_log))
+        .route(AUDIT_LOG_BY_ID, get(get_audit_log_by_id))
+        .route(AUDIT_LOGS_LIST, get(get_audit_logs))
+        .route(AUDIT_LOG_DELETE, delete(delete_audit_log))
+        .route(AUDIT_LOG, patch(update_audit_log))
         // Purchase routes
         .route(PURCHASE, put(create_purchase))
         .route(PURCHASE_BY_ID, get(get_purchase_by_id))
@@ -283,6 +391,30 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(SALES_LIST, get(get_sales))
         .route(SALE_DELETE, delete(delete_sale))
         .route(SALE_UPDATE, patch(update_sale))
+        // Sale Payment routes
+        .route(SALE_PAYMENT, put(create_sale_payment))
+        .route(SALE_PAYMENT_BY_ID, get(get_sale_payment_by_id))
+        .route(SALE_PAYMENTS_LIST, get(get_sale_payments))
+        .route(SALE_PAYMENT_DELETE, delete(delete_sale_payment))
+        .route(SALE_PAYMENT, patch(update_sale_payment))
+        // Discount routes
+        .route(DISCOUNT, put(create_discount))
+        .route(DISCOUNT_BY_ID, get(get_discount_by_id))
+        .route(DISCOUNTS_LIST, get(get_discounts))
+        .route(DISCOUNT_DELETE, delete(delete_discount))
+        .route(DISCOUNT, patch(update_discount))
+        // Inventory Movement routes
+        .route(INVENTORY_MOVEMENT, put(create_inventory_movement))
+        .route(INVENTORY_MOVEMENT_BY_ID, get(get_inventory_movement_by_id))
+        .route(INVENTORY_MOVEMENTS_LIST, get(get_inventory_movements))
+        .route(INVENTORY_MOVEMENT_DELETE, delete(delete_inventory_movement))
+        .route(INVENTORY_MOVEMENT, patch(update_inventory_movement))
+        // Sale Item routes
+        .route(SALE_ITEM, put(create_sale_item))
+        .route(SALE_ITEM_BY_ID, get(get_sale_item_by_id))
+        .route(SALE_ITEMS_LIST, get(get_sale_items))
+        .route(SALE_ITEM_DELETE, delete(delete_sale_item))
+        .route(SALE_ITEM, patch(update_sale_item))
         .with_state(app_ctx.clone())
         // CORS middleware must be the outermost layer so it runs before auth
         //.layer(from_fn(auth_middleware))

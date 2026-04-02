@@ -55,7 +55,120 @@ pub fn to_page_index(page: u64) -> u64 {
 pub fn to_page_limit(page: u64) -> u64 {
     if page == 0 { 10 } else { page }
 }
-
+/// Name: `get_current_timestamp_now`
+/// Description: Get the current timestamp in UTC with a fixed offset of 0.
+/// Outputs: `DateTimeWithTimeZone` representing the current timestamp.
 pub fn get_current_timestamp_now() -> DateTimeWithTimeZone {
     Utc::now().with_timezone(&FixedOffset::east_opt(0).unwrap())
+}
+
+pub fn parce_date_str_to_date_time_with_timezone(
+    date_str: &str,
+) -> Result<DateTimeWithTimeZone, ApiError> {
+    let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
+    match naive {
+        Ok(d) => {
+            let date_time = d.and_hms_opt(0, 0, 0).unwrap();
+            Ok(DateTimeWithTimeZone::from_naive_utc_and_offset(
+                date_time,
+                FixedOffset::east_opt(0).unwrap(),
+            ))
+        }
+        Err(e) => Err(ApiError::ValidationError(format!("Invalid date: {}", e))),
+    }
+}
+
+pub fn parce_date_time_str_to_date_time_with_timezone(
+    date_time_str: &str,
+) -> Result<DateTimeWithTimeZone, ApiError> {
+    let naive = chrono::NaiveDateTime::parse_from_str(date_time_str, "%Y-%m-%dT%H:%M:%S");
+    match naive {
+        Ok(d) => Ok(DateTimeWithTimeZone::from_naive_utc_and_offset(
+            d,
+            FixedOffset::east_opt(0).unwrap(),
+        )),
+        Err(e) => Err(ApiError::ValidationError(format!(
+            "Invalid date-time: {}",
+            e
+        ))),
+    }
+}
+
+pub fn parce_date_time_str_to_date_time_with_timezone_opt(
+    date_time_str: &str,
+) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
+    if date_time_str.is_empty() {
+        return Ok(None);
+    }
+    let naive = chrono::NaiveDateTime::parse_from_str(date_time_str, "%Y-%m-%dT%H:%M:%S");
+    match naive {
+        Ok(d) => Ok(Some(DateTimeWithTimeZone::from_naive_utc_and_offset(
+            d,
+            FixedOffset::east_opt(0).unwrap(),
+        ))),
+        Err(e) => Err(ApiError::ValidationError(format!(
+            "Invalid date-time: {}",
+            e
+        ))),
+    }
+}
+
+pub fn parce_date_str_to_date_time_with_timezone_opt(
+    date_str: &str,
+) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
+    if date_str.is_empty() {
+        return Ok(None);
+    }
+    let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
+    match naive {
+        Ok(d) => {
+            let date_time = d.and_hms_opt(0, 0, 0).unwrap();
+            Ok(Some(DateTimeWithTimeZone::from_naive_utc_and_offset(
+                date_time,
+                FixedOffset::east_opt(0).unwrap(),
+            )))
+        }
+        Err(e) => Err(ApiError::ValidationError(format!("Invalid date: {}", e))),
+    }
+}
+
+pub fn valite_date_range(start_date: &str, end_date: &str) -> Result<(), ApiError> {
+    let start = parce_date_str_to_date_time_with_timezone(start_date)?;
+    let end = parce_date_str_to_date_time_with_timezone(end_date)?;
+
+    if start > end {
+        return Err(ApiError::ValidationError(
+            "Start date cannot be after end date".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn valite_date_time_range(start_date_time: &str, end_date_time: &str) -> Result<(), ApiError> {
+    let start = parce_date_time_str_to_date_time_with_timezone(start_date_time)?;
+    let end = parce_date_time_str_to_date_time_with_timezone(end_date_time)?;
+
+    if start > end {
+        return Err(ApiError::ValidationError(
+            "Start date-time cannot be after end date-time".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn valite_date_time_range_opt(
+    start_date_time: &str,
+    end_date_time: &str,
+) -> Result<(), ApiError> {
+    let start = parce_date_time_str_to_date_time_with_timezone_opt(start_date_time)?;
+    let end = parce_date_time_str_to_date_time_with_timezone_opt(end_date_time)?;
+
+    if let (Some(start), Some(end)) = (start, end) {
+        if start > end {
+            return Err(ApiError::ValidationError(
+                "Start date-time cannot be after end date-time".to_string(),
+            ));
+        }
+    }
+    Ok(())
 }
