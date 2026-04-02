@@ -3,6 +3,10 @@ use axum::{Router, middleware::from_fn};
 use log::info;
 
 use crate::api_module::login::service::login_service::{get_login, get_profile};
+use crate::api_module::payment_methods::payment_methods_service::payment_methods_service::{
+    create_payment_method, delete_payment_method, get_payment_method_by_id, get_payment_methods,
+    update_payment_method,
+};
 use crate::api_module::permissions::permissions_service::permissions_service::{
     create_permission, delete_permission, get_permission_by_id, get_permissions,
     get_permissions_by_name, update_permission,
@@ -91,8 +95,11 @@ use crate::api_module::user::service::user_service::{
     change_user_password, change_user_status, create_user, delete_user, get_all_users,
     get_user_by_id, update_user,
 };
+use crate::api_module::user_role::user_role_service::user_role_service::{
+    create_user_role, delete_user_role, get_user_role_by_user_id, get_user_roles, update_user_role,
+};
 use crate::config::config_database::config_db_context::AppContext;
-//use crate::config::config_middleware::auth_jwt::auth_middleware;
+use crate::config::config_middleware::auth_jwt::auth_middleware;
 use crate::config::config_middleware::cors::cors_middleware;
 
 // API route constants
@@ -112,30 +119,37 @@ const USER: &str = route!("/user");
 const USER_BY_ID: &str = route!("/user/{:id}");
 const USER_CHANGE_PASSWORD: &str = route!("/user/password");
 const USER_CHANGE_STATUS: &str = route!("/user/status");
-const USER_LIST: &str = route!("/users");
+const USER_LIST: &str = route!("/user");
 const USER_DELETE: &str = route!("/user");
 const USER_UPDATE: &str = route!("/user");
+
+/*Metodos USER_ROLE  */
+const USER_ROLE: &str = route!("/user_role");
+const USER_ROLE_BY_ID: &str = route!("/user_role/{:user_id}/{:role_id}");
+const USER_ROLE_LIST: &str = route!("/user_role");
+const USER_ROLE_DELETE: &str = route!("/user_role/{:user_id}/{:role_id}");
+const USER_ROLE_UPDATE: &str = route!("/user_role/{:user_id}/{:role_id}");
 
 /*Metodos PERMISSION  */
 const PERMISSION: &str = route!("/permission");
 const PERMISSION_BY_ID: &str = route!("/permission/{:id}");
-const PERMISSION_LIST: &str = route!("/permissions");
-const PERMISSION_DELETE: &str = route!("/permission");
-const PERMISSION_UPDATE: &str = route!("/permission");
+const PERMISSION_LIST: &str = route!("/permission");
+const PERMISSION_DELETE: &str = route!("/permission/{:id}");
+const PERMISSION_UPDATE: &str = route!("/permission/{:id}");
 const PERMISSION_BY_NAME: &str = route!("/permission/name");
 
 /*Metodos ROLE  */
 const ROLE: &str = route!("/role");
 const ROLE_BY_ID: &str = route!("/role/{:id}");
-const ROLE_LIST: &str = route!("/roles");
-const ROLE_DELETE: &str = route!("/role");
-const ROLE_UPDATE: &str = route!("/role");
+const ROLE_LIST: &str = route!("/role");
+const ROLE_DELETE: &str = route!("/role/{:id}");
+const ROLE_UPDATE: &str = route!("/role/{:id}");
 const ROLE_BY_NAME: &str = route!("/role/name");
 
 /*Metodos PRODUCT  */
 const PRODUCT: &str = route!("/product");
 const PRODUCT_BY_ID: &str = route!("/product/{:id}");
-const PRODUCTS_LIST: &str = route!("/products");
+const PRODUCTS_LIST: &str = route!("/product");
 const PRODUCT_DELETE: &str = route!("/product");
 const PRODUCT_UPDATE: &str = route!("/product");
 const PRODUCT_BY_NAME: &str = route!("/product/name");
@@ -143,33 +157,33 @@ const PRODUCT_BY_NAME: &str = route!("/product/name");
 /*Metodos CATEGORY  */
 const CATEGORY: &str = route!("/category");
 const CATEGORY_BY_ID: &str = route!("/category/{:id}");
-const CATEGORY_LIST: &str = route!("/categories");
+const CATEGORY_LIST: &str = route!("/category");
 const CATEGORY_DELETE: &str = route!("/category");
 const CATEGORY_UPDATE: &str = route!("/category");
 
 /*Metodos CUSTOMER  */
 const CUSTOMER: &str = route!("/customer");
 const CUSTOMER_BY_ID: &str = route!("/customer/{:id}");
-const CUSTOMER_LIST: &str = route!("/customers");
+const CUSTOMER_LIST: &str = route!("/customer");
 const CUSTOMER_DELETE: &str = route!("/customer");
 const CUSTOMER_UPDATE: &str = route!("/customer");
 /*Metodos CUSTOMER CREDIT ACCOUNT */
 const CUSTOMER_CREDIT_ACCOUNT: &str = route!("/customer_credit_account");
 const CUSTOMER_CREDIT_ACCOUNT_BY_ID: &str = route!("/customer_credit_account/{:id}");
-const CUSTOMER_CREDIT_ACCOUNTS_LIST: &str = route!("/customer_credit_accounts");
+const CUSTOMER_CREDIT_ACCOUNTS_LIST: &str = route!("/customer_credit_account");
 const CUSTOMER_CREDIT_ACCOUNT_DELETE: &str = route!("/customer_credit_account");
 const CUSTOMER_CREDIT_ACCOUNT_UPDATE: &str = route!("/customer_credit_account");
 
 /*Metodos SUPPLIER  */
 const SUPPLIER: &str = route!("/supplier");
 const SUPPLIER_BY_ID: &str = route!("/supplier/{:id}");
-const SUPPLIER_LIST: &str = route!("/suppliers");
+const SUPPLIER_LIST: &str = route!("/supplier");
 const SUPPLIER_DELETE: &str = route!("/supplier");
 const SUPPLIER_UPDATE: &str = route!("/supplier");
 
 /*Metodos ROLE_PERMISSIONS  */
 const ROLE_PERMISSIONS: &str = route!("/role_permissions");
-const ROLE_PERMISSIONS_BY_ID: &str = route!("/role_permissions/{:role_id}/{:permission_id}");
+const ROLE_PERMISSIONS_BY_ID: &str = route!("/role_permissions/{:role_id}");
 const ROLE_PERMISSIONS_LIST: &str = route!("/role_permissions/list");
 const ROLE_PERMISSIONS_DELETE: &str = route!("/role_permissions/{:role_id}/{:permission_id}");
 const ROLE_PERMISSIONS_UPDATE: &str = route!("/role_permissions/{:role_id}/{:permission_id}");
@@ -177,14 +191,14 @@ const ROLE_PERMISSIONS_UPDATE: &str = route!("/role_permissions/{:role_id}/{:per
 /*Metodos PURCHASE  */
 const PURCHASE: &str = route!("/purchase");
 const PURCHASE_BY_ID: &str = route!("/purchase/{:id}");
-const PURCHASES_LIST: &str = route!("/purchases");
+const PURCHASES_LIST: &str = route!("/purchase");
 const PURCHASE_DELETE: &str = route!("/purchase");
 const PURCHASE_UPDATE: &str = route!("/purchase");
 
 /*Metodos SALE  */
 const SALE: &str = route!("/sale");
 const SALE_BY_ID: &str = route!("/sale/{:id}");
-const SALES_LIST: &str = route!("/sales");
+const SALES_LIST: &str = route!("/sale");
 const SALE_DELETE: &str = route!("/sale");
 const SALE_UPDATE: &str = route!("/sale");
 
@@ -200,48 +214,48 @@ const PURCHASE_ITEM_DELETE: &str = route!("/purchase_item");
 /*Metodos SALE_ITEM */
 const SALE_ITEM: &str = route!("/sale_item");
 const SALE_ITEM_BY_ID: &str = route!("/sale_item/{:id}");
-const SALE_ITEMS_LIST: &str = route!("/sale_items");
+const SALE_ITEMS_LIST: &str = route!("/sale_item");
 const SALE_ITEM_DELETE: &str = route!("/sale_item");
 
 /*Metodos PURCHASE_PAYMENT  */
 const PURCHASE_PAYMENT: &str = route!("/purchase_payment");
 const PURCHASE_PAYMENT_BY_ID: &str = route!("/purchase_payment/{:id}");
-const PURCHASE_PAYMENTS_LIST: &str = route!("/purchase_payments");
+const PURCHASE_PAYMENTS_LIST: &str = route!("/purchase_payment");
 const PURCHASE_PAYMENT_DELETE: &str = route!("/purchase_payment");
 /*Metodos CASH_ENTRY */
 const CASH_ENTRY: &str = route!("/cash_entry");
 const CASH_ENTRY_BY_ID: &str = route!("/cash_entry/{:id}");
-const CASH_ENTRIES_LIST: &str = route!("/cash_entries");
+const CASH_ENTRIES_LIST: &str = route!("/cash_entry");
 const CASH_ENTRY_DELETE: &str = route!("/cash_entry");
 
 /*Metodos CASH_JOURNAL */
 const CASH_JOURNAL: &str = route!("/cash_journal");
 const CASH_JOURNAL_BY_ID: &str = route!("/cash_journal/{:id}");
-const CASH_JOURNALS_LIST: &str = route!("/cash_journals");
+const CASH_JOURNALS_LIST: &str = route!("/cash_journal");
 const CASH_JOURNAL_DELETE: &str = route!("/cash_journal");
 
 /*Metodos AUDIT_LOG */
 const AUDIT_LOG: &str = route!("/audit_log");
 const AUDIT_LOG_BY_ID: &str = route!("/audit_log/{:id}");
-const AUDIT_LOGS_LIST: &str = route!("/audit_logs");
+const AUDIT_LOGS_LIST: &str = route!("/audit_log");
 const AUDIT_LOG_DELETE: &str = route!("/audit_log");
 
 /*Metodos SALE_PAYMENT  */
 const SALE_PAYMENT: &str = route!("/sale_payment");
 const SALE_PAYMENT_BY_ID: &str = route!("/sale_payment/{:id}");
-const SALE_PAYMENTS_LIST: &str = route!("/sale_payments");
+const SALE_PAYMENTS_LIST: &str = route!("/sale_payment");
 const SALE_PAYMENT_DELETE: &str = route!("/sale_payment");
 
 /*Metodos DISCOUNT */
 const DISCOUNT: &str = route!("/discount");
 const DISCOUNT_BY_ID: &str = route!("/discount/{:id}");
-const DISCOUNTS_LIST: &str = route!("/discounts");
+const DISCOUNTS_LIST: &str = route!("/discount");
 const DISCOUNT_DELETE: &str = route!("/discount");
 
 /*Metodos INVENTORY_MOVEMENT */
 const INVENTORY_MOVEMENT: &str = route!("/inventory_movement");
 const INVENTORY_MOVEMENT_BY_ID: &str = route!("/inventory_movement/{:id}");
-const INVENTORY_MOVEMENTS_LIST: &str = route!("/inventory_movements");
+const INVENTORY_MOVEMENTS_LIST: &str = route!("/inventory_movement");
 const INVENTORY_MOVEMENT_DELETE: &str = route!("/inventory_movement");
 
 /*Metodos PRODUCT_BARCODE  */
@@ -253,6 +267,12 @@ const PRODUCT_BARCODE_DELETE: &str = route!("/product_barcode");
 const PRODUCT_PRICE: &str = route!("/product_price");
 const PRODUCT_PRICE_BY_ID: &str = route!("/product_price/{:id}");
 const PRODUCT_PRICE_DELETE: &str = route!("/product_price");
+
+/*Metodos PAYMENT_METHODS */
+const PAYMENT_METHODS: &str = route!("/payment_methods");
+const PAYMENT_METHODS_BY_ID: &str = route!("/payment_methods/{:id}");
+const PAYMENT_METHODS_DELETE: &str = route!("/payment_methods/{:id}");
+const PAYMENT_METHODS_UPDATE: &str = route!("/payment_methods/{:id}");
 
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
@@ -267,6 +287,12 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(USER_LIST, get(get_all_users))
         .route(USER_DELETE, delete(delete_user))
         .route(USER_UPDATE, patch(update_user))
+        // User Role routes
+        .route(USER_ROLE, put(create_user_role))
+        .route(USER_ROLE_BY_ID, get(get_user_role_by_user_id))
+        .route(USER_ROLE_LIST, get(get_user_roles))
+        .route(USER_ROLE_DELETE, delete(delete_user_role))
+        .route(USER_ROLE_UPDATE, patch(update_user_role))
         // Permission routes
         .route(PERMISSION, put(create_permission))
         .route(PERMISSION_BY_ID, get(get_permission_by_id))
@@ -415,9 +441,15 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(SALE_ITEMS_LIST, get(get_sale_items))
         .route(SALE_ITEM_DELETE, delete(delete_sale_item))
         .route(SALE_ITEM, patch(update_sale_item))
+        // Payment Methods routes
+        .route(PAYMENT_METHODS, put(create_payment_method))
+        .route(PAYMENT_METHODS_BY_ID, get(get_payment_method_by_id))
+        .route(PAYMENT_METHODS, get(get_payment_methods))
+        .route(PAYMENT_METHODS_DELETE, delete(delete_payment_method))
+        .route(PAYMENT_METHODS_UPDATE, patch(update_payment_method))
         .with_state(app_ctx.clone())
         // CORS middleware must be the outermost layer so it runs before auth
-        //.layer(from_fn(auth_middleware))
+        .layer(from_fn(auth_middleware))
         .layer(from_fn(cors_middleware));
 
     Ok(router)

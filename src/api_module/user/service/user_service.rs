@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
@@ -14,7 +15,7 @@ use crate::{
         user::dto::user_dto::{
             UserChangePasswordRequest, UserChangeStatusRequest, UserRequestDto, UserResponse,
         },
-        utils::utils::ACTIVE_STATUS,
+        utils::utils::{ACTIVE_STATUS, INACTIVE_STATUS},
     },
     api_utils::{
         api_error::ApiError,
@@ -127,6 +128,10 @@ pub async fn change_user_status(
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
+    if payload.status != ACTIVE_STATUS && payload.status != INACTIVE_STATUS {
+        return Err(ApiError::Validation(validator::ValidationErrors::new()));
+    }
+
     let user = schemas::users::Entity::find()
         .filter(schemas::users::Column::Username.eq(payload.username))
         .one(&app_ctx.conn)
@@ -136,7 +141,7 @@ pub async fn change_user_status(
 
     let mut user_active_model = user.into_active_model();
 
-    if payload.status.clone() == ACTIVE_STATUS {
+    if payload.status.clone() == ACTIVE_STATUS || payload.status.clone() == INACTIVE_STATUS {
         user_active_model.deleted_at = ActiveValue::Set(None);
         user_active_model.updated_at = ActiveValue::Set(Some(get_current_timestamp_now()));
         user_active_model.updated_by = ActiveValue::Set(Some(payload.updated_by));
@@ -197,6 +202,12 @@ pub async fn delete_user(
     State(app_ctx): State<AppContext>,
     Query(payload): Query<UserChangeStatusRequest>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!(
+        "Attempting to delete user with username: {}",
+        payload.username
+    );
+    payload.validate().map_err(ApiError::Validation)?;
+
     let user = schemas::users::Entity::find()
         .filter(schemas::users::Column::Username.eq(payload.username.clone()))
         .one(&app_ctx.conn)

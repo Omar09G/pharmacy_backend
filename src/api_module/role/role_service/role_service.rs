@@ -160,11 +160,12 @@ pub async fn get_roles_by_name(
 
 pub async fn update_role(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<RoleRequest>,
 ) -> Result<Json<ApiResponse<RoleIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let role = schemas::roles::Entity::find_by_id(payload.id)
+    let role = schemas::roles::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -175,6 +176,7 @@ pub async fn update_role(
 
             role_active_model.name = ActiveValue::Set(payload.name);
             role_active_model.description = ActiveValue::Set(payload.description);
+            role_active_model.created_at = ActiveValue::Set(payload.created_at);
 
             let updated_role = role_active_model
                 .save(&app_ctx.conn)

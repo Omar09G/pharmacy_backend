@@ -1,8 +1,11 @@
 use crate::api_utils::api_error::ApiError;
+use chrono::Offset;
 use chrono::{FixedOffset, Utc};
+use chrono_tz::America::Mexico_City;
 use lazy_static::lazy_static;
 use regex::Regex;
 use sea_orm::entity::prelude::*;
+use sea_orm::sea_query::NullAlias;
 use validator::ValidationError;
 // 1. Definir la expresión regular para caracteres especiales permitidos.
 // Acepta alfanuméricos, guion bajo y arroba.
@@ -62,6 +65,22 @@ pub fn get_current_timestamp_now() -> DateTimeWithTimeZone {
     Utc::now().with_timezone(&FixedOffset::east_opt(0).unwrap())
 }
 
+///Name: get_current_timestamp_at_zone_mexico
+///Description: Get the current timestamp in the Mexico City timezone.
+///Outputs: `DateTimeWithTimeZone` representing the current timestamp in Mexico City timezone.
+pub fn get_current_timestamp_at_zone_mexico(
+    date_time: DateTimeWithTimeZone,
+) -> DateTimeWithTimeZone {
+    // Convert the incoming fixed-offset datetime to UTC, then to Mexico City tz (handles DST),
+    // and finally to a fixed-offset `DateTimeWithTimeZone` representing the same instant
+    // in the local Mexico City offset.
+    let dt_utc = date_time.with_timezone(&Utc);
+    let tz_dt = dt_utc.with_timezone(&Mexico_City);
+    let fixed_offset = tz_dt.offset().fix();
+
+    tz_dt.with_timezone(&fixed_offset)
+}
+
 pub fn parce_date_str_to_date_time_with_timezone(
     date_str: &str,
 ) -> Result<DateTimeWithTimeZone, ApiError> {
@@ -113,6 +132,24 @@ pub fn parce_date_time_str_to_date_time_with_timezone_opt(
     }
 }
 
+fn parce_date_srt_to_date_white_time_zone_mexico(
+    date_str: &str,
+) -> Result<DateTimeWithTimeZone, ApiError> {
+    let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
+    match naive {
+        Ok(d) => {
+            let date_time = d.and_hms_opt(0, 0, 0).unwrap();
+            Ok(get_current_timestamp_at_zone_mexico(
+                DateTimeWithTimeZone::from_naive_utc_and_offset(
+                    date_time,
+                    FixedOffset::east_opt(0).unwrap(),
+                ),
+            ))
+        }
+        Err(e) => Err(ApiError::ValidationError(format!("Invalid date: {}", e))),
+    }
+}
+
 pub fn parce_date_str_to_date_time_with_timezone_opt(
     date_str: &str,
 ) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
@@ -133,8 +170,8 @@ pub fn parce_date_str_to_date_time_with_timezone_opt(
 }
 
 pub fn valite_date_range(start_date: &str, end_date: &str) -> Result<(), ApiError> {
-    let start = parce_date_str_to_date_time_with_timezone(start_date)?;
-    let end = parce_date_str_to_date_time_with_timezone(end_date)?;
+    let start = parse_date_str(start_date)?;
+    let end = parse_date_str(end_date)?;
 
     if start > end {
         return Err(ApiError::ValidationError(

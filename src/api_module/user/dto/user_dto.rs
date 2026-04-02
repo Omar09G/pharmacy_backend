@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use crate::{
-    api_utils::api_utils_fun::get_current_timestamp_now,
+    api_utils::api_utils_fun::{get_current_timestamp_at_zone_mexico, get_current_timestamp_now},
     config::config_pass::config_password::generate_hash,
 };
 
@@ -105,11 +105,15 @@ impl From<schemas::users::Model> for UserResponse {
             email: model.email,
             phone: model.phone,
             status: model.status,
-            created_at: model.created_at,
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
             created_by: model.created_by,
-            updated_at: model.updated_at,
+            updated_at: model
+                .updated_at
+                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
             updated_by: model.updated_by,
-            deleted_at: model.deleted_at,
+            deleted_at: model
+                .deleted_at
+                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
         }
     }
 }
@@ -123,11 +127,17 @@ impl From<schemas::users::ActiveModel> for UserResponse {
             email: model.email.unwrap(),
             phone: model.phone.unwrap(),
             status: model.status.unwrap(),
-            created_at: model.created_at.unwrap(),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
             created_by: model.created_by.unwrap(),
-            updated_at: model.updated_at.unwrap(),
+            updated_at: model
+                .updated_at
+                .unwrap()
+                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
             updated_by: model.updated_by.unwrap(),
-            deleted_at: model.deleted_at.unwrap(),
+            deleted_at: model
+                .deleted_at
+                .unwrap()
+                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
         }
     }
 }

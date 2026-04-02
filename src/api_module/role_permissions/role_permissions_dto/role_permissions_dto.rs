@@ -24,6 +24,15 @@ pub struct RolePermissionsResponse {
     pub permission_id: i64,
 }
 
+impl RolePermissionsResponse {
+    pub fn new(role_id: i64, permission_id: i64) -> Self {
+        Self {
+            role_id,
+            permission_id,
+        }
+    }
+}
+
 impl From<RolePermissionsRequest> for schemas::role_permissions::ActiveModel {
     fn from(request: RolePermissionsRequest) -> Self {
         Self {

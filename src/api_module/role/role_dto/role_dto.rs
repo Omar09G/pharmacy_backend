@@ -38,7 +38,7 @@ pub struct RoleDetailResponse {
 impl From<RoleRequest> for schemas::roles::ActiveModel {
     fn from(request: RoleRequest) -> Self {
         Self {
-            id: ActiveValue::Set(request.id),
+            id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             description: ActiveValue::Set(request.description),
             created_at: ActiveValue::Set(request.created_at),

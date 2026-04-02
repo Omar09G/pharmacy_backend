@@ -11,7 +11,7 @@ use validator::Validate;
 
 use crate::{
     api_module::payment_methods::payment_methods_dto::payment_methods_dto::{
-        PaymentMethodIdResponse, PaymentMethodRequest,
+        PaymentMethodIdResponse, PaymentMethodRequest, PaymentMethodResponse,
     },
     api_utils::{
         api_error::ApiError,
@@ -48,7 +48,7 @@ pub async fn create_payment_method(
 pub async fn get_payment_method_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<PaymentMethodIdResponse>>, ApiError> {
+) -> Result<Json<ApiResponse<PaymentMethodResponse>>, ApiError> {
     let payment_method = schemas::payment_methods::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -56,7 +56,7 @@ pub async fn get_payment_method_by_id(
 
     match payment_method {
         Some(pm) => Ok(Json(ApiResponse::success(
-            PaymentMethodIdResponse::from(pm),
+            PaymentMethodResponse::from(pm),
             "Payment method retrieved successfully".to_string(),
             1,
         ))),
@@ -91,7 +91,7 @@ pub async fn delete_payment_method(
 pub async fn get_payment_methods(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
-) -> Result<Json<ApiResponse<Vec<PaymentMethodIdResponse>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<PaymentMethodResponse>>>, ApiError> {
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -109,7 +109,7 @@ pub async fn get_payment_methods(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
         .into_iter()
-        .map(PaymentMethodIdResponse::from)
+        .map(PaymentMethodResponse::from)
         .collect();
 
     Ok(Json(ApiResponse::success(

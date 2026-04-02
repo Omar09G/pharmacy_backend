@@ -1,144 +1,279 @@
 @base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NDY1NjMwMCwiaWF0IjoxNzc0NTY5OTAwLCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjMsIm5hbWUiOiJPbWFyIiwicm9sZSI6IkFETUlOIiwiY29tcGFueSI6IlBoYXJtYWN5In0.2ZX6Sa2K68YTDLpFZ11RUowfW76fjc2LqoNMEjqje3E
-
-##### Get Role Permission by ID
-GET {{base}}/role_permissions/1
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
-
-##### Delete Role Permission by ID
-DELETE {{base}}/role_permissions/1/2
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
-
-##### Products - Create
-PUT {{base}}/product
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTI1MDYxNCwiaWF0IjoxNzc1MTY0MjE0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.Eb3MXolbxjw1nrQXgk0Qj56xqSVwSM44Kjj0ulaG3TU
+###LOGIN
+POST {{base}}/auth/login
+Content-Type: application/json;charset=UTF-8
 
 {
-	"id": 0,
-	"sku": "P-001",
-	"name": "Aspirina 500mg",
-	"description": "Pain reliever",
-	"brand": "PharmaCo",
-	"categoryId": 1,
-	"unitId": 1,
-	"isSellable": true,
-	"trackBatches": false,
-	"taxProfileId": null,
-	"defaultCost": 1.50,
-	"purchasePrice": 2.00,
-	"wholesalePrice": 2.50,
-	"salePrice": 3.00,
-	"defaultPrice": 3.00,
-	"createdAt": "2026-04-01T00:00:00Z",
-	"updatedAt": null,
-	"deletedAt": null
+	"username": "omar0907",
+	"password": "omar0907"
 }
 
-##### Products - Get by ID
-GET {{base}}/product/1
-Content-Type: {{contentType}}
+### Get all permission
+PUT {{base}}/permission
 Authorization: Bearer {{accessToken}}
-
-##### Products - List (pagination)
-GET {{base}}/products?page=1&limit=20
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
-
-##### Products - Update
-PATCH {{base}}/product
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
 {
 	"id": 1,
-	"name": "Aspirina 500mg - Nueva",
-	"description": "Pain reliever updated"
+	"name": "SALES_MANAGER",
+	"description": "Permite gestionar las ventas y los clientes"
 }
 
-##### Products - Delete
-DELETE {{base}}/product/1
-Content-Type: {{contentType}}
+### Get BY ID	
+GET  {{base}}/permission/1
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
-##### Categories - Create
-PUT {{base}}/category
-Content-Type: {{contentType}}
+### Get BY NAME
+GET  {{base}}/permission/name?page=1&limit=10&total=0&name=SALES_MANAGER
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Get BY ID	
+GET  {{base}}/permission?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Get BY ID	
+PATCH   {{base}}/permission/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
 {
-	"id": 0,
-	"name": "Analgésicos",
-	"parentId": null,
-	"description": "Medicines for pain relief"
+	"id": 1,
+	"name": "INVENTORY_MANAGER",
+	"description": "Permite gestionar el inventario y los productos"
 }
-
-##### Categories - List
-GET {{base}}/categories?page=1&limit=20
-Content-Type: {{contentType}}
+### Get BY ID	
+DELETE  {{base}}/permission/1
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
-##### Categories - Get by ID
-GET {{base}}/category/1
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
+###################################ROLE###################################
 
-##### Customers - Create
-PUT {{base}}/customer
-Content-Type: {{contentType}}
+### Create role
+PUT {{base}}/role
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
 {
-	"id": 0,
-	"name": "Juan Perez",
-	"documentId": "12345678",
-	"phone": "+59170000000",
-	"email": "juan.perez@example.com",
-	"billingAddress": "Calle Falsa 123",
-	"creditLimit": 1000.00,
-	"termsDays": 30,
-	"status": "active",
-	"createdAt": "2026-04-01T00:00:00Z"
+	"id": 4,
+    "name": "CLIENT",
+    "description": "Permite gestionar las compras y el perfil del cliente",
+    "createdAt": "2026-04-02T10:33:00Z"
 }
 
-##### Customers - List
-GET {{base}}/customers?page=1&limit=20
-Content-Type: {{contentType}}
+### Get BY ID
+GET  {{base}}/role/1
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
-##### Customers - Get by ID
-GET {{base}}/customer/1
-Content-Type: {{contentType}}
+### Get BY NAME
+GET  {{base}}/role/name?page=1&limit=10&total=0&name=MANAGER
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8	
 
-##### Suppliers - Create
-PUT {{base}}/supplier
-Content-Type: {{contentType}}
+### Get All ROLE
+GET  {{base}}/role?page=1&limit=10&total=0
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update ROLE
+PATCH   {{base}}/role/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
 {
-	"id": 0,
-	"name": "Distribuidora S.A.",
-	"taxId": "ABC-123456",
-	"contactPerson": "María López",
-	"phone": "+59170123456",
-	"email": "contact@distribuidora.example",
-	"address": "Av. Central 456",
-	"notes": "Main supplier",
-	"createdAt": "2026-04-01T00:00:00Z"
+	"id": 1,
+	"name": "ADMIN",
+	"description": "Permite gestionar el sistema y los usuarios",
+	"createdAt": "2026-04-02T10:33:00Z"
 }
 
-##### Suppliers - List
-GET {{base}}/suppliers?page=1&limit=20
-Content-Type: {{contentType}}
+### Delete ROLE
+DELETE  {{base}}/role/4
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
-##### Suppliers - Get by ID
-GET {{base}}/supplier/1
-Content-Type: {{contentType}}
+
+##########################USER##########################
+### Create USER
+PUT {{base}}/user
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
 
+{
+	"id": 1,
+    "username": "omar1234",
+    "passwordHash": "hashed_password",
+    "fullName": "Omar Doe",
+    "email": "john.1e@example.com",
+    "phone": "1234567890",
+    "status": "ACTIVE",
+    "createdAt": "2026-04-02T10:33:00Z",
+    "createdBy": 1,
+    "updatedAt": "2026-04-02T10:33:00Z",
+    "updatedBy": 1,
+    "deletedAt": null
+}
+
+### Get BY ID
+GET  {{base}}/user/4
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+###Get ALL USER
+GET  {{base}}/user?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8	
+
+
+### Get BY USERNAME
+GET  {{base}}/user/username?page=1&limit=10&total=
+0&username=omar1234
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update USER
+PATCH   {{base}}/user
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 4,
+    "username": "omar1234",
+    "passwordHash": "hashed_password",
+    "fullName": "Omar Perez",
+    "email": "john.1e@example.com",
+    "phone": "1234567890",
+    "status": "ACTIVE",
+    "createdAt": "2026-04-02T10:33:00Z",
+    "createdBy": 1,
+    "updatedAt": "2026-04-02T10:33:00Z",
+    "updatedBy": 2,
+    "deletedAt": "2026-04-02T10:33:00Z"
+}
+
+### Delete USER
+DELETE  {{base}}/user?username=omar1234&updatedBy=2&status=DELETED
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+
+### Update USER STATUS
+PUT  {{base}}/user/status?username=john_doe&updatedBy=2&status=INACTIVE
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+##############ROLE-PERMISSION##########################
+### Assign Permission to Role
+PUT {{base}}/role_permissions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"roleId": 1,
+	"permissionId": 2
+}
+### Get Permissions by Role ID
+GET  {{base}}/role_permissions/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### GET ALL ROLE-PERMISSION
+GET  {{base}}/role_permissions/list?page=1&limit=10&total=0&roleId=1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update ROLE-PERMISSION
+PATCH   {{base}}/role_permissions/1/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"roleId": 1,
+	"permissionId": 2
+}
+
+### Delete ROLE-PERMISSION
+DELETE  {{base}}/role_permissions/1/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+############USER-ROLE##########################
+### Assign Role to User
+PUT {{base}}/user_role
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"userId": 2,
+	"roleId": 1
+}
+### Get Roles by User ID
+GET  {{base}}/user_role/2/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### GET ALL USER-ROLE
+GET  {{base}}/user_role?page=1&limit=10&total=0&userId=2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update USER-ROLE
+PATCH   {{base}}/user_role/2/2
+Authorization: Bearer {{accessToken}}	
+Content-Type: application/json;charset=UTF-8
+
+{
+	"userId": 2,
+	"roleId": 1
+}
+
+### Delete USER-ROLE
+DELETE  {{base}}/user_role/2/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#######PAYMENT METHODS##########################
+### Create Payment Method
+PUT {{base}}/payment_methods
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Cambio",
+	"methodType": "CASH",
+	"active": true
+}
+
+#### GEt BY ID
+GET  {{base}}/payment_methods/5
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+
+### Get All Payment Methods
+GET  {{base}}/payment_methods?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update Payment Method
+PATCH   {{base}}/payment_methods/5
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 5,
+	"name": "Tarjeta de Crédito",
+	"methodType": "CREDIT_CARD",
+	"active": true
+}
+
+### Delete Payment Method
+DELETE  {{base}}/payment_methods/7
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8

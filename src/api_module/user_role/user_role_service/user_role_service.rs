@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
@@ -25,19 +26,27 @@ pub async fn create_user_role(
 ) -> Result<Json<ApiResponse<UserRoleResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
+    let user_id_str: i64 = payload.user_id;
+    let role_id_str: i64 = payload.role_id;
+
+    info!(
+        "Creating user role with user_id: {} and role_id: {}",
+        user_id_str, role_id_str
+    );
+
     let user_role_create = schemas::user_roles::ActiveModel::from(payload);
 
     if user_role_create.user_id.is_not_set() || user_role_create.role_id.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));
     }
 
-    let new_user_role = user_role_create
-        .save(&app_ctx.conn)
+    user_role_create
+        .insert(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     Ok(Json(ApiResponse::success(
-        UserRoleResponse::from(new_user_role),
+        UserRoleResponse::new(user_id_str, role_id_str),
         "User role created successfully".to_string(),
         1,
     )))
@@ -96,29 +105,27 @@ pub async fn update_user_role(
     Json(payload): Json<UserRoleRequest>,
 ) -> Result<Json<ApiResponse<UserRoleResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
+    let user_id_str: i64 = payload.user_id;
+    let role_id_str: i64 = payload.role_id;
 
-    let user_role = schemas::user_roles::Entity::find()
-        .filter(schemas::user_roles::Column::UserId.eq(user_id))
-        .filter(schemas::user_roles::Column::RoleId.eq(role_id))
+    info!(
+        "Updating user role for user_id: {} and role_id: {}",
+        user_id, role_id
+    );
+
+    //Eliminar con la funcion delete y luego insertar con la funcion create
+    let _ = delete_user_role(State(app_ctx.clone()), Path((user_id, role_id))).await?;
+    let _ = create_user_role(State(app_ctx.clone()), Json(payload)).await?;
+
+    let user_role_update = schemas::user_roles::Entity::find()
+        .filter(schemas::user_roles::Column::UserId.eq(user_id_str))
+        .filter(schemas::user_roles::Column::RoleId.eq(role_id_str))
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    let mut user_role = match user_role {
-        Some(ur) => ur.into_active_model(),
-        None => return Err(ApiError::ValidationError("User role not found".to_string())),
-    };
-
-    user_role.user_id = ActiveValue::Set(payload.user_id);
-    user_role.role_id = ActiveValue::Set(payload.role_id);
-
-    let updated_user_role = user_role
-        .save(&app_ctx.conn)
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
     Ok(Json(ApiResponse::success(
-        UserRoleResponse::from(updated_user_role),
+        UserRoleResponse::from(user_role_update.unwrap()),
         "User role updated successfully".to_string(),
         1,
     )))

@@ -42,6 +42,13 @@ pub struct UserRoleResponse {
     pub user_id: i64,
     pub role_id: i64,
 }
+
+impl UserRoleResponse {
+    pub fn new(user_id: i64, role_id: i64) -> Self {
+        Self { user_id, role_id }
+    }
+}
+
 impl From<schemas::user_roles::Model> for UserRoleResponse {
     fn from(model: schemas::user_roles::Model) -> Self {
         Self {

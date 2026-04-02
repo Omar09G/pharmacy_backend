@@ -7,7 +7,7 @@ use validator::Validate;
 pub struct PaymentMethodDto {
     pub id: i64,
     pub name: String,
-    method_type: Option<String>,
+    pub method_type: Option<String>,
     pub active: bool,
 }
 
@@ -16,7 +16,7 @@ pub struct PaymentMethodDto {
 pub struct PaymentMethodResponse {
     pub id: i64,
     pub name: String,
-    method_type: Option<String>,
+    pub method_type: Option<String>,
     pub active: bool,
 }
 
@@ -38,10 +38,10 @@ pub struct PaymentMethodRequest {
 impl From<PaymentMethodRequest> for schemas::payment_methods::ActiveModel {
     fn from(request: PaymentMethodRequest) -> Self {
         Self {
+            id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             method_type: ActiveValue::Set(request.method_type),
             active: ActiveValue::Set(request.active),
-            id: ActiveValue::NotSet,
         }
     }
 }

@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::{info, warn};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
@@ -28,6 +29,14 @@ pub async fn create_role_permissions(
 ) -> Result<Json<ApiResponse<RolePermissionsResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
+    let role_id_str = payload.role_id;
+    let permission_id_str = payload.permission_id;
+
+    info!(
+        "Creating role permissions with role_id: {} and permission_id: {}",
+        payload.role_id, payload.permission_id
+    );
+
     let role_permissions_create = schemas::role_permissions::ActiveModel::from(payload);
 
     if role_permissions_create.role_id.is_not_set()
@@ -36,20 +45,19 @@ pub async fn create_role_permissions(
         return Err(ApiError::Validation(validator::ValidationErrors::new()));
     }
 
-    let new_role_permissions = role_permissions_create
-        .save(&app_ctx.conn)
+    warn!(
+        "Attempting to create role permissions with role_id: {} and permission_id: {}",
+        role_permissions_create.role_id.clone().unwrap(),
+        role_permissions_create.permission_id.clone().unwrap()
+    );
+
+    role_permissions_create
+        .insert(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    if new_role_permissions.role_id.is_not_set() || new_role_permissions.permission_id.is_not_set()
-    {
-        return Err(ApiError::ValidationError(
-            "Failed to create role permissions".to_string(),
-        ));
-    }
-
     Ok(Json(ApiResponse::success(
-        RolePermissionsResponse::from(new_role_permissions),
+        RolePermissionsResponse::new(role_id_str, permission_id_str),
         "Role permissions created successfully".to_string(),
         1,
     )))
@@ -84,29 +92,34 @@ pub async fn get_role_permissions(
 ) -> Result<Json<ApiResponse<Vec<RolePermissionsResponse>>>, ApiError> {
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
+    let role_id = pagination.role_id.clone().unwrap_or_default();
 
-    let role_permissions = schemas::role_permissions::Entity::find()
-        .filter(schemas::role_permissions::Column::RoleId.eq(pagination.role_id))
-        .order_by_asc(schemas::role_permissions::Column::RoleId)
-        .paginate(&app_ctx.conn, page_limit)
+    info!(
+        "Retrieving role permissions for role_id: {} with page: {} and limit: {}",
+        role_id, pagination.page, pagination.limit
+    );
+
+    let paginator = schemas::role_permissions::Entity::find()
+        .filter(schemas::role_permissions::Column::RoleId.eq(role_id))
+        .order_by_asc(schemas::role_permissions::Column::PermissionId)
+        .paginate(&app_ctx.conn, page_limit);
+    let total_items = paginator
+        .num_items()
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let items = paginator
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    let total_items = schemas::role_permissions::Entity::find()
-        .count(&app_ctx.conn)
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-    let total_pages = (total_items as f64 / page_limit as f64).ceil() as usize;
-
     Ok(Json(ApiResponse::success(
-        role_permissions
+        items
             .into_iter()
             .map(RolePermissionsResponse::from)
             .collect(),
         "Role permissions retrieved successfully".to_string(),
-        total_pages as i32,
+        total_items as i32,
     )))
 }
 
@@ -147,6 +160,9 @@ pub async fn update_role_permissions(
 ) -> Result<Json<ApiResponse<RolePermissionsResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
+    let role_id_str = payload.role_id;
+    let permission_id_str = payload.permission_id;
+
     let role_permission = schemas::role_permissions::Entity::find()
         .filter(schemas::role_permissions::Column::RoleId.eq(role_id))
         .filter(schemas::role_permissions::Column::PermissionId.eq(permission_id))
@@ -154,27 +170,27 @@ pub async fn update_role_permissions(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    match role_permission {
-        Some(model) => {
-            let mut active_model: schemas::role_permissions::ActiveModel =
-                model.into_active_model();
-            active_model.role_id = ActiveValue::Set(payload.role_id);
-            active_model.permission_id = ActiveValue::Set(payload.permission_id);
-
-            let updated_role_permission = active_model
-                .save(&app_ctx.conn)
-                .await
-                .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-            Ok(Json(ApiResponse::success(
-                RolePermissionsResponse::from(updated_role_permission),
-                "Role permission updated successfully".to_string(),
-                1,
-            )))
-        }
-        None => Err(ApiError::ValidationError(format!(
+    if role_permission.is_none() {
+        return Err(ApiError::ValidationError(format!(
             "Role permission with role_id {} and permission_id {} not found",
             role_id, permission_id
-        ))),
+        )));
     }
+
+    //Eliminar con la funcion delete y luego insertar con la funcion create
+    let _ = delete_role_permissions(State(app_ctx.clone()), Path((role_id, permission_id))).await?;
+    let _ = create_role_permissions(State(app_ctx.clone()), Json(payload)).await?;
+
+    let role_permission_update = schemas::role_permissions::Entity::find()
+        .filter(schemas::role_permissions::Column::RoleId.eq(role_id_str))
+        .filter(schemas::role_permissions::Column::PermissionId.eq(permission_id_str))
+        .one(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    Ok(Json(ApiResponse::success(
+        RolePermissionsResponse::from(role_permission_update.unwrap()),
+        "Role permissions updated successfully".to_string(),
+        1,
+    )))
 }
