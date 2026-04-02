@@ -183,11 +183,12 @@ pub async fn get_suppliers_by_name(
 
 pub async fn update_supplier(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<SupplierRequest>,
 ) -> Result<Json<ApiResponse<SupplierIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let supplier = schemas::suppliers::Entity::find_by_id(payload.id)
+    let supplier = schemas::suppliers::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

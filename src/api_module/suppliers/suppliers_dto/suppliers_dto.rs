@@ -3,6 +3,10 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::{
+    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
+};
+
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct SupplierDto {
@@ -62,7 +66,7 @@ impl From<SupplierRequest> for schemas::suppliers::ActiveModel {
             email: ActiveValue::Set(request.email),
             address: ActiveValue::Set(request.address),
             notes: ActiveValue::Set(request.notes),
-            created_at: ActiveValue::Set(request.created_at),
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
         }
     }
 }
@@ -78,7 +82,7 @@ impl From<schemas::suppliers::Model> for SupplierDetailResponse {
             email: model.email,
             address: model.address,
             notes: model.notes,
-            created_at: model.created_at,
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
         }
     }
 }
@@ -94,7 +98,7 @@ impl From<schemas::suppliers::ActiveModel> for SupplierDetailResponse {
             email: model.email.unwrap(),
             address: model.address.unwrap(),
             notes: model.notes.unwrap(),
-            created_at: model.created_at.unwrap(),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
         }
     }
 }

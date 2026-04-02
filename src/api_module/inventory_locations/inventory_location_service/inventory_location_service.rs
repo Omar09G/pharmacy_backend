@@ -11,7 +11,7 @@ use validator::Validate;
 
 use crate::{
     api_module::inventory_locations::inventory_location_dto::inventory_location_dto::{
-        InventoryLocationIdResponse, InventoryLocationRequest,
+        InventoryLocationIdResponse, InventoryLocationRequest, InventoryLocationResponse,
     },
     api_utils::{
         api_error::ApiError,
@@ -54,7 +54,7 @@ pub async fn create_inventory_location(
 pub async fn get_inventory_location_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<InventoryLocationIdResponse>>, ApiError> {
+) -> Result<Json<ApiResponse<InventoryLocationResponse>>, ApiError> {
     let inventory_location = schemas::inventory_locations::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -62,7 +62,7 @@ pub async fn get_inventory_location_by_id(
 
     match inventory_location {
         Some(il) => Ok(Json(ApiResponse::success(
-            InventoryLocationIdResponse::from(il),
+            InventoryLocationResponse::from(il),
             "Inventory location retrieved successfully".to_string(),
             1,
         ))),
@@ -101,7 +101,7 @@ pub async fn delete_inventory_location(
 pub async fn get_inventory_locations(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
-) -> Result<Json<ApiResponse<Vec<InventoryLocationIdResponse>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<InventoryLocationResponse>>>, ApiError> {
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -121,7 +121,7 @@ pub async fn get_inventory_locations(
 
     let inventory_location_responses = inventory_locations
         .into_iter()
-        .map(InventoryLocationIdResponse::from)
+        .map(InventoryLocationResponse::from)
         .collect();
 
     Ok(Json(ApiResponse::success(

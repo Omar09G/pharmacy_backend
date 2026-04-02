@@ -9,8 +9,11 @@ use sea_orm::{
 };
 use validator::Validate;
 
-use crate::api_module::products::products_dto::products_dto::{
-    ProductDetailResponse, ProductIdResponse, ProductRequest,
+use crate::{
+    api_module::products::products_dto::products_dto::{
+        ProductDetailResponse, ProductIdResponse, ProductRequest,
+    },
+    api_utils::api_utils_fun::get_current_timestamp_now,
 };
 use crate::{
     api_utils::{
@@ -220,20 +223,55 @@ pub async fn update_product(
         Some(product) => {
             let mut product_active_model = product.into_active_model();
 
-            product_active_model.sku = ActiveValue::Set(payload.sku);
-            product_active_model.name = ActiveValue::Set(payload.name);
-            product_active_model.description = ActiveValue::Set(payload.description);
-            product_active_model.brand = ActiveValue::Set(payload.brand);
-            product_active_model.category_id = ActiveValue::Set(payload.category_id);
-            product_active_model.unit_id = ActiveValue::Set(payload.unit_id);
+            if let Some(sku) = payload.sku.clone() {
+                if !sku.is_empty() {
+                    product_active_model.sku = ActiveValue::Set(Some(sku));
+                }
+            }
+            if !payload.name.trim().is_empty() {
+                product_active_model.name = ActiveValue::Set(payload.name.clone());
+            }
+            if let Some(description) = payload.description.clone() {
+                if !description.is_empty() {
+                    product_active_model.description = ActiveValue::Set(Some(description));
+                }
+            }
+            if let Some(brand) = payload.brand.clone() {
+                if !brand.is_empty() {
+                    product_active_model.brand = ActiveValue::Set(Some(brand));
+                }
+            }
+            if let Some(category_id) = payload.category_id {
+                product_active_model.category_id = ActiveValue::Set(Some(category_id));
+            }
+            if let Some(unit_id) = payload.unit_id {
+                product_active_model.unit_id = ActiveValue::Set(Some(unit_id));
+            }
+
             product_active_model.is_sellable = ActiveValue::Set(payload.is_sellable);
+
             product_active_model.track_batches = ActiveValue::Set(payload.track_batches);
-            product_active_model.tax_profile_id = ActiveValue::Set(payload.tax_profile_id);
-            product_active_model.default_cost = ActiveValue::Set(payload.default_cost);
-            product_active_model.purchase_price = ActiveValue::Set(payload.purchase_price);
-            product_active_model.wholesale_price = ActiveValue::Set(payload.wholesale_price);
-            product_active_model.sale_price = ActiveValue::Set(payload.sale_price);
-            product_active_model.default_price = ActiveValue::Set(payload.default_price);
+
+            if let Some(tax_profile_id) = payload.tax_profile_id {
+                product_active_model.tax_profile_id = ActiveValue::Set(Some(tax_profile_id));
+            }
+            if let Some(default_cost) = payload.default_cost {
+                product_active_model.default_cost = ActiveValue::Set(Some(default_cost));
+            }
+            if let Some(purchase_price) = payload.purchase_price {
+                product_active_model.purchase_price = ActiveValue::Set(Some(purchase_price));
+            }
+            if let Some(wholesale_price) = payload.wholesale_price {
+                product_active_model.wholesale_price = ActiveValue::Set(Some(wholesale_price));
+            }
+            if let Some(sale_price) = payload.sale_price {
+                product_active_model.sale_price = ActiveValue::Set(Some(sale_price));
+            }
+            if let Some(default_price) = payload.default_price {
+                product_active_model.default_price = ActiveValue::Set(Some(default_price));
+            }
+
+            product_active_model.updated_at = ActiveValue::Set(Some(get_current_timestamp_now()));
 
             let updated_product = product_active_model
                 .save(&app_ctx.conn)

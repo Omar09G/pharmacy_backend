@@ -130,6 +130,7 @@ pub async fn update_unit(
 
     if let Some(unit) = unit {
         let mut unit_active: schemas::units::ActiveModel = unit.into_active_model();
+        unit_active.code = ActiveValue::Set(payload.code);
         unit_active.name = ActiveValue::Set(payload.name);
         unit_active.precision = ActiveValue::Set(payload.precision);
 

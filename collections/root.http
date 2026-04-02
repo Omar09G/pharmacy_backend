@@ -277,3 +277,319 @@ Content-Type: application/json;charset=UTF-8
 DELETE  {{base}}/payment_methods/7
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
+
+###### INVENTORY-LOCATIONS##########################
+
+### Create Inventory Location
+PUT {{base}}/inventory_locations
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Tienda Secundaria",
+	"type": "STORE",
+	"description": "Tienda secundaria"
+}
+
+### Get Inventory Location by ID
+GET  {{base}}/inventory_locations/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8\
+
+### Get All Inventory Locations
+GET  {{base}}/inventory_locations?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update Inventory Location
+PATCH   {{base}}/inventory_locations/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 2,
+	"name": "Tienda Principal",
+	"type": "STORE",
+	"description": "Tienda principal actualizada"
+}
+
+### Delete Inventory Location
+DELETE  {{base}}/inventory_locations/3
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#######UNITS##########################
+### Create Unit
+PUT {{base}}/units
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"code": "Mil",
+	"name": "Milliliter",
+	"precision": 4
+}
+
+### Get Unit by ID
+GET  {{base}}/units/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Get All Units
+GET  {{base}}/units?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Unit
+PATCH   {{base}}/units/3
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 3,
+	"code": "L",
+	"name": "Liter",
+	"precision": 4
+}
+### Delete Unit
+DELETE  {{base}}/units/4
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+##### TAX PROFILES##########################
+### Create Tax Profile
+PUT {{base}}/tax_profiles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "IVA 5%",
+	"rate": 0.05,
+	"isInclusive": true,
+	"description": "Impuesto para IVA al 5%"
+}
+
+### Get Tax Profile by ID
+GET  {{base}}/tax_profiles/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Tax Profiles
+GET  {{base}}/tax_profiles?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Upgrade: Tax Profile
+PATCH   {{base}}/tax_profiles/3
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 3,
+	"name": "IVA 15%",
+	"rate": 0.15,
+	"isInclusive": false,
+	"description": "Impuesto para IVA al 15%"
+}
+
+### Delete Tax Profile
+DELETE  {{base}}/tax_profiles/4
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+########CATEGORIES##########################
+### Create Category
+PUT {{base}}/category
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Analgesicos",
+	"description": "Categoría para analgésicos"
+}
+### Get Category by ID
+GET  {{base}}/category/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Get All Categories
+GET  {{base}}/category?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update Category
+PATCH {{base}}/category/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 2,
+	"name": "Antibióticos",
+	"description": "Categoría para antibióticos actualizada",
+	"parentId": 1
+}
+### Delete Category
+DELETE  {{base}}/category/3
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#### SUPPLIERS##########################
+### Create Supplier
+PUT {{base}}/supplier
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+    
+	"id":1,
+    "name": "Proveedor B",
+    "taxId": "7721248765",
+    "contactPerson": "Omar Garcia Godinez",
+    "phone": "7721248765",
+    "email": "omar.garcia@example.com",
+    "address": "Calle Falsa 123",
+    "notes": "Proveedor confiable",
+    "createdAt": "2024-06-01T12:00:00Z"
+}
+
+### Get Supplier by ID
+GET  {{base}}/supplier/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Suppliers
+GET  {{base}}/supplier?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Supplier
+PATCH {{base}}/supplier/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id":1,
+	"name": "Proveedor A",
+	"taxId": "123456789",
+	"contactPerson": "Juan Perez Gomez",
+	"phone": "7721248765",
+	"email": "juan.perez@example.com",
+	"address": "Calle Falsa 123",
+	"notes": "Proveedor confiable",
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Delete Supplier
+DELETE  {{base}}/supplier/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#####CUSTOMERS##########################
+### Create Customer
+PUT {{base}}/customer
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Cliente A",
+	"documentId": "123456789",
+	"phone": "7721234567",
+	"email": "maria.lopez@example.com",
+	"billingAddress": "Avenida Siempre Viva 456",
+	"creditLimit": 10000.00,
+	"termsDays": 30,
+	"status": "ACTIVE",
+	"createdAt": "2024-06-01T12:00:00Z"
+
+}
+
+### Get Customer by ID
+GET  {{base}}/customer/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Customers
+GET  {{base}}/customer?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Customer
+PATCH {{base}}/customer/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Cliente A",
+	"documentId": "123456789",
+	"phone": "7721234567",
+	"email": "maria.lopez@example.com",
+	"billingAddress": "Avenida Siempre Viva 456",
+	"creditLimit": 250000.00,
+	"termsDays": 45,
+	"status": "ACTIVE",
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Delete Customer
+DELETE  {{base}}/customer/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#####PRODUCTS##########################
+### Create Product
+PUT {{base}}/product
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+    "id": 1,
+    "sku": "SKU123",
+    "name": "Paracetamol 500mg",
+    "description": "Analgésico y antipirético",
+    "brand": "Marca A",
+    "categoryId": 1,
+    "unitId": 1,
+    "isSellable": true,
+    "trackBatches": false,
+    "taxProfileId": 1,
+    "defaultCost": 100.00,
+    "purchasePrice": 120.00,
+    "wholesalePrice": 150.00,
+    "salePrice": 200.00,
+    "defaultPrice": 250.00,
+    "createdAt": "2024-06-01T12:00:00Z",
+    "updatedAt": null,
+    "deletedAt": null
+}
+
+### Get Product by ID
+GET  {{base}}/product/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Products
+GET  {{base}}/product?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Product
+PATCH {{base}}/product/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"sku": "SKU123",
+	"name": "Paracetamol 500mg",
+	"description": "Analgésico y antipirético actualizado",
+	"brand": "Marca A",
+	"categoryId": 1,
+	"unitId": 1,
+	"isSellable": true,
+	"trackBatches": false,
+	"taxProfileId": 1,
+	"defaultCost": 110.00,
+	"purchasePrice": 130.00,
+	"wholesalePrice": 160.00,
+	"salePrice": 210.00,
+	"defaultPrice": 260.00,
+	"createdAt": "2024-06-01T12:00:00Z",
+	"updatedAt": "2024-06-02T12:00:00Z",
+	"deletedAt": null
+}

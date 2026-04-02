@@ -3,6 +3,10 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::{
+    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
+};
+
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomerDto {
@@ -66,7 +70,7 @@ impl From<CustomerRequest> for schemas::customers::ActiveModel {
             credit_limit: ActiveValue::Set(request.credit_limit),
             terms_days: ActiveValue::Set(request.terms_days),
             status: ActiveValue::Set(request.status),
-            created_at: ActiveValue::Set(request.created_at),
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
         }
     }
 }
@@ -83,7 +87,7 @@ impl From<schemas::customers::Model> for CustomerDetailResponse {
             credit_limit: model.credit_limit,
             terms_days: model.terms_days,
             status: model.status,
-            created_at: model.created_at,
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
         }
     }
 }
@@ -100,7 +104,7 @@ impl From<schemas::customers::ActiveModel> for CustomerDetailResponse {
             credit_limit: model.credit_limit.unwrap(),
             terms_days: model.terms_days.unwrap(),
             status: model.status.unwrap(),
-            created_at: model.created_at.unwrap(),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
         }
     }
 }

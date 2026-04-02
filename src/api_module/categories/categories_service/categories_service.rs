@@ -180,11 +180,12 @@ pub async fn get_categories_by_name(
 
 pub async fn update_category(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<CategoryRequest>,
 ) -> Result<Json<ApiResponse<CategoryIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let category = schemas::categories::Entity::find_by_id(payload.id)
+    let category = schemas::categories::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

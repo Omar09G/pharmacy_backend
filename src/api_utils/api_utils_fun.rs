@@ -5,7 +5,7 @@ use chrono_tz::America::Mexico_City;
 use lazy_static::lazy_static;
 use regex::Regex;
 use sea_orm::entity::prelude::*;
-use sea_orm::sea_query::NullAlias;
+
 use validator::ValidationError;
 // 1. Definir la expresión regular para caracteres especiales permitidos.
 // Acepta alfanuméricos, guion bajo y arroba.
@@ -132,7 +132,7 @@ pub fn parce_date_time_str_to_date_time_with_timezone_opt(
     }
 }
 
-fn parce_date_srt_to_date_white_time_zone_mexico(
+pub fn parce_date_str_to_date_time_with_timezone_mexico(
     date_str: &str,
 ) -> Result<DateTimeWithTimeZone, ApiError> {
     let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");

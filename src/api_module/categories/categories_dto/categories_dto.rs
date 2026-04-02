@@ -40,7 +40,7 @@ impl From<CategoryRequest> for schemas::categories::ActiveModel {
         Self {
             id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
-            parent_id: ActiveValue::Set(request.parent_id),
+            parent_id: ActiveValue::NotSet,
             description: ActiveValue::Set(request.description),
         }
     }

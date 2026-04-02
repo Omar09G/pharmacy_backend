@@ -200,11 +200,12 @@ pub async fn get_customers_by_name(
 
 pub async fn update_customer(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<CustomerRequest>,
 ) -> Result<Json<ApiResponse<CustomerIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let customer = schemas::customers::Entity::find_by_id(payload.id)
+    let customer = schemas::customers::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -213,14 +214,31 @@ pub async fn update_customer(
         Some(customer) => {
             let mut customer_active_model = customer.into_active_model();
 
-            customer_active_model.name = ActiveValue::Set(payload.name);
-            customer_active_model.document_id = ActiveValue::Set(payload.document_id);
-            customer_active_model.phone = ActiveValue::Set(payload.phone);
-            customer_active_model.email = ActiveValue::Set(payload.email);
-            customer_active_model.billing_address = ActiveValue::Set(payload.billing_address);
-            customer_active_model.credit_limit = ActiveValue::Set(payload.credit_limit);
-            customer_active_model.terms_days = ActiveValue::Set(payload.terms_days);
-            customer_active_model.status = ActiveValue::Set(payload.status);
+            // name and status are required in the request DTO, assign directly
+            customer_active_model.name = ActiveValue::Set(payload.name.clone());
+
+            // Optional fields: wrap in Some(...) when setting into ActiveValue::Set
+            if let Some(document_id) = payload.document_id {
+                customer_active_model.document_id = ActiveValue::Set(Some(document_id));
+            }
+            if let Some(phone) = payload.phone {
+                customer_active_model.phone = ActiveValue::Set(Some(phone));
+            }
+            if let Some(email) = payload.email {
+                customer_active_model.email = ActiveValue::Set(Some(email));
+            }
+            if let Some(billing_address) = payload.billing_address {
+                customer_active_model.billing_address = ActiveValue::Set(Some(billing_address));
+            }
+            if let Some(credit_limit) = payload.credit_limit {
+                customer_active_model.credit_limit = ActiveValue::Set(Some(credit_limit));
+            }
+            if let Some(terms_days) = payload.terms_days {
+                customer_active_model.terms_days = ActiveValue::Set(Some(terms_days));
+            }
+
+            // status is required in the request DTO
+            customer_active_model.status = ActiveValue::Set(payload.status.clone());
 
             let updated_customer = customer_active_model
                 .save(&app_ctx.conn)
