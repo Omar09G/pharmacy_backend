@@ -193,4 +193,6 @@ pub struct PaginationParams {
     pub status: Option<String>,
     pub is_sellable: Option<bool>,
     pub track_batches: Option<bool>,
+    pub inventory_location_name: Option<String>,
+    pub inits_name: Option<String>,
 }

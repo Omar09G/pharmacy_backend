@@ -1,6 +1,11 @@
+pub mod inventory_locations;
 pub mod login;
+pub mod payment_methods;
 pub mod permissions;
 pub mod role;
 pub mod role_permissions;
+pub mod tax_profiles;
+pub mod units;
 pub mod user;
+pub mod user_role;
 pub mod utils;
