@@ -27,7 +27,8 @@ pub async fn create_tax_profile(
 ) -> Result<Json<ApiResponse<TaxProfileIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let tax_profile_create = schemas::tax_profiles::ActiveModel::from(payload);
+    let tax_profile_create = schemas::tax_profiles::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if tax_profile_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));

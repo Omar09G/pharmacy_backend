@@ -27,7 +27,8 @@ pub async fn create_discount(
 ) -> Result<Json<ApiResponse<DiscountIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let d_create = schemas::discounts::ActiveModel::from(payload);
+    let d_create = schemas::discounts::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_d = d_create
         .save(&app_ctx.conn)

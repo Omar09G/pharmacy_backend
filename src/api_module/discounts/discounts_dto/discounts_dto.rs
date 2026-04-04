@@ -55,9 +55,11 @@ pub struct DiscountDetailResponse {
     pub created_by: Option<i64>,
 }
 
-impl From<DiscountRequest> for schemas::discounts::ActiveModel {
-    fn from(request: DiscountRequest) -> Self {
-        Self {
+impl TryFrom<DiscountRequest> for schemas::discounts::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: DiscountRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             code: ActiveValue::Set(request.code),
             name: ActiveValue::Set(request.name),
@@ -76,7 +78,7 @@ impl From<DiscountRequest> for schemas::discounts::ActiveModel {
             active: ActiveValue::Set(request.active),
             created_at: ActiveValue::Set(request.created_at),
             created_by: ActiveValue::Set(request.created_by),
-        }
+        })
     }
 }
 

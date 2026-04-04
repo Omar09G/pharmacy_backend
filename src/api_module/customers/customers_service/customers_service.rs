@@ -27,7 +27,8 @@ pub async fn create_customer(
 ) -> Result<Json<ApiResponse<CustomerIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let customer_create = schemas::customers::ActiveModel::from(payload);
+    let customer_create = schemas::customers::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if customer_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));

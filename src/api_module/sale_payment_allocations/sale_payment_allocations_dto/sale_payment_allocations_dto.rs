@@ -27,14 +27,16 @@ pub struct SalePaymentAllocationDetailResponse {
     pub amount: Decimal,
 }
 
-impl From<SalePaymentAllocationRequest> for schemas::sale_payment_allocations::ActiveModel {
-    fn from(request: SalePaymentAllocationRequest) -> Self {
-        Self {
+impl TryFrom<SalePaymentAllocationRequest> for schemas::sale_payment_allocations::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: SalePaymentAllocationRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             payment_id: ActiveValue::Set(request.payment_id),
             credit_invoice_id: ActiveValue::Set(request.credit_invoice_id),
             amount: ActiveValue::Set(request.amount),
-        }
+        })
     }
 }
 

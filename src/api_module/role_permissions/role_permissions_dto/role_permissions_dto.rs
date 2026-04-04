@@ -33,12 +33,14 @@ impl RolePermissionsResponse {
     }
 }
 
-impl From<RolePermissionsRequest> for schemas::role_permissions::ActiveModel {
-    fn from(request: RolePermissionsRequest) -> Self {
-        Self {
+impl TryFrom<RolePermissionsRequest> for schemas::role_permissions::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: RolePermissionsRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             role_id: ActiveValue::Set(request.role_id),
             permission_id: ActiveValue::Set(request.permission_id),
-        }
+        })
     }
 }
 

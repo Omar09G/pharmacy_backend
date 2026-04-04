@@ -31,16 +31,18 @@ pub struct SalePaymentDetailResponse {
     pub reference: Option<String>,
 }
 
-impl From<SalePaymentRequest> for schemas::sale_payments::ActiveModel {
-    fn from(request: SalePaymentRequest) -> Self {
-        Self {
+impl TryFrom<SalePaymentRequest> for schemas::sale_payments::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: SalePaymentRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             sale_id: ActiveValue::Set(request.sale_id),
             amount: ActiveValue::Set(request.amount),
             method_id: ActiveValue::Set(request.method_id),
             paid_at: ActiveValue::Set(request.paid_at),
             reference: ActiveValue::Set(request.reference),
-        }
+        })
     }
 }
 

@@ -35,9 +35,11 @@ pub struct AuditLogDetailResponse {
     pub change_data: Option<Json>,
 }
 
-impl From<AuditLogRequest> for schemas::audit_log::ActiveModel {
-    fn from(request: AuditLogRequest) -> Self {
-        Self {
+impl TryFrom<AuditLogRequest> for schemas::audit_log::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: AuditLogRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             entity_type: ActiveValue::Set(request.entity_type),
             table_name: ActiveValue::Set(request.table_name),
@@ -46,7 +48,7 @@ impl From<AuditLogRequest> for schemas::audit_log::ActiveModel {
             changed_by: ActiveValue::Set(request.changed_by),
             changed_at: ActiveValue::Set(request.changed_at),
             change_data: ActiveValue::Set(request.change_data),
-        }
+        })
     }
 }
 

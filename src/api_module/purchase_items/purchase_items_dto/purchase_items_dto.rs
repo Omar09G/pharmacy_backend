@@ -37,9 +37,11 @@ pub struct PurchaseItemDetailResponse {
     pub line_total: Decimal,
 }
 
-impl From<PurchaseItemRequest> for schemas::purchase_items::ActiveModel {
-    fn from(request: PurchaseItemRequest) -> Self {
-        Self {
+impl TryFrom<PurchaseItemRequest> for schemas::purchase_items::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: PurchaseItemRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             purchase_id: ActiveValue::Set(request.purchase_id),
             product_id: ActiveValue::Set(request.product_id),
@@ -49,7 +51,7 @@ impl From<PurchaseItemRequest> for schemas::purchase_items::ActiveModel {
             discount: ActiveValue::Set(request.discount),
             tax_amount: ActiveValue::Set(request.tax_amount),
             line_total: ActiveValue::Set(request.line_total),
-        }
+        })
     }
 }
 

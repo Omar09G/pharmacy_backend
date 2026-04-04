@@ -43,9 +43,11 @@ pub struct SaleDetailResponse {
     pub created_at: DateTimeWithTimeZone,
 }
 
-impl From<SaleRequest> for schemas::sales::ActiveModel {
-    fn from(request: SaleRequest) -> Self {
-        Self {
+impl TryFrom<SaleRequest> for schemas::sales::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: SaleRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             customer_id: ActiveValue::Set(request.customer_id),
             user_id: ActiveValue::Set(request.user_id),
@@ -58,7 +60,7 @@ impl From<SaleRequest> for schemas::sales::ActiveModel {
             status: ActiveValue::Set(request.status),
             is_credit: ActiveValue::Set(request.is_credit),
             created_at: ActiveValue::Set(request.created_at),
-        }
+        })
     }
 }
 

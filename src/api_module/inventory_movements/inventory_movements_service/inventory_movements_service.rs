@@ -27,7 +27,8 @@ pub async fn create_inventory_movement(
 ) -> Result<Json<ApiResponse<InventoryMovementIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let im_create = schemas::inventory_movements::ActiveModel::from(payload);
+    let im_create = schemas::inventory_movements::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_im = im_create
         .save(&app_ctx.conn)

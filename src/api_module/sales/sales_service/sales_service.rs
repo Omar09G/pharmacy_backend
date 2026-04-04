@@ -27,7 +27,8 @@ pub async fn create_sale(
 ) -> Result<Json<ApiResponse<SaleIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let s_create = schemas::sales::ActiveModel::from(payload);
+    let s_create = schemas::sales::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_s = s_create
         .save(&app_ctx.conn)

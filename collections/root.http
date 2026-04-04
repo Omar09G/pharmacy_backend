@@ -1,7 +1,7 @@
 @base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTM2NzAyNCwiaWF0IjoxNzc1MjgwNjI0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.FGx3F8NjkC5wNG5m6STMkSG_Q22ys4rrNKcf-5O8oadwo3DVDpvLaR1tlhC_Sop3I39NvXdVILAhUwPiWOzP6DR0AWSz8RUxWD7HVwbXgmOSYqtpkfDJaS5tJDYkYIQrV4PK-YwbYnIf1O3bLzsH-K6nRSkDmbBsoTz7nnPKe9HqHU9lHDsKrMSAMTD8VjdDgeBAHNs6mKBy41GFecweEqDSs_NHAyxhgW1gfVxTo2eZn9VHch-MNQO56zJpyJxTp45aZ1WsvIygRdGgi3U3O9VVPZws2JCOop5_dz8Yg0kEQ2-Qb-9wMwyitxFKuHWOcxWO2HKDQFitwax_wuf7Ow
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTQwMzA1MywiaWF0IjoxNzc1MzE2NjUzLCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.W24VdQcyDca_uQU7xiK91BYPMDXkTX934b03UU6VjkR6Tfse4nqTrQFvTvND73xAJy9YGzELkjHkDWOqgbkPLCWNlp0V65mFG5hU-njohdIBnTagxu9nVwLqpLrf5Y609XLw71sOPaQoVEzZxZDSqnWUWd7E_vFJxVx1EnnR2BgPQLhy9oq8aLyeYoF8qVQiM5UaiexxFmsJe81VwylX_wQR6UApmHcAjWWBf5kpb0tc3lIumh-NxYMov3j9PH2pwFAk8RdkrLciizJvf5HvArA3G0mVJtZtx_kNDV_9CpBSmcUKu45xExjDqp44HCEUAxrsg9wVP5iomZnCChVHHA
 
 ###LOGIN
 POST {{base}}/auth/login
@@ -10,6 +10,15 @@ Content-Type: application/json;charset=UTF-8
 {
 	"username": "omar0907",
 	"password": "omar0907"
+}
+
+###LOGIN
+POST {{base}}/auth/login
+Content-Type: application/json;charset=UTF-8
+
+{
+	"username": "noemi0907",
+	"password": "noemi0907"
 }
 
 ### Get all permission
@@ -108,10 +117,10 @@ Content-Type: application/json;charset=UTF-8
 
 {
 	"id": 1,
-    "username": "omar1234",
-    "passwordHash": "hashed_password",
-    "fullName": "Omar Doe",
-    "email": "john.1e@example.com",
+    "username": "noemi0907",
+    "passwordHash": "noemi0907",
+    "fullName": "Noemi Bautista",
+    "email": "noemi.bautista@example.com",
     "phone": "1234567890",
     "status": "ACTIVE",
     "createdAt": "2026-04-02T10:33:00Z",
@@ -133,8 +142,7 @@ Content-Type: application/json;charset=UTF-8
 
 
 ### Get BY USERNAME
-GET  {{base}}/user/username?page=1&limit=10&total=
-0&username=omar1234
+GET  {{base}}/user/username?page=1&limit=10&total=0&username=noemi0907
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
 
@@ -211,8 +219,8 @@ Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
 
 {
-	"userId": 2,
-	"roleId": 1
+	"userId": 5,
+	"roleId": 2
 }
 ### Get Roles by User ID
 GET  {{base}}/user_role/2/1
@@ -542,10 +550,10 @@ Content-Type: application/json;charset=UTF-8
 
 {
     "id": 1,
-    "sku": "SKU124",
-    "name": "Paracetamol 750mg",
+    "sku": "SKU128",
+    "name": "Ibuprofeno 750mg",
     "description": "Analgésico",
-    "brand": "Marca A",
+    "brand": "Marca B",
     "categoryId": 1,
     "unitId": 1,
     "isSellable": true,
@@ -576,10 +584,10 @@ Content-Type: application/json;charset=UTF-8
 
 {
 	"id": 1,
-	"sku": "SKU123",
-	"name": "Paracetamol 750mg",
-	"description": "Analgésico y antipirético actualizado",
-	"brand": "Marca A",
+	"sku": "SKU128",
+	"name": "Ibuprofeno 750mg",
+	"description": "Analgésico",
+	"brand": "Marca B",
 	"categoryId": 1,
 	"unitId": 1,
 	"isSellable": true,
@@ -774,3 +782,29 @@ Content-Type: application/json;charset=UTF-8
 	"qtyOnHand": 100.00,
 	"createdAt": "2024-06-01T12:00:00Z"
 }
+
+#### PUSHASE ITEMS ##########################
+### Create Purchase Item
+PUT {{base}}/purchase_item
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+{
+	"id": 1,
+	"purchaseId": 2,
+	"productId": 1,
+	"lotId": 2,
+	"qty": 10.00,
+	"unitCost": 150.00,
+	"discount": 0.00
+}
+### Get Purchase Item by ID
+GET  {{base}}/purchase_item/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Get All Purchase Items
+GET  {{base}}/purchase_item?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update Purchase Item

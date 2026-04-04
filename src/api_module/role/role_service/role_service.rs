@@ -27,7 +27,8 @@ pub async fn create_role(
 ) -> Result<Json<ApiResponse<RoleIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let role_create = schemas::roles::ActiveModel::from(payload);
+    let role_create = schemas::roles::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if role_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));

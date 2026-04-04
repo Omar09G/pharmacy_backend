@@ -82,9 +82,11 @@ pub struct ProductDetailResponse {
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 
-impl From<ProductRequest> for schemas::products::ActiveModel {
-    fn from(request: ProductRequest) -> Self {
-        Self {
+impl TryFrom<ProductRequest> for schemas::products::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: ProductRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             sku: ActiveValue::Set(request.sku),
             name: ActiveValue::Set(request.name),
@@ -103,7 +105,7 @@ impl From<ProductRequest> for schemas::products::ActiveModel {
             created_at: ActiveValue::Set(get_current_timestamp_now()),
             updated_at: ActiveValue::NotSet,
             deleted_at: ActiveValue::NotSet,
-        }
+        })
     }
 }
 

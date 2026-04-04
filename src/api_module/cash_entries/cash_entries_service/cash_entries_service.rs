@@ -27,7 +27,8 @@ pub async fn create_cash_entry(
 ) -> Result<Json<ApiResponse<CashEntryIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let ce_create = schemas::cash_entries::ActiveModel::from(payload);
+    let ce_create = schemas::cash_entries::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_ce = ce_create
         .save(&app_ctx.conn)

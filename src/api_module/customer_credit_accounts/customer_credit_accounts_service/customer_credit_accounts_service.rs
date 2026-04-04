@@ -27,7 +27,8 @@ pub async fn create_customer_credit_account(
 ) -> Result<Json<ApiResponse<CustomerCreditAccountIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let cca_create = schemas::customer_credit_accounts::ActiveModel::from(payload);
+    let cca_create = schemas::customer_credit_accounts::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_cca = cca_create
         .save(&app_ctx.conn)

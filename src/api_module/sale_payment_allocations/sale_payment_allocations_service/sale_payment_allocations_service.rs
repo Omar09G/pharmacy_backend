@@ -27,7 +27,8 @@ pub async fn create_sale_payment_allocation(
 ) -> Result<Json<ApiResponse<SalePaymentAllocationIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let spa_create = schemas::sale_payment_allocations::ActiveModel::from(payload);
+    let spa_create = schemas::sale_payment_allocations::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_spa = spa_create
         .save(&app_ctx.conn)

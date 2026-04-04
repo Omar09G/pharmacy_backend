@@ -27,7 +27,8 @@ pub async fn create_audit_log(
 ) -> Result<Json<ApiResponse<AuditLogIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let al_create = schemas::audit_log::ActiveModel::from(payload);
+    let al_create = schemas::audit_log::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_al = al_create
         .save(&app_ctx.conn)

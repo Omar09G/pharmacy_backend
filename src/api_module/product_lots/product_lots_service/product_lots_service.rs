@@ -30,7 +30,8 @@ pub async fn create_product_lot(
 
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pl_create = schemas::product_lots::ActiveModel::from(payload);
+    let pl_create = schemas::product_lots::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_pl = pl_create
         .save(&app_ctx.conn)

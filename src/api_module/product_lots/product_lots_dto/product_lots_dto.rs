@@ -37,9 +37,11 @@ pub struct ProductLotDetailResponse {
     pub created_at: DateTimeWithTimeZone,
 }
 
-impl From<ProductLotRequest> for schemas::product_lots::ActiveModel {
-    fn from(request: ProductLotRequest) -> Self {
-        Self {
+impl TryFrom<ProductLotRequest> for schemas::product_lots::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: ProductLotRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             product_id: ActiveValue::Set(request.product_id),
             lot_number: ActiveValue::Set(request.lot_number),
@@ -47,7 +49,7 @@ impl From<ProductLotRequest> for schemas::product_lots::ActiveModel {
             expiry_date: ActiveValue::NotSet,
             purchase_id: ActiveValue::Set(request.purchase_id),
             created_at: ActiveValue::Set(get_current_timestamp_now()),
-        }
+        })
     }
 }
 

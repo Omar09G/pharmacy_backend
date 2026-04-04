@@ -220,6 +220,7 @@ const PRODUCT_LOT_UPDATE: &str = route!("/product_lot/{:id}");
 const PURCHASE_ITEM: &str = route!("/purchase_item");
 const PURCHASE_ITEM_BY_ID: &str = route!("/purchase_item/{:id}");
 const PURCHASE_ITEM_DELETE: &str = route!("/purchase_item/{:id}");
+const PURCHASE_ITEM_UPDATE: &str = route!("/purchase_item/{:id}");
 /*Metodos SALE_ITEM */
 const SALE_ITEM: &str = route!("/sale_item");
 const SALE_ITEM_BY_ID: &str = route!("/sale_item/{:id}");
@@ -413,7 +414,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(PURCHASE_ITEM_BY_ID, get(get_purchase_item_by_id))
         .route(PURCHASE_ITEM_DELETE, delete(delete_purchase_item))
         .route(PURCHASE_ITEM, get(get_purchase_items))
-        .route(PURCHASE_ITEM, patch(update_purchase_item))
+        .route(PURCHASE_ITEM_UPDATE, patch(update_purchase_item))
         // Purchase Payment routes
         .route(PURCHASE_PAYMENT, put(create_purchase_payment))
         .route(PURCHASE_PAYMENT_BY_ID, get(get_purchase_payment_by_id))

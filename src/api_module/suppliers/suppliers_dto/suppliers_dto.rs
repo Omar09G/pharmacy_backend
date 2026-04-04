@@ -55,9 +55,11 @@ pub struct SupplierDetailResponse {
     pub created_at: DateTimeWithTimeZone,
 }
 
-impl From<SupplierRequest> for schemas::suppliers::ActiveModel {
-    fn from(request: SupplierRequest) -> Self {
-        Self {
+impl TryFrom<SupplierRequest> for schemas::suppliers::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: SupplierRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             tax_id: ActiveValue::Set(request.tax_id),
@@ -67,7 +69,7 @@ impl From<SupplierRequest> for schemas::suppliers::ActiveModel {
             address: ActiveValue::Set(request.address),
             notes: ActiveValue::Set(request.notes),
             created_at: ActiveValue::Set(get_current_timestamp_now()),
-        }
+        })
     }
 }
 

@@ -77,12 +77,18 @@ pub struct UserResponse {
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 
-impl From<UserRequestDto> for schemas::users::ActiveModel {
-    fn from(dto: UserRequestDto) -> Self {
-        Self {
+use std::convert::TryFrom;
+
+impl TryFrom<UserRequestDto> for schemas::users::ActiveModel {
+    type Error = String;
+
+    fn try_from(dto: UserRequestDto) -> Result<Self, Self::Error> {
+        let password_hash = generate_hash(&dto.password_hash)?;
+
+        Ok(Self {
             id: ActiveValue::NotSet,
             username: ActiveValue::Set(dto.username),
-            password_hash: ActiveValue::Set(generate_hash(&dto.password_hash).unwrap()),
+            password_hash: ActiveValue::Set(password_hash),
             full_name: ActiveValue::Set(dto.full_name),
             email: ActiveValue::Set(dto.email),
             phone: ActiveValue::Set(dto.phone),
@@ -92,7 +98,7 @@ impl From<UserRequestDto> for schemas::users::ActiveModel {
             updated_at: ActiveValue::NotSet,
             updated_by: ActiveValue::NotSet,
             deleted_at: ActiveValue::NotSet,
-        }
+        })
     }
 }
 

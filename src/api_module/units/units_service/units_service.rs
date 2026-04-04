@@ -25,7 +25,8 @@ pub async fn create_unit(
 ) -> Result<Json<ApiResponse<UnitIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let unit_create = schemas::units::ActiveModel::from(payload);
+    let unit_create = schemas::units::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if unit_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));
@@ -59,7 +60,9 @@ pub async fn get_unit_by_id(
             1,
         )))
     } else {
-        Err(ApiError::ValidationError("Unit not found".to_string()))
+        Err(ApiError::NotFoundErrorDescription(
+            "Unit not found".to_string(),
+        ))
     }
 }
 
@@ -113,7 +116,9 @@ pub async fn delete_unit(
                 1,
             )))
         }
-        None => Err(ApiError::ValidationError("Unit not found".to_string())),
+        None => Err(ApiError::NotFoundErrorDescription(
+            "Unit not found".to_string(),
+        )),
     }
 }
 pub async fn update_unit(
@@ -145,7 +150,9 @@ pub async fn update_unit(
             1,
         )))
     } else {
-        Err(ApiError::ValidationError("Unit not found".to_string()))
+        Err(ApiError::NotFoundErrorDescription(
+            "Unit not found".to_string(),
+        ))
     }
 }
 

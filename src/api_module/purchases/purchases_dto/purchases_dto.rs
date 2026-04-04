@@ -43,9 +43,11 @@ pub struct PurchaseDetailResponse {
     pub created_by: Option<i64>,
 }
 
-impl From<PurchaseRequest> for schemas::purchases::ActiveModel {
-    fn from(request: PurchaseRequest) -> Self {
-        Self {
+impl TryFrom<PurchaseRequest> for schemas::purchases::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: PurchaseRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             supplier_id: ActiveValue::Set(request.supplier_id),
             invoice_no: ActiveValue::Set(request.invoice_no),
@@ -56,7 +58,7 @@ impl From<PurchaseRequest> for schemas::purchases::ActiveModel {
             status: ActiveValue::Set(request.status),
             created_at: ActiveValue::Set(get_current_timestamp_now()),
             created_by: ActiveValue::Set(request.created_by),
-        }
+        })
     }
 }
 

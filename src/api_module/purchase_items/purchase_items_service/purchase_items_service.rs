@@ -27,7 +27,8 @@ pub async fn create_purchase_item(
 ) -> Result<Json<ApiResponse<PurchaseItemIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pi_create = schemas::purchase_items::ActiveModel::from(payload);
+    let pi_create = schemas::purchase_items::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_pi = pi_create
         .save(&app_ctx.conn)
@@ -144,11 +145,12 @@ pub async fn delete_purchase_item(
 
 pub async fn update_purchase_item(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<PurchaseItemRequest>,
 ) -> Result<Json<ApiResponse<PurchaseItemIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pi = schemas::purchase_items::Entity::find_by_id(payload.id)
+    let pi = schemas::purchase_items::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -157,9 +159,9 @@ pub async fn update_purchase_item(
         Some(pi) => {
             let mut pi_active = pi.into_active_model();
 
-            pi_active.purchase_id = ActiveValue::Set(payload.purchase_id);
-            pi_active.product_id = ActiveValue::Set(payload.product_id);
-            pi_active.lot_id = ActiveValue::Set(payload.lot_id);
+            // pi_active.purchase_id = ActiveValue::Set(payload.purchase_id);
+            // pi_active.product_id = ActiveValue::Set(payload.product_id);
+            //  pi_active.lot_id = ActiveValue::Set(payload.lot_id);
             pi_active.qty = ActiveValue::Set(payload.qty);
             pi_active.unit_cost = ActiveValue::Set(payload.unit_cost);
             pi_active.discount = ActiveValue::Set(payload.discount);

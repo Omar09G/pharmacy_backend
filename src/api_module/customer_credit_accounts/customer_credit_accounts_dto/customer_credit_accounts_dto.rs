@@ -29,15 +29,17 @@ pub struct CustomerCreditAccountDetailResponse {
     pub last_overdue_date: Option<Date>,
 }
 
-impl From<CustomerCreditAccountRequest> for schemas::customer_credit_accounts::ActiveModel {
-    fn from(request: CustomerCreditAccountRequest) -> Self {
-        Self {
+impl TryFrom<CustomerCreditAccountRequest> for schemas::customer_credit_accounts::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: CustomerCreditAccountRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             customer_id: ActiveValue::Set(request.customer_id),
             balance: ActiveValue::Set(request.balance),
             limit_amount: ActiveValue::Set(request.limit_amount),
             last_overdue_date: ActiveValue::Set(request.last_overdue_date),
-        }
+        })
     }
 }
 

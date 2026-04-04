@@ -27,7 +27,8 @@ pub async fn create_permission(
 ) -> Result<Json<ApiResponse<PermissionResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let permission_create = schemas::permissions::ActiveModel::from(payload);
+    let permission_create = schemas::permissions::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if permission_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));

@@ -30,7 +30,8 @@ pub async fn create_product(
 ) -> Result<Json<ApiResponse<ProductIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let product_create = schemas::products::ActiveModel::from(payload);
+    let product_create = schemas::products::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if product_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));

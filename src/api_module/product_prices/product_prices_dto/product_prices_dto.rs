@@ -37,9 +37,11 @@ pub struct ProductPriceDetailResponse {
     pub created_at: DateTimeWithTimeZone,
 }
 
-impl From<ProductPriceRequest> for schemas::product_prices::ActiveModel {
-    fn from(request: ProductPriceRequest) -> Self {
-        Self {
+impl TryFrom<ProductPriceRequest> for schemas::product_prices::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: ProductPriceRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             product_id: ActiveValue::Set(request.product_id),
             price_type: ActiveValue::Set(request.price_type),
@@ -47,7 +49,7 @@ impl From<ProductPriceRequest> for schemas::product_prices::ActiveModel {
             starts_at: ActiveValue::Set(Some(get_current_timestamp_now())),
             ends_at: ActiveValue::NotSet,
             created_at: ActiveValue::Set(get_current_timestamp_now()),
-        }
+        })
     }
 }
 

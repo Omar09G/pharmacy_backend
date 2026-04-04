@@ -41,9 +41,11 @@ pub struct InventoryMovementDetailResponse {
     pub created_by: Option<i64>,
 }
 
-impl From<InventoryMovementRequest> for schemas::inventory_movements::ActiveModel {
-    fn from(request: InventoryMovementRequest) -> Self {
-        Self {
+impl TryFrom<InventoryMovementRequest> for schemas::inventory_movements::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: InventoryMovementRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             product_id: ActiveValue::Set(request.product_id),
             lot_id: ActiveValue::Set(request.lot_id),
@@ -55,7 +57,7 @@ impl From<InventoryMovementRequest> for schemas::inventory_movements::ActiveMode
             cost: ActiveValue::Set(request.cost),
             created_at: ActiveValue::Set(request.created_at),
             created_by: ActiveValue::Set(request.created_by),
-        }
+        })
     }
 }
 

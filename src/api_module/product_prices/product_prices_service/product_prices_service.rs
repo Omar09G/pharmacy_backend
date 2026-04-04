@@ -30,7 +30,8 @@ pub async fn create_product_price(
 ) -> Result<Json<ApiResponse<ProductPriceIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pp_create = schemas::product_prices::ActiveModel::from(payload);
+    let pp_create = schemas::product_prices::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let new_pp = pp_create
         .save(&app_ctx.conn)

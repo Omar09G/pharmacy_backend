@@ -41,15 +41,17 @@ pub struct TaxProfileIdResponse {
     pub id: i64,
 }
 
-impl From<TaxProfileRequest> for schemas::tax_profiles::ActiveModel {
-    fn from(request: TaxProfileRequest) -> Self {
-        Self {
+impl TryFrom<TaxProfileRequest> for schemas::tax_profiles::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: TaxProfileRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             rate: ActiveValue::Set(request.rate),
             is_inclusive: ActiveValue::Set(request.is_inclusive),
             description: ActiveValue::Set(request.description),
-        }
+        })
     }
 }
 

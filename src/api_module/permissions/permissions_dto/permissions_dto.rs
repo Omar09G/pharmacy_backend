@@ -29,13 +29,15 @@ pub struct PermissionResponse {
     pub id: i64,
 }
 
-impl From<PermissionRequest> for schemas::permissions::ActiveModel {
-    fn from(request: PermissionRequest) -> Self {
-        Self {
+impl TryFrom<PermissionRequest> for schemas::permissions::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: PermissionRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             description: ActiveValue::Set(request.description),
-        }
+        })
     }
 }
 

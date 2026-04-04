@@ -58,9 +58,11 @@ pub struct CustomerDetailResponse {
     pub created_at: DateTimeWithTimeZone,
 }
 
-impl From<CustomerRequest> for schemas::customers::ActiveModel {
-    fn from(request: CustomerRequest) -> Self {
-        Self {
+impl TryFrom<CustomerRequest> for schemas::customers::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: CustomerRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             document_id: ActiveValue::Set(request.document_id),
@@ -71,7 +73,7 @@ impl From<CustomerRequest> for schemas::customers::ActiveModel {
             terms_days: ActiveValue::Set(request.terms_days),
             status: ActiveValue::Set(request.status),
             created_at: ActiveValue::Set(get_current_timestamp_now()),
-        }
+        })
     }
 }
 

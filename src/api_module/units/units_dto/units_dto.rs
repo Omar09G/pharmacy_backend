@@ -38,14 +38,16 @@ pub struct UnitRequest {
     pub precision: i32,
 }
 
-impl From<UnitRequest> for schemas::units::ActiveModel {
-    fn from(request: UnitRequest) -> Self {
-        Self {
+impl TryFrom<UnitRequest> for schemas::units::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: UnitRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             code: ActiveValue::Set(request.code),
             name: ActiveValue::Set(request.name),
             precision: ActiveValue::Set(request.precision),
-        }
+        })
     }
 }
 

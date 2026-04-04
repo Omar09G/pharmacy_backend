@@ -27,7 +27,8 @@ pub async fn create_supplier(
 ) -> Result<Json<ApiResponse<SupplierIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let supplier_create = schemas::suppliers::ActiveModel::from(payload);
+    let supplier_create = schemas::suppliers::ActiveModel::try_from(payload)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     if supplier_create.name.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));

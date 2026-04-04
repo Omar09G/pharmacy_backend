@@ -39,9 +39,11 @@ pub struct CashJournalDetailResponse {
     pub created_at: DateTimeWithTimeZone,
 }
 
-impl From<CashJournalRequest> for schemas::cash_journals::ActiveModel {
-    fn from(request: CashJournalRequest) -> Self {
-        Self {
+impl TryFrom<CashJournalRequest> for schemas::cash_journals::ActiveModel {
+    type Error = String;
+
+    fn try_from(request: CashJournalRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: ActiveValue::NotSet,
             name: ActiveValue::Set(request.name),
             description: ActiveValue::Set(request.description),
@@ -52,7 +54,7 @@ impl From<CashJournalRequest> for schemas::cash_journals::ActiveModel {
             closed_by: ActiveValue::Set(request.closed_by),
             status: ActiveValue::Set(request.status),
             created_at: ActiveValue::Set(request.created_at),
-        }
+        })
     }
 }
 
