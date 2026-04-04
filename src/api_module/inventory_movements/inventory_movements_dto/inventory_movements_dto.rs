@@ -103,6 +103,8 @@ impl From<schemas::inventory_movements::Model> for InventoryMovementIdResponse {
 
 impl From<schemas::inventory_movements::ActiveModel> for InventoryMovementIdResponse {
     fn from(model: schemas::inventory_movements::ActiveModel) -> Self {
-        Self { id: model.id.unwrap() }
+        Self {
+            id: model.id.unwrap(),
+        }
     }
 }

@@ -98,6 +98,8 @@ impl From<schemas::cash_journals::Model> for CashJournalIdResponse {
 
 impl From<schemas::cash_journals::ActiveModel> for CashJournalIdResponse {
     fn from(model: schemas::cash_journals::ActiveModel) -> Self {
-        Self { id: model.id.unwrap() }
+        Self {
+            id: model.id.unwrap(),
+        }
     }
 }

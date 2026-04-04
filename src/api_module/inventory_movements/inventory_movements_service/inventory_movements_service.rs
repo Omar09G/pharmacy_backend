@@ -35,7 +35,9 @@ pub async fn create_inventory_movement(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     if new_im.id.is_not_set() {
-        return Err(ApiError::ValidationError("Failed to create inventory movement".to_string()));
+        return Err(ApiError::ValidationError(
+            "Failed to create inventory movement".to_string(),
+        ));
     }
 
     Ok(Json(ApiResponse::success(
@@ -60,7 +62,9 @@ pub async fn get_inventory_movement_by_id(
             "Inventory movement retrieved successfully".to_string(),
             1,
         ))),
-        None => Err(ApiError::ValidationError("Inventory movement not found".to_string())),
+        None => Err(ApiError::ValidationError(
+            "Inventory movement not found".to_string(),
+        )),
     }
 }
 
@@ -87,7 +91,8 @@ pub async fn get_inventory_movements(
 
     if let Some(ref_type) = pagination.reference_type.clone() {
         if !ref_type.is_empty() {
-            select = select.filter(schemas::inventory_movements::Column::ReferenceType.eq(ref_type));
+            select =
+                select.filter(schemas::inventory_movements::Column::ReferenceType.eq(ref_type));
         }
     }
 
@@ -129,7 +134,10 @@ pub async fn get_inventory_movements(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     Ok(Json(ApiResponse::success(
-        items.into_iter().map(InventoryMovementDetailResponse::from).collect(),
+        items
+            .into_iter()
+            .map(InventoryMovementDetailResponse::from)
+            .collect(),
         "Inventory movements retrieved successfully".to_string(),
         total_items as i32,
     )))
@@ -155,7 +163,9 @@ pub async fn delete_inventory_movement(
                 0,
             )))
         }
-        None => Err(ApiError::ValidationError("Inventory movement not found".to_string())),
+        None => Err(ApiError::ValidationError(
+            "Inventory movement not found".to_string(),
+        )),
     }
 }
 
@@ -196,6 +206,8 @@ pub async fn update_inventory_movement(
                 0,
             )))
         }
-        None => Err(ApiError::ValidationError("Inventory movement not found".to_string())),
+        None => Err(ApiError::ValidationError(
+            "Inventory movement not found".to_string(),
+        )),
     }
 }

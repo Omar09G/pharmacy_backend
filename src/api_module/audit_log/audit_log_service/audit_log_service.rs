@@ -35,7 +35,9 @@ pub async fn create_audit_log(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     if new_al.id.is_not_set() {
-        return Err(ApiError::ValidationError("Failed to create audit log".to_string()));
+        return Err(ApiError::ValidationError(
+            "Failed to create audit log".to_string(),
+        ));
     }
 
     Ok(Json(ApiResponse::success(
