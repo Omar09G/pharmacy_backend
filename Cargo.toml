@@ -17,7 +17,7 @@ validator = { version = "0.20.0", features = ["derive"] }
 log = "0.4"
 env_logger = "0.11.9"
 api-rate-limiter = "0.1.2"
-jsonwebtoken = "10.2.0"
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.6"
 argon2 = "0.5.3"

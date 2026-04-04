@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use log::info;
 use std::env;
 
@@ -14,6 +14,15 @@ pub fn get_jwt_secret() -> Result<String, String> {
 
 pub fn get_jwt_secret_refresh() -> Result<String, String> {
     env::var("API_JWT_SECRET_REFRESH").map_err(|_| "API_JWT_SECRET_REFRESH must be set".to_string())
+}
+
+// RSA keys (PEM) for RS256 signing
+pub fn get_jwt_private_pem() -> Result<String, String> {
+    env::var("API_JWT_PRIVATE_PEM").map_err(|_| "API_JWT_PRIVATE_PEM must be set".to_string())
+}
+
+pub fn get_jwt_public_pem() -> Result<String, String> {
+    env::var("API_JWT_PUBLIC_PEM").map_err(|_| "API_JWT_PUBLIC_PEM must be set".to_string())
 }
 
 pub async fn generate_jwt(
@@ -51,52 +60,80 @@ pub async fn get_jwt_token_with_role(
 
     info!("Generating {} JWT for user: {}", jwt_type, claims.sub);
 
-    let jwt_secret = if jwt_type == JWT_TYPE_ACCESS {
-        get_jwt_secret()?
-    } else if jwt_type == JWT_TYPE_REFRESH {
-        get_jwt_secret_refresh()?
+    // Prefer RSA (RS256) if RSA env keys are present, otherwise fallback to HMAC secret
+    let token = if let Ok(private_pem) = get_jwt_private_pem() {
+        let header = Header::new(Algorithm::RS256);
+        encode(
+            &header,
+            &claims,
+            &EncodingKey::from_rsa_pem(private_pem.as_bytes()).map_err(|e| e.to_string())?,
+        )
+        .map_err(|e| e.to_string())?
     } else {
-        return Err("Invalid token type".to_string());
-    };
+        let jwt_secret = if jwt_type == JWT_TYPE_ACCESS {
+            get_jwt_secret()?
+        } else if jwt_type == JWT_TYPE_REFRESH {
+            get_jwt_secret_refresh()?
+        } else {
+            return Err("Invalid token type".to_string());
+        };
 
-    let token = encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(jwt_secret.as_bytes()),
-    )
-    .map_err(|e| e.to_string())?;
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(jwt_secret.as_bytes()),
+        )
+        .map_err(|e| e.to_string())?
+    };
 
     Ok(token)
 }
 
 //Validar Token
 pub async fn validate_token(token: &str) -> Result<Claims, String> {
-    let jwt_secret = get_jwt_secret()?;
+    // Prefer RSA public key if provided, otherwise use HMAC secret
+    let decoded = if let Ok(public_pem) = get_jwt_public_pem() {
+        decode::<Claims>(
+            &token,
+            &DecodingKey::from_rsa_pem(public_pem.as_bytes()).map_err(|e| e.to_string())?,
+            &Validation::new(Algorithm::RS256),
+        )
+        .map_err(|e| e.to_string())?
+    } else {
+        let jwt_secret = get_jwt_secret()?;
+        decode::<Claims>(
+            &token,
+            &DecodingKey::from_secret(jwt_secret.as_bytes()),
+            &Validation::default(),
+        )
+        .map_err(|e| e.to_string())?
+    };
 
-    let token = decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret(jwt_secret.as_bytes()),
-        &Validation::default(),
-    )
-    .map_err(|e| e.to_string())?;
+    info!("Validated JWT for user: {}", decoded.claims.sub);
 
-    info!("Validated JWT for user: {}", token.claims.sub);
-
-    Ok(token.claims)
+    Ok(decoded.claims)
 }
 
 //Validar Token
 pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
-    let jwt_secret = get_jwt_secret_refresh()?;
+    let decoded = if let Ok(public_pem) = get_jwt_public_pem() {
+        decode::<Claims>(
+            &token,
+            &DecodingKey::from_rsa_pem(public_pem.as_bytes()).map_err(|e| e.to_string())?,
+            &Validation::new(Algorithm::RS256),
+        )
+        .map_err(|e| e.to_string())?
+    } else {
+        let jwt_secret = get_jwt_secret_refresh()?;
+        decode::<Claims>(
+            &token,
+            &DecodingKey::from_secret(jwt_secret.as_bytes()),
+            &Validation::default(),
+        )
+        .map_err(|e| e.to_string())?
+    };
 
-    let token = decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret(jwt_secret.as_bytes()),
-        &Validation::default(),
-    )
-    .map_err(|e| e.to_string())?;
+    info!("Validated JWT Refresh for user: {}", decoded.claims.sub);
 
-    info!("Validated JWT Refresh for user: {}", token.claims.sub);
-
-    Ok(token.claims)
+    Ok(decoded.claims)
 }
