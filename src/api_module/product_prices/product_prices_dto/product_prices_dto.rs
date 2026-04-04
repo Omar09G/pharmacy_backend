@@ -3,6 +3,10 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::{
+    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
+};
+
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductPriceRequest {
@@ -40,9 +44,9 @@ impl From<ProductPriceRequest> for schemas::product_prices::ActiveModel {
             product_id: ActiveValue::Set(request.product_id),
             price_type: ActiveValue::Set(request.price_type),
             price: ActiveValue::Set(request.price),
-            starts_at: ActiveValue::Set(request.starts_at),
-            ends_at: ActiveValue::Set(request.ends_at),
-            created_at: ActiveValue::Set(request.created_at),
+            starts_at: ActiveValue::Set(Some(get_current_timestamp_now())),
+            ends_at: ActiveValue::NotSet,
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
         }
     }
 }
@@ -54,9 +58,9 @@ impl From<schemas::product_prices::Model> for ProductPriceDetailResponse {
             product_id: model.product_id,
             price_type: model.price_type,
             price: model.price,
-            starts_at: model.starts_at,
-            ends_at: model.ends_at,
-            created_at: model.created_at,
+            starts_at: model.starts_at.map(get_current_timestamp_at_zone_mexico),
+            ends_at: model.ends_at.map(get_current_timestamp_at_zone_mexico),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
         }
     }
 }
@@ -68,9 +72,15 @@ impl From<schemas::product_prices::ActiveModel> for ProductPriceDetailResponse {
             product_id: model.product_id.unwrap(),
             price_type: model.price_type.unwrap(),
             price: model.price.unwrap(),
-            starts_at: model.starts_at.unwrap(),
-            ends_at: model.ends_at.unwrap(),
-            created_at: model.created_at.unwrap(),
+            starts_at: model
+                .starts_at
+                .unwrap()
+                .map(get_current_timestamp_at_zone_mexico),
+            ends_at: model
+                .ends_at
+                .unwrap()
+                .map(get_current_timestamp_at_zone_mexico),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
         }
     }
 }

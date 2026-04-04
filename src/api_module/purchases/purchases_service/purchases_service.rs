@@ -9,8 +9,11 @@ use sea_orm::{
 };
 use validator::Validate;
 
-use crate::api_module::purchases::purchases_dto::purchases_dto::{
-    PurchaseDetailResponse, PurchaseIdResponse, PurchaseRequest,
+use crate::{
+    api_module::purchases::purchases_dto::purchases_dto::{
+        PurchaseDetailResponse, PurchaseIdResponse, PurchaseRequest,
+    },
+    api_utils::api_utils_fun::get_current_timestamp_now,
 };
 use crate::{
     api_utils::{
@@ -173,15 +176,8 @@ pub async fn update_purchase(
         Some(p) => {
             let mut p_active = p.into_active_model();
 
-            p_active.supplier_id = ActiveValue::Set(payload.supplier_id);
-            p_active.invoice_no = ActiveValue::Set(payload.invoice_no);
-            p_active.date = ActiveValue::Set(payload.date);
-            p_active.subtotal = ActiveValue::Set(payload.subtotal);
-            p_active.tax_total = ActiveValue::Set(payload.tax_total);
-            p_active.total = ActiveValue::Set(payload.total);
             p_active.status = ActiveValue::Set(payload.status);
-            p_active.created_at = ActiveValue::Set(payload.created_at);
-            p_active.created_by = ActiveValue::Set(payload.created_by);
+            p_active.created_at = ActiveValue::Set(get_current_timestamp_now());
 
             let updated = p_active
                 .save(&app_ctx.conn)

@@ -215,7 +215,7 @@ const SALE_UPDATE: &str = route!("/sale/{:id}");
 const PRODUCT_LOT: &str = route!("/product_lot");
 const PRODUCT_LOT_BY_ID: &str = route!("/product_lot/{:id}");
 const PRODUCT_LOT_DELETE: &str = route!("/product_lot/{:id}");
-
+const PRODUCT_LOT_UPDATE: &str = route!("/product_lot/{:id}");
 /*Metodos PURCHASE_ITEM */
 const PURCHASE_ITEM: &str = route!("/purchase_item");
 const PURCHASE_ITEM_BY_ID: &str = route!("/purchase_item/{:id}");
@@ -401,13 +401,13 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(PRODUCT_PRICE_BY_ID, get(get_product_price_by_id))
         .route(PRODUCT_PRICE_DELETE, delete(delete_product_price))
         .route(PRODUCT_PRICE, get(get_product_prices))
-        .route(PRODUCT_PRICE, patch(update_product_price))
+        .route(PRODUCT_PRICE_DELETE, patch(update_product_price))
         // Product Lot routes
         .route(PRODUCT_LOT, put(create_product_lot))
         .route(PRODUCT_LOT_BY_ID, get(get_product_lot_by_id))
         .route(PRODUCT_LOT_DELETE, delete(delete_product_lot))
         .route(PRODUCT_LOT, get(get_product_lots))
-        .route(PRODUCT_LOT, patch(update_product_lot))
+        .route(PRODUCT_LOT_UPDATE, patch(update_product_lot))
         // Purchase Item routes
         .route(PURCHASE_ITEM, put(create_purchase_item))
         .route(PURCHASE_ITEM_BY_ID, get(get_purchase_item_by_id))

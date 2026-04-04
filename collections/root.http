@@ -1,7 +1,7 @@
 @base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTI1MDYxNCwiaWF0IjoxNzc1MTY0MjE0LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.Eb3MXolbxjw1nrQXgk0Qj56xqSVwSM44Kjj0ulaG3TU
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTM2MjgwMywiaWF0IjoxNzc1Mjc2NDAzLCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.kPYho26sB7cGqEb30-L-Id92Jawwy0TwU83Pnbe3fc0
 ###LOGIN
 POST {{base}}/auth/login
 Content-Type: application/json;charset=UTF-8
@@ -642,3 +642,134 @@ DELETE  {{base}}/product_barcode/1
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
 
+##### PRODUCT_PRICES##########################
+### Create Product Price
+PUT {{base}}/product_price
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"productId": 1,
+	"priceType": "SALE",
+	"price": 250.00,
+	"startsAt": "2024-06-01T12:00:00Z",
+	"endsAt": null,
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Get Product Price by ID
+GET  {{base}}/product_price/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Product Prices
+GET  {{base}}/product_price?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Product Price
+PATCH {{base}}/product_price/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"productId": 1,
+	"priceType": "RETAIL",
+	"price": 25.00,
+	"startsAt": "2024-06-01T12:00:00Z",
+	"endsAt": null,
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+###### Delete Product Price	
+DELETE  {{base}}/product_price/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+##### purchases ##########################
+### Create Purchase
+PUT {{base}}/purchase
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+    "id": 1,
+    "supplierId": 2,
+    "invoiceNo": "INV-001",
+    "date": "2024-06-01T12:00:00Z",
+    "subtotal": 200.00,
+    "taxTotal": 100.00,
+    "total": 300.00,
+    "status": "PENDING",
+    "createdAt": "2024-06-01T12:00:00Z",
+    "createdBy": 2
+}
+### Get Purchase by ID
+GET  {{base}}/purchase/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Purchases
+GET  {{base}}/purchase?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Purchase
+PATCH {{base}}/purchase/3
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 3,
+	"supplierId": 2,
+	"invoiceNo": "INV-001",
+	"date": "2024-06-01T12:00:00Z",
+	"subtotal": 200.00,
+	"taxTotal": 100.00,
+	"total": 300.00,
+	"status": "COMPLETED",
+	"createdAt": "2024-06-01T12:00:00Z",
+	"createdBy": 2
+}
+
+########## Delete Purchase
+DELETE  {{base}}/purchase/3
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+
+##### product_lots ##########################
+### Create Product Lot
+PUT {{base}}/product_lot
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"productId": 1,
+	"lotNumber": "LOT-001",
+	"purchaseId": 2,
+	"expiryDate": "2024-06-01",
+	"qtyOnHand": 100.00,
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+
+### Get Product Lot by ID
+GET  {{base}}/product_lot/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Product Lots
+GET  {{base}}/product_lot?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Product Lot
+
+PATCH {{base}}/product_lot/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8	
+
+{
+	"id": 2,
+	"productId": 1,
+	"lotNumber": "LOT-001",
+	"purchaseId": 2,
+	"expiryDate": "2024-06-01",
+	"qtyOnHand": 100.00,
+	"createdAt": "2024-06-01T12:00:00Z"
+}

@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
@@ -25,6 +26,8 @@ pub async fn create_product_lot(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<ProductLotRequest>,
 ) -> Result<Json<ApiResponse<ProductLotIdResponse>>, ApiError> {
+    info!("Creating product lot: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pl_create = schemas::product_lots::ActiveModel::from(payload);
@@ -51,6 +54,8 @@ pub async fn get_product_lot_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<ProductLotDetailResponse>>, ApiError> {
+    info!("Retrieving product lot with ID: {}", id);
+
     let pl = schemas::product_lots::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -74,6 +79,11 @@ pub async fn get_product_lots(
 ) -> Result<Json<ApiResponse<Vec<ProductLotDetailResponse>>>, ApiError> {
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
+
+    info!(
+        "Retrieving product lots - Page: {}, Limit: {}, Product ID: {:?}, Lot Number: {:?}",
+        pagination.page, pagination.limit, pagination.product_id, pagination.lot_number
+    );
 
     let mut select = schemas::product_lots::Entity::find();
 
@@ -115,6 +125,8 @@ pub async fn delete_product_lot(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("Deleting product lot with ID: {}", id);
+
     let pl = schemas::product_lots::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -139,11 +151,14 @@ pub async fn delete_product_lot(
 
 pub async fn update_product_lot(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<ProductLotRequest>,
 ) -> Result<Json<ApiResponse<ProductLotIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pl = schemas::product_lots::Entity::find_by_id(payload.id)
+    info!("Updating product lot with ID {}: {:?}", id, payload);
+
+    let pl = schemas::product_lots::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -152,12 +167,8 @@ pub async fn update_product_lot(
         Some(pl) => {
             let mut pl_active = pl.into_active_model();
 
-            pl_active.product_id = ActiveValue::Set(payload.product_id);
             pl_active.lot_number = ActiveValue::Set(payload.lot_number);
             pl_active.qty_on_hand = ActiveValue::Set(payload.qty_on_hand);
-            pl_active.expiry_date = ActiveValue::Set(payload.expiry_date);
-            pl_active.purchase_id = ActiveValue::Set(payload.purchase_id);
-            pl_active.created_at = ActiveValue::Set(payload.created_at);
 
             let updated = pl_active
                 .save(&app_ctx.conn)

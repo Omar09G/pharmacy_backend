@@ -9,8 +9,11 @@ use sea_orm::{
 };
 use validator::Validate;
 
-use crate::api_module::product_prices::product_prices_dto::product_prices_dto::{
-    ProductPriceDetailResponse, ProductPriceIdResponse, ProductPriceRequest,
+use crate::{
+    api_module::product_prices::product_prices_dto::product_prices_dto::{
+        ProductPriceDetailResponse, ProductPriceIdResponse, ProductPriceRequest,
+    },
+    api_utils::api_utils_fun::get_current_timestamp_now,
 };
 use crate::{
     api_utils::{
@@ -35,7 +38,9 @@ pub async fn create_product_price(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     if new_pp.id.is_not_set() {
-        return Err(ApiError::ValidationError("Failed to create product price".to_string()));
+        return Err(ApiError::ValidationError(
+            "Failed to create product price".to_string(),
+        ));
     }
 
     Ok(Json(ApiResponse::success(
@@ -60,7 +65,9 @@ pub async fn get_product_price_by_id(
             "Product price retrieved successfully".to_string(),
             1,
         ))),
-        None => Err(ApiError::ValidationError("Product price not found".to_string())),
+        None => Err(ApiError::ValidationError(
+            "Product price not found".to_string(),
+        )),
     }
 }
 
@@ -79,7 +86,8 @@ pub async fn get_product_prices(
 
     if let Some(price_type_filter) = pagination.price_type.clone() {
         if !price_type_filter.is_empty() {
-            select = select.filter(schemas::product_prices::Column::PriceType.eq(price_type_filter));
+            select =
+                select.filter(schemas::product_prices::Column::PriceType.eq(price_type_filter));
         }
     }
 
@@ -117,7 +125,10 @@ pub async fn get_product_prices(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     Ok(Json(ApiResponse::success(
-        items.into_iter().map(ProductPriceDetailResponse::from).collect(),
+        items
+            .into_iter()
+            .map(ProductPriceDetailResponse::from)
+            .collect(),
         "Product prices retrieved successfully".to_string(),
         total_items as i32,
     )))
@@ -143,7 +154,9 @@ pub async fn delete_product_price(
                 0,
             )))
         }
-        None => Err(ApiError::ValidationError("Product price not found".to_string())),
+        None => Err(ApiError::ValidationError(
+            "Product price not found".to_string(),
+        )),
     }
 }
 
@@ -162,11 +175,9 @@ pub async fn update_product_price(
         Some(pp) => {
             let mut pp_active = pp.into_active_model();
 
-            pp_active.product_id = ActiveValue::Set(payload.product_id);
             pp_active.price_type = ActiveValue::Set(payload.price_type);
             pp_active.price = ActiveValue::Set(payload.price);
-            pp_active.starts_at = ActiveValue::Set(payload.starts_at);
-            pp_active.ends_at = ActiveValue::Set(payload.ends_at);
+            pp_active.starts_at = ActiveValue::Set(Some(get_current_timestamp_now()));
 
             let updated = pp_active
                 .save(&app_ctx.conn)
@@ -179,6 +190,8 @@ pub async fn update_product_price(
                 0,
             )))
         }
-        None => Err(ApiError::ValidationError("Product price not found".to_string())),
+        None => Err(ApiError::ValidationError(
+            "Product price not found".to_string(),
+        )),
     }
 }
