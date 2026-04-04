@@ -18,11 +18,31 @@ pub fn get_jwt_secret_refresh() -> Result<String, String> {
 
 // RSA keys (PEM) for RS256 signing
 pub fn get_jwt_private_pem() -> Result<String, String> {
-    env::var("API_JWT_PRIVATE_PEM").map_err(|_| "API_JWT_PRIVATE_PEM must be set".to_string())
+    // Try direct env var first
+    if let Ok(pem) = env::var("API_JWT_PRIVATE_PEM") {
+        return Ok(pem);
+    }
+
+    // Fallback to file path
+    if let Ok(path) = env::var("API_JWT_PRIVATE_PEM_PATH") {
+        return std::fs::read_to_string(path)
+            .map_err(|e| format!("failed to read private pem: {}", e));
+    }
+
+    Err("API_JWT_PRIVATE_PEM or API_JWT_PRIVATE_PEM_PATH must be set".to_string())
 }
 
 pub fn get_jwt_public_pem() -> Result<String, String> {
-    env::var("API_JWT_PUBLIC_PEM").map_err(|_| "API_JWT_PUBLIC_PEM must be set".to_string())
+    if let Ok(pem) = env::var("API_JWT_PUBLIC_PEM") {
+        return Ok(pem);
+    }
+
+    if let Ok(path) = env::var("API_JWT_PUBLIC_PEM_PATH") {
+        return std::fs::read_to_string(path)
+            .map_err(|e| format!("failed to read public pem: {}", e));
+    }
+
+    Err("API_JWT_PUBLIC_PEM or API_JWT_PUBLIC_PEM_PATH must be set".to_string())
 }
 
 pub async fn generate_jwt(
