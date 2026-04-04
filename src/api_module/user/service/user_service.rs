@@ -40,7 +40,24 @@ pub async fn create_user(
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let user_create = schemas::users::ActiveModel::from(payload);
+    // Build ActiveModel manually so password hashing errors can be handled gracefully
+    let password_hash = generate_hash(&payload.password_hash)
+        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
+
+    let user_create = schemas::users::ActiveModel {
+        id: ActiveValue::NotSet,
+        username: ActiveValue::Set(payload.username),
+        password_hash: ActiveValue::Set(password_hash),
+        full_name: ActiveValue::Set(payload.full_name),
+        email: ActiveValue::Set(payload.email),
+        phone: ActiveValue::Set(payload.phone),
+        status: ActiveValue::Set(payload.status),
+        created_at: ActiveValue::Set(get_current_timestamp_now()),
+        created_by: ActiveValue::NotSet,
+        updated_at: ActiveValue::NotSet,
+        updated_by: ActiveValue::NotSet,
+        deleted_at: ActiveValue::NotSet,
+    };
 
     if user_create.username.is_not_set()
         || user_create.password_hash.is_not_set()
