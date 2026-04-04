@@ -107,13 +107,9 @@ impl From<schemas::users::Model> for UserResponse {
             status: model.status,
             created_at: get_current_timestamp_at_zone_mexico(model.created_at),
             created_by: model.created_by,
-            updated_at: model
-                .updated_at
-                .map(get_current_timestamp_at_zone_mexico),
+            updated_at: model.updated_at.map(get_current_timestamp_at_zone_mexico),
             updated_by: model.updated_by,
-            deleted_at: model
-                .deleted_at
-                .map(get_current_timestamp_at_zone_mexico),
+            deleted_at: model.deleted_at.map(get_current_timestamp_at_zone_mexico),
         }
     }
 }

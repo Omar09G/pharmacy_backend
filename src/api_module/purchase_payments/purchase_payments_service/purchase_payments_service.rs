@@ -86,24 +86,27 @@ pub async fn get_purchase_payments(
     }
 
     if let Some(reference) = pagination.reference.clone()
-        && !reference.is_empty() {
-            select = select.filter(schemas::purchase_payments::Column::Reference.eq(reference));
-        }
+        && !reference.is_empty()
+    {
+        select = select.filter(schemas::purchase_payments::Column::Reference.eq(reference));
+    }
 
     // paid_at date range using date_init/date_end if provided
     if let Some(date_init) = pagination.date_init.clone()
         && !date_init.is_empty()
-            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init) {
-                let dt_utc = dt.with_timezone(&chrono::Utc);
-                select = select.filter(schemas::purchase_payments::Column::PaidAt.gte(dt_utc));
-            }
+        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init)
+    {
+        let dt_utc = dt.with_timezone(&chrono::Utc);
+        select = select.filter(schemas::purchase_payments::Column::PaidAt.gte(dt_utc));
+    }
 
     if let Some(date_end) = pagination.date_end.clone()
         && !date_end.is_empty()
-            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end) {
-                let dt_utc = dt.with_timezone(&chrono::Utc);
-                select = select.filter(schemas::purchase_payments::Column::PaidAt.lte(dt_utc));
-            }
+        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end)
+    {
+        let dt_utc = dt.with_timezone(&chrono::Utc);
+        select = select.filter(schemas::purchase_payments::Column::PaidAt.lte(dt_utc));
+    }
 
     let paginator = select
         .order_by_asc(schemas::purchase_payments::Column::Id)

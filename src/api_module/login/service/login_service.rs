@@ -62,9 +62,7 @@ pub async fn get_login(
         user.full_name.clone().unwrap_or_default(),
     )
     .await
-    .map_err(|e| {
-        ApiError::Unexpected(Box::new(std::io::Error::other(e)))
-    })?;
+    .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let response = ApiResponse {
         data: LoginResponseDTO::new(

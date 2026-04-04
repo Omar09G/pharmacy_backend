@@ -81,29 +81,34 @@ pub async fn get_customers(
 
     // Apply optional filters
     if let Some(name_filter) = pagination.name.clone()
-        && !name_filter.is_empty() {
-            select = select.filter(schemas::customers::Column::Name.eq(name_filter));
-        }
+        && !name_filter.is_empty()
+    {
+        select = select.filter(schemas::customers::Column::Name.eq(name_filter));
+    }
 
     if let Some(doc_filter) = pagination.document_id.clone()
-        && !doc_filter.is_empty() {
-            select = select.filter(schemas::customers::Column::DocumentId.eq(doc_filter));
-        }
+        && !doc_filter.is_empty()
+    {
+        select = select.filter(schemas::customers::Column::DocumentId.eq(doc_filter));
+    }
 
     if let Some(email_filter) = pagination.email.clone()
-        && !email_filter.is_empty() {
-            select = select.filter(schemas::customers::Column::Email.eq(email_filter));
-        }
+        && !email_filter.is_empty()
+    {
+        select = select.filter(schemas::customers::Column::Email.eq(email_filter));
+    }
 
     if let Some(phone_filter) = pagination.phone.clone()
-        && !phone_filter.is_empty() {
-            select = select.filter(schemas::customers::Column::Phone.eq(phone_filter));
-        }
+        && !phone_filter.is_empty()
+    {
+        select = select.filter(schemas::customers::Column::Phone.eq(phone_filter));
+    }
 
     if let Some(status_filter) = pagination.status.clone()
-        && !status_filter.is_empty() {
-            select = select.filter(schemas::customers::Column::Status.eq(status_filter));
-        }
+        && !status_filter.is_empty()
+    {
+        select = select.filter(schemas::customers::Column::Status.eq(status_filter));
+    }
 
     let paginator = select
         .order_by_asc(schemas::customers::Column::Id)

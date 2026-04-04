@@ -83,29 +83,33 @@ pub async fn get_purchases(
     }
 
     if let Some(invoice) = pagination.invoice_no.clone()
-        && !invoice.is_empty() {
-            select = select.filter(schemas::purchases::Column::InvoiceNo.eq(invoice));
-        }
+        && !invoice.is_empty()
+    {
+        select = select.filter(schemas::purchases::Column::InvoiceNo.eq(invoice));
+    }
 
     if let Some(status) = pagination.status.clone()
-        && !status.is_empty() {
-            select = select.filter(schemas::purchases::Column::Status.eq(status));
-        }
+        && !status.is_empty()
+    {
+        select = select.filter(schemas::purchases::Column::Status.eq(status));
+    }
 
     // date range
     if let Some(date_init) = pagination.date_init.clone()
         && !date_init.is_empty()
-            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init) {
-                let dt_utc = dt.with_timezone(&chrono::Utc);
-                select = select.filter(schemas::purchases::Column::Date.gte(dt_utc));
-            }
+        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init)
+    {
+        let dt_utc = dt.with_timezone(&chrono::Utc);
+        select = select.filter(schemas::purchases::Column::Date.gte(dt_utc));
+    }
 
     if let Some(date_end) = pagination.date_end.clone()
         && !date_end.is_empty()
-            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end) {
-                let dt_utc = dt.with_timezone(&chrono::Utc);
-                select = select.filter(schemas::purchases::Column::Date.lte(dt_utc));
-            }
+        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end)
+    {
+        let dt_utc = dt.with_timezone(&chrono::Utc);
+        select = select.filter(schemas::purchases::Column::Date.lte(dt_utc));
+    }
 
     let paginator = select
         .order_by_asc(schemas::purchases::Column::Id)

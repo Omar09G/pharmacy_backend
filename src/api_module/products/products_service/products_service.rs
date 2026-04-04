@@ -83,19 +83,22 @@ pub async fn get_products(
     let mut select = schemas::products::Entity::find();
 
     if let Some(sku_filter) = pagination.sku.clone()
-        && !sku_filter.is_empty() {
-            select = select.filter(schemas::products::Column::Sku.eq(sku_filter));
-        }
+        && !sku_filter.is_empty()
+    {
+        select = select.filter(schemas::products::Column::Sku.eq(sku_filter));
+    }
 
     if let Some(name_filter) = pagination.name.clone()
-        && !name_filter.is_empty() {
-            select = select.filter(schemas::products::Column::Name.eq(name_filter));
-        }
+        && !name_filter.is_empty()
+    {
+        select = select.filter(schemas::products::Column::Name.eq(name_filter));
+    }
 
     if let Some(brand_filter) = pagination.brand.clone()
-        && !brand_filter.is_empty() {
-            select = select.filter(schemas::products::Column::Brand.eq(brand_filter));
-        }
+        && !brand_filter.is_empty()
+    {
+        select = select.filter(schemas::products::Column::Brand.eq(brand_filter));
+    }
 
     if let Some(category) = pagination.category_id {
         select = select.filter(schemas::products::Column::CategoryId.eq(category));
@@ -221,20 +224,23 @@ pub async fn update_product(
             let mut product_active_model = product.into_active_model();
 
             if let Some(sku) = payload.sku.clone()
-                && !sku.is_empty() {
-                    product_active_model.sku = ActiveValue::Set(Some(sku));
-                }
+                && !sku.is_empty()
+            {
+                product_active_model.sku = ActiveValue::Set(Some(sku));
+            }
             if !payload.name.trim().is_empty() {
                 product_active_model.name = ActiveValue::Set(payload.name.clone());
             }
             if let Some(description) = payload.description.clone()
-                && !description.is_empty() {
-                    product_active_model.description = ActiveValue::Set(Some(description));
-                }
+                && !description.is_empty()
+            {
+                product_active_model.description = ActiveValue::Set(Some(description));
+            }
             if let Some(brand) = payload.brand.clone()
-                && !brand.is_empty() {
-                    product_active_model.brand = ActiveValue::Set(Some(brand));
-                }
+                && !brand.is_empty()
+            {
+                product_active_model.brand = ActiveValue::Set(Some(brand));
+            }
             if let Some(category_id) = payload.category_id {
                 product_active_model.category_id = ActiveValue::Set(Some(category_id));
             }

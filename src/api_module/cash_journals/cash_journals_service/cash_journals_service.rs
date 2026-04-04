@@ -78,14 +78,16 @@ pub async fn get_cash_journals(
     let mut select = schemas::cash_journals::Entity::find();
 
     if let Some(name) = pagination.name.clone()
-        && !name.is_empty() {
-            select = select.filter(schemas::cash_journals::Column::Name.eq(name));
-        }
+        && !name.is_empty()
+    {
+        select = select.filter(schemas::cash_journals::Column::Name.eq(name));
+    }
 
     if let Some(status) = pagination.status.clone()
-        && !status.is_empty() {
-            select = select.filter(schemas::cash_journals::Column::Status.eq(status));
-        }
+        && !status.is_empty()
+    {
+        select = select.filter(schemas::cash_journals::Column::Status.eq(status));
+    }
 
     if let Some(user) = pagination.user_id {
         select = select.filter(schemas::cash_journals::Column::OpenedBy.eq(user));

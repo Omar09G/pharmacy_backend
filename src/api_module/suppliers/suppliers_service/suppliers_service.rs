@@ -81,9 +81,10 @@ pub async fn get_suppliers(
 
     // Apply optional filters
     if let Some(name_filter) = pagination.name.clone()
-        && !name_filter.is_empty() {
-            select = select.filter(schemas::suppliers::Column::Name.eq(name_filter));
-        }
+        && !name_filter.is_empty()
+    {
+        select = select.filter(schemas::suppliers::Column::Name.eq(name_filter));
+    }
 
     if let Some(tax_id_filter) = pagination.username.clone() {
         // reuse username field to allow tax_id search if provided

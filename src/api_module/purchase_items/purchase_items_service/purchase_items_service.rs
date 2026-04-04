@@ -86,10 +86,11 @@ pub async fn get_purchase_items(
     }
 
     if let Some(lot) = pagination.lot_number.clone()
-        && !lot.is_empty() {
-            // we have lot_number in PaginationParams but purchase_items stores lot_id
-            // join or filter by related lot id is out of scope; skip unless product_lots exist
-        }
+        && !lot.is_empty()
+    {
+        // we have lot_number in PaginationParams but purchase_items stores lot_id
+        // join or filter by related lot id is out of scope; skip unless product_lots exist
+    }
 
     let paginator = select
         .order_by_asc(schemas::purchase_items::Column::Id)
