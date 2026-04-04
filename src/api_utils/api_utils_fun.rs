@@ -44,11 +44,7 @@ pub fn parse_date_str(date_str: &str) -> Result<Date, ApiError> {
 /// Parameters: `page` - page number from client (u64).
 /// Outputs: 0-based `usize` page index.
 pub fn to_page_index(page: u64) -> u64 {
-    if page == 0 {
-        0
-    } else {
-        (page.saturating_sub(1))
-    }
+    if page == 0 { 0 } else { page.saturating_sub(1) }
 }
 
 /// Name: `to_page_limit`
@@ -201,10 +197,11 @@ pub fn valite_date_time_range_opt(
     let end = parce_date_time_str_to_date_time_with_timezone_opt(end_date_time)?;
 
     if let (Some(start), Some(end)) = (start, end)
-        && start > end {
-            return Err(ApiError::ValidationError(
-                "Start date-time cannot be after end date-time".to_string(),
-            ));
-        }
+        && start > end
+    {
+        return Err(ApiError::ValidationError(
+            "Start date-time cannot be after end date-time".to_string(),
+        ));
+    }
     Ok(())
 }

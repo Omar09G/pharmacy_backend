@@ -82,6 +82,7 @@ pub async fn get_jwt_token_with_role(
 
     // Prefer RSA (RS256) if RSA env keys are present, otherwise fallback to HMAC secret
     let token = if let Ok(private_pem) = get_jwt_private_pem() {
+        info!("Using RSA keys for JWT signing");
         let header = Header::new(Algorithm::RS256);
         encode(
             &header,
@@ -90,6 +91,7 @@ pub async fn get_jwt_token_with_role(
         )
         .map_err(|e| e.to_string())?
     } else {
+        info!("Using HMAC secret for JWT signing");
         let jwt_secret = if jwt_type == JWT_TYPE_ACCESS {
             get_jwt_secret()?
         } else if jwt_type == JWT_TYPE_REFRESH {
@@ -113,6 +115,7 @@ pub async fn get_jwt_token_with_role(
 pub async fn validate_token(token: &str) -> Result<Claims, String> {
     // Prefer RSA public key if provided, otherwise use HMAC secret
     let decoded = if let Ok(public_pem) = get_jwt_public_pem() {
+        info!("Validating JWT using RSA public key");
         decode::<Claims>(
             &token,
             &DecodingKey::from_rsa_pem(public_pem.as_bytes()).map_err(|e| e.to_string())?,
@@ -120,6 +123,7 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
         )
         .map_err(|e| e.to_string())?
     } else {
+        info!("Validating JWT using HMAC secret");
         let jwt_secret = get_jwt_secret()?;
         decode::<Claims>(
             &token,
@@ -129,7 +133,7 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
         .map_err(|e| e.to_string())?
     };
 
-    info!("Validated JWT for user: {}", decoded.claims.sub);
+    info!("Validated JWT for user with ID: {}", decoded.claims.id);
 
     Ok(decoded.claims)
 }
@@ -153,7 +157,10 @@ pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
         .map_err(|e| e.to_string())?
     };
 
-    info!("Validated JWT Refresh for user: {}", decoded.claims.sub);
+    info!(
+        "Validated JWT Refresh for user with ID: {}",
+        decoded.claims.id
+    );
 
     Ok(decoded.claims)
 }

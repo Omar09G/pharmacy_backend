@@ -74,3 +74,10 @@
 *Dockerfile
 *docker-compose.yml
 *.sh
+/pem
+/key
+/crt
+/p12
+/pfx
+
+.env
