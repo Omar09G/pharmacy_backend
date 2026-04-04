@@ -63,7 +63,7 @@ pub async fn get_login(
     )
     .await
     .map_err(|e| {
-        ApiError::Unexpected(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)))
+        ApiError::Unexpected(Box::new(std::io::Error::other(e)))
     })?;
 
     let response = ApiResponse {

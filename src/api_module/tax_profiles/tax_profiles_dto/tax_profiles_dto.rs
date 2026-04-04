@@ -58,7 +58,7 @@ impl From<schemas::tax_profiles::Model> for TaxProfileResponse {
         Self {
             id: model.id,
             name: model.name,
-            rate: model.rate.into(),
+            rate: model.rate,
             is_inclusive: model.is_inclusive,
             description: model.description,
         }

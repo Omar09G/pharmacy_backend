@@ -77,27 +77,24 @@ pub async fn get_cash_entries(
 
     let mut select = schemas::cash_entries::Entity::find();
 
-    if let Some(name) = pagination.name.clone() {
-        if !name.is_empty() {
+    if let Some(name) = pagination.name.clone()
+        && !name.is_empty() {
             select = select.filter(schemas::cash_entries::Column::Name.eq(name));
         }
-    }
 
-    if let Some(entry_type) = pagination.reference_type.clone() {
-        if !entry_type.is_empty() {
+    if let Some(entry_type) = pagination.reference_type.clone()
+        && !entry_type.is_empty() {
             select = select.filter(schemas::cash_entries::Column::EntryType.eq(entry_type));
         }
-    }
 
     if let Some(method) = pagination.method_id {
         select = select.filter(schemas::cash_entries::Column::MethodId.eq(method));
     }
 
-    if let Some(rel_type) = pagination.reference.clone() {
-        if !rel_type.is_empty() {
+    if let Some(rel_type) = pagination.reference.clone()
+        && !rel_type.is_empty() {
             select = select.filter(schemas::cash_entries::Column::RelatedType.eq(rel_type));
         }
-    }
 
     if let Some(rel_id) = pagination.reference_id {
         select = select.filter(schemas::cash_entries::Column::RelatedId.eq(rel_id));

@@ -80,11 +80,10 @@ pub async fn get_categories(
     let mut select = schemas::categories::Entity::find();
 
     // Apply optional filters
-    if let Some(name_filter) = pagination.name.clone() {
-        if !name_filter.is_empty() {
+    if let Some(name_filter) = pagination.name.clone()
+        && !name_filter.is_empty() {
             select = select.filter(schemas::categories::Column::Name.eq(name_filter));
         }
-    }
 
     if let Some(parent) = pagination.parent_id {
         select = select.filter(schemas::categories::Column::ParentId.eq(parent));

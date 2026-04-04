@@ -91,7 +91,7 @@ pub async fn get_role_permissions(
 ) -> Result<Json<ApiResponse<Vec<RolePermissionsResponse>>>, ApiError> {
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
-    let role_id = pagination.role_id.clone().unwrap_or_default();
+    let role_id = pagination.role_id.unwrap_or_default();
 
     info!(
         "Retrieving role permissions for role_id: {} with page: {} and limit: {}",

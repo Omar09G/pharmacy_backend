@@ -89,35 +89,30 @@ pub async fn get_inventory_movements(
         select = select.filter(schemas::inventory_movements::Column::LocationId.eq(location));
     }
 
-    if let Some(ref_type) = pagination.reference_type.clone() {
-        if !ref_type.is_empty() {
+    if let Some(ref_type) = pagination.reference_type.clone()
+        && !ref_type.is_empty() {
             select =
                 select.filter(schemas::inventory_movements::Column::ReferenceType.eq(ref_type));
         }
-    }
 
     if let Some(ref_id) = pagination.id {
         select = select.filter(schemas::inventory_movements::Column::ReferenceId.eq(ref_id));
     }
 
     // date range
-    if let Some(date_init) = pagination.date_init.clone() {
-        if !date_init.is_empty() {
-            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init) {
+    if let Some(date_init) = pagination.date_init.clone()
+        && !date_init.is_empty()
+            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init) {
                 let dt_utc = dt.with_timezone(&chrono::Utc);
                 select = select.filter(schemas::inventory_movements::Column::CreatedAt.gte(dt_utc));
             }
-        }
-    }
 
-    if let Some(date_end) = pagination.date_end.clone() {
-        if !date_end.is_empty() {
-            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end) {
+    if let Some(date_end) = pagination.date_end.clone()
+        && !date_end.is_empty()
+            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end) {
                 let dt_utc = dt.with_timezone(&chrono::Utc);
                 select = select.filter(schemas::inventory_movements::Column::CreatedAt.lte(dt_utc));
             }
-        }
-    }
 
     let paginator = select
         .order_by_asc(schemas::inventory_movements::Column::Id)

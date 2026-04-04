@@ -109,11 +109,11 @@ impl From<schemas::users::Model> for UserResponse {
             created_by: model.created_by,
             updated_at: model
                 .updated_at
-                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
+                .map(get_current_timestamp_at_zone_mexico),
             updated_by: model.updated_by,
             deleted_at: model
                 .deleted_at
-                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
+                .map(get_current_timestamp_at_zone_mexico),
         }
     }
 }
@@ -132,12 +132,12 @@ impl From<schemas::users::ActiveModel> for UserResponse {
             updated_at: model
                 .updated_at
                 .unwrap()
-                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
+                .map(get_current_timestamp_at_zone_mexico),
             updated_by: model.updated_by.unwrap(),
             deleted_at: model
                 .deleted_at
                 .unwrap()
-                .map(|dt| get_current_timestamp_at_zone_mexico(dt)),
+                .map(get_current_timestamp_at_zone_mexico),
         }
     }
 }

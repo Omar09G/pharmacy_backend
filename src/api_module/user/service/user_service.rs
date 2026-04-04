@@ -179,7 +179,7 @@ pub async fn change_user_password(
     let mut user_active_model = user.into_active_model();
 
     let new_password_hash = generate_hash(&payload.password).map_err(|e| {
-        ApiError::Unexpected(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)))
+        ApiError::Unexpected(Box::new(std::io::Error::other(e)))
     })?;
 
     user_active_model.password_hash = ActiveValue::Set(new_password_hash);

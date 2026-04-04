@@ -91,11 +91,10 @@ pub async fn get_product_lots(
         select = select.filter(schemas::product_lots::Column::ProductId.eq(product));
     }
 
-    if let Some(lot_num) = pagination.lot_number.clone() {
-        if !lot_num.is_empty() {
+    if let Some(lot_num) = pagination.lot_number.clone()
+        && !lot_num.is_empty() {
             select = select.filter(schemas::product_lots::Column::LotNumber.eq(lot_num));
         }
-    }
 
     let paginator = select
         .order_by_asc(schemas::product_lots::Column::Id)

@@ -75,11 +75,10 @@ pub async fn get_discounts(
 
     let mut select = schemas::discounts::Entity::find();
 
-    if let Some(code) = pagination.name.clone() {
-        if !code.is_empty() {
+    if let Some(code) = pagination.name.clone()
+        && !code.is_empty() {
             select = select.filter(schemas::discounts::Column::Name.eq(code));
         }
-    }
 
     if let Some(product) = pagination.product_id {
         select = select.filter(schemas::discounts::Column::ProductId.eq(product));

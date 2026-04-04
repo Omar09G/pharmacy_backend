@@ -47,7 +47,7 @@ pub fn to_page_index(page: u64) -> u64 {
     if page == 0 {
         0
     } else {
-        (page.saturating_sub(1)) as u64
+        (page.saturating_sub(1))
     }
 }
 
@@ -200,12 +200,11 @@ pub fn valite_date_time_range_opt(
     let start = parce_date_time_str_to_date_time_with_timezone_opt(start_date_time)?;
     let end = parce_date_time_str_to_date_time_with_timezone_opt(end_date_time)?;
 
-    if let (Some(start), Some(end)) = (start, end) {
-        if start > end {
+    if let (Some(start), Some(end)) = (start, end)
+        && start > end {
             return Err(ApiError::ValidationError(
                 "Start date-time cannot be after end date-time".to_string(),
             ));
         }
-    }
     Ok(())
 }

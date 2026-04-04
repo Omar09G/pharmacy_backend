@@ -84,31 +84,26 @@ pub async fn get_product_prices(
         select = select.filter(schemas::product_prices::Column::ProductId.eq(product));
     }
 
-    if let Some(price_type_filter) = pagination.price_type.clone() {
-        if !price_type_filter.is_empty() {
+    if let Some(price_type_filter) = pagination.price_type.clone()
+        && !price_type_filter.is_empty() {
             select =
                 select.filter(schemas::product_prices::Column::PriceType.eq(price_type_filter));
         }
-    }
 
     // date range can use date_init / date_end if provided
-    if let Some(date_init) = pagination.date_init.clone() {
-        if !date_init.is_empty() {
-            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init) {
+    if let Some(date_init) = pagination.date_init.clone()
+        && !date_init.is_empty()
+            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init) {
                 let dt_utc = dt.with_timezone(&chrono::Utc);
                 select = select.filter(schemas::product_prices::Column::StartsAt.gte(dt_utc));
             }
-        }
-    }
 
-    if let Some(date_end) = pagination.date_end.clone() {
-        if !date_end.is_empty() {
-            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end) {
+    if let Some(date_end) = pagination.date_end.clone()
+        && !date_end.is_empty()
+            && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end) {
                 let dt_utc = dt.with_timezone(&chrono::Utc);
                 select = select.filter(schemas::product_prices::Column::EndsAt.lte(dt_utc));
             }
-        }
-    }
 
     let paginator = select
         .order_by_asc(schemas::product_prices::Column::Id)

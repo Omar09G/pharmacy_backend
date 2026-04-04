@@ -75,23 +75,20 @@ pub async fn get_audit_logs(
 
     let mut select = schemas::audit_log::Entity::find();
 
-    if let Some(entity_type) = pagination.entity_type.clone() {
-        if !entity_type.is_empty() {
+    if let Some(entity_type) = pagination.entity_type.clone()
+        && !entity_type.is_empty() {
             select = select.filter(schemas::audit_log::Column::EntityType.eq(entity_type));
         }
-    }
 
-    if let Some(table_name) = pagination.table_name.clone() {
-        if !table_name.is_empty() {
+    if let Some(table_name) = pagination.table_name.clone()
+        && !table_name.is_empty() {
             select = select.filter(schemas::audit_log::Column::TableName.eq(table_name));
         }
-    }
 
-    if let Some(action) = pagination.action.clone() {
-        if !action.is_empty() {
+    if let Some(action) = pagination.action.clone()
+        && !action.is_empty() {
             select = select.filter(schemas::audit_log::Column::Action.eq(action));
         }
-    }
 
     if let Some(eid) = pagination.entity_id {
         select = select.filter(schemas::audit_log::Column::EntityId.eq(eid));

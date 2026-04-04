@@ -81,11 +81,10 @@ pub async fn get_product_barcodes(
 
     let mut select = schemas::product_barcodes::Entity::find();
 
-    if let Some(barcode_filter) = pagination.barcode.clone() {
-        if !barcode_filter.is_empty() {
+    if let Some(barcode_filter) = pagination.barcode.clone()
+        && !barcode_filter.is_empty() {
             select = select.filter(schemas::product_barcodes::Column::Barcode.eq(barcode_filter));
         }
-    }
 
     if let Some(product_id) = pagination.product_id {
         select = select.filter(schemas::product_barcodes::Column::ProductId.eq(product_id));

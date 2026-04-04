@@ -80,35 +80,30 @@ pub async fn get_customers(
     let mut select = schemas::customers::Entity::find();
 
     // Apply optional filters
-    if let Some(name_filter) = pagination.name.clone() {
-        if !name_filter.is_empty() {
+    if let Some(name_filter) = pagination.name.clone()
+        && !name_filter.is_empty() {
             select = select.filter(schemas::customers::Column::Name.eq(name_filter));
         }
-    }
 
-    if let Some(doc_filter) = pagination.document_id.clone() {
-        if !doc_filter.is_empty() {
+    if let Some(doc_filter) = pagination.document_id.clone()
+        && !doc_filter.is_empty() {
             select = select.filter(schemas::customers::Column::DocumentId.eq(doc_filter));
         }
-    }
 
-    if let Some(email_filter) = pagination.email.clone() {
-        if !email_filter.is_empty() {
+    if let Some(email_filter) = pagination.email.clone()
+        && !email_filter.is_empty() {
             select = select.filter(schemas::customers::Column::Email.eq(email_filter));
         }
-    }
 
-    if let Some(phone_filter) = pagination.phone.clone() {
-        if !phone_filter.is_empty() {
+    if let Some(phone_filter) = pagination.phone.clone()
+        && !phone_filter.is_empty() {
             select = select.filter(schemas::customers::Column::Phone.eq(phone_filter));
         }
-    }
 
-    if let Some(status_filter) = pagination.status.clone() {
-        if !status_filter.is_empty() {
+    if let Some(status_filter) = pagination.status.clone()
+        && !status_filter.is_empty() {
             select = select.filter(schemas::customers::Column::Status.eq(status_filter));
         }
-    }
 
     let paginator = select
         .order_by_asc(schemas::customers::Column::Id)

@@ -166,7 +166,7 @@ pub async fn search_tax_profiles_by_name(
     let paginator = schemas::tax_profiles::Entity::find()
         .filter(
             schemas::tax_profiles::Column::Name
-                .contains(&pagination.name.clone().unwrap_or_default()),
+                .contains(pagination.name.clone().unwrap_or_default()),
         )
         .order_by_asc(schemas::tax_profiles::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
