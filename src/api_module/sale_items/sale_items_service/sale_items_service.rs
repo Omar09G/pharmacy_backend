@@ -134,11 +134,12 @@ pub async fn delete_sale_item(
 
 pub async fn update_sale_item(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<SaleItemRequest>,
 ) -> Result<Json<ApiResponse<SaleItemIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let si = schemas::sale_items::Entity::find_by_id(payload.id)
+    let si = schemas::sale_items::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

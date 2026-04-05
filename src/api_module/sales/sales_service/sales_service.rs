@@ -3,14 +3,17 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use chrono::Timelike;
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
 };
 use validator::Validate;
 
-use crate::api_module::sales::sales_dto::sales_dto::{
-    SaleDetailResponse, SaleIdResponse, SaleRequest,
+use crate::{
+    api_module::sales::sales_dto::sales_dto::{SaleDetailResponse, SaleIdResponse, SaleRequest},
+    api_utils::api_utils_fun::parce_date_str_to_date_time_with_timezone_opt,
 };
 use crate::{
     api_utils::{
@@ -74,6 +77,11 @@ pub async fn get_sales(
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
+    info!(
+        "Fetching sales with pagination: page {}, limit {}",
+        pagination.page, pagination.limit
+    );
+
     let mut select = schemas::sales::Entity::find();
 
     if let Some(customer) = pagination.customer_id {
@@ -96,21 +104,35 @@ pub async fn get_sales(
         select = select.filter(schemas::sales::Column::Status.eq(status));
     }
 
+    let fecha_init = parce_date_str_to_date_time_with_timezone_opt(
+        &pagination.date_init.clone().unwrap_or_default(),
+    )?;
+    let fecha_end = parce_date_str_to_date_time_with_timezone_opt(
+        &pagination.date_end.clone().unwrap_or_default(),
+    )?;
+    // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
+    let fecha_end = fecha_end.and_then(|d| {
+        d.with_hour(23)
+            .and_then(|dt| dt.with_minute(59))
+            .and_then(|dt| dt.with_second(59))
+    });
+
+    info!(
+        "Applying filters - customer_id: {:?}, user_id: {:?}, invoice_no: {:?}, status: {:?}, date_init: {:?}, date_end: {:?}",
+        pagination.customer_id,
+        pagination.user_id,
+        pagination.invoice_no,
+        pagination.status,
+        fecha_init,
+        fecha_end
+    );
     // date range
-    if let Some(date_init) = pagination.date_init.clone()
-        && !date_init.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::sales::Column::Date.gte(dt_utc));
+    if let Some(date_init) = fecha_init {
+        select = select.filter(schemas::sales::Column::Date.gte(date_init));
     }
 
-    if let Some(date_end) = pagination.date_end.clone()
-        && !date_end.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::sales::Column::Date.lte(dt_utc));
+    if let Some(date_end) = fecha_end {
+        select = select.filter(schemas::sales::Column::Date.lte(date_end));
     }
 
     let paginator = select
@@ -160,11 +182,12 @@ pub async fn delete_sale(
 
 pub async fn update_sale(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<SaleRequest>,
 ) -> Result<Json<ApiResponse<SaleIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let s = schemas::sales::Entity::find_by_id(payload.id)
+    let s = schemas::sales::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -173,17 +196,17 @@ pub async fn update_sale(
         Some(s) => {
             let mut s_active = s.into_active_model();
 
-            s_active.customer_id = ActiveValue::Set(payload.customer_id);
-            s_active.user_id = ActiveValue::Set(payload.user_id);
-            s_active.invoice_no = ActiveValue::Set(payload.invoice_no);
-            s_active.date = ActiveValue::Set(payload.date);
-            s_active.subtotal = ActiveValue::Set(payload.subtotal);
-            s_active.tax_total = ActiveValue::Set(payload.tax_total);
-            s_active.discount_total = ActiveValue::Set(payload.discount_total);
-            s_active.total = ActiveValue::Set(payload.total);
+            //s_active.customer_id = ActiveValue::Set(payload.customer_id);
+            //s_active.user_id = ActiveValue::Set(payload.user_id);
+            //s_active.invoice_no = ActiveValue::Set(payload.invoice_no);
+            //s_active.date = ActiveValue::Set(payload.date);
+            //s_active.subtotal = ActiveValue::Set(payload.subtotal);
+            //s_active.tax_total = ActiveValue::Set(payload.tax_total);
+            //s_active.discount_total = ActiveValue::Set(payload.discount_total);
+            //s_active.total = ActiveValue::Set(payload.total);
             s_active.status = ActiveValue::Set(payload.status);
-            s_active.is_credit = ActiveValue::Set(payload.is_credit);
-            s_active.created_at = ActiveValue::Set(payload.created_at);
+            //s_active.is_credit = ActiveValue::Set(payload.is_credit);
+            //s_active.created_at = ActiveValue::Set(payload.created_at);
 
             let updated = s_active
                 .save(&app_ctx.conn)

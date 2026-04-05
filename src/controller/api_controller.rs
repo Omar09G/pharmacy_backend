@@ -226,12 +226,14 @@ const SALE_ITEM: &str = route!("/sale_item");
 const SALE_ITEM_BY_ID: &str = route!("/sale_item/{:id}");
 const SALE_ITEMS_LIST: &str = route!("/sale_item");
 const SALE_ITEM_DELETE: &str = route!("/sale_item/{:id}");
-
+const SALE_ITEM_UPDATE: &str = route!("/sale_item/{:id}");
 /*Metodos PURCHASE_PAYMENT  */
 const PURCHASE_PAYMENT: &str = route!("/purchase_payment");
 const PURCHASE_PAYMENT_BY_ID: &str = route!("/purchase_payment/{:id}");
 const PURCHASE_PAYMENTS_LIST: &str = route!("/purchase_payment");
 const PURCHASE_PAYMENT_DELETE: &str = route!("/purchase_payment/{:id}");
+const PURCHASE_PAYMENT_UPDATE: &str = route!("/purchase_payment/{:id}");
+
 /*Metodos CASH_ENTRY */
 const CASH_ENTRY: &str = route!("/cash_entry");
 const CASH_ENTRY_BY_ID: &str = route!("/cash_entry/{:id}");
@@ -255,6 +257,7 @@ const SALE_PAYMENT: &str = route!("/sale_payment");
 const SALE_PAYMENT_BY_ID: &str = route!("/sale_payment/{:id}");
 const SALE_PAYMENTS_LIST: &str = route!("/sale_payment");
 const SALE_PAYMENT_DELETE: &str = route!("/sale_payment/{:id}");
+const SALE_PAYMENT_UPDATE: &str = route!("/sale_payment/{:id}");
 
 /*Metodos DISCOUNT */
 const DISCOUNT: &str = route!("/discount");
@@ -420,7 +423,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(PURCHASE_PAYMENT_BY_ID, get(get_purchase_payment_by_id))
         .route(PURCHASE_PAYMENTS_LIST, get(get_purchase_payments))
         .route(PURCHASE_PAYMENT_DELETE, delete(delete_purchase_payment))
-        .route(PURCHASE_PAYMENT, patch(update_purchase_payment))
+        .route(PURCHASE_PAYMENT_UPDATE, patch(update_purchase_payment))
         // Cash Entry routes
         .route(CASH_ENTRY, put(create_cash_entry))
         .route(CASH_ENTRY_BY_ID, get(get_cash_entry_by_id))
@@ -456,7 +459,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(SALE_PAYMENT_BY_ID, get(get_sale_payment_by_id))
         .route(SALE_PAYMENTS_LIST, get(get_sale_payments))
         .route(SALE_PAYMENT_DELETE, delete(delete_sale_payment))
-        .route(SALE_PAYMENT, patch(update_sale_payment))
+        .route(SALE_PAYMENT_UPDATE, patch(update_sale_payment))
         // Discount routes
         .route(DISCOUNT, put(create_discount))
         .route(DISCOUNT_BY_ID, get(get_discount_by_id))
@@ -474,7 +477,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(SALE_ITEM_BY_ID, get(get_sale_item_by_id))
         .route(SALE_ITEMS_LIST, get(get_sale_items))
         .route(SALE_ITEM_DELETE, delete(delete_sale_item))
-        .route(SALE_ITEM, patch(update_sale_item))
+        .route(SALE_ITEM_UPDATE, patch(update_sale_item))
         // Payment Methods routes
         .route(PAYMENT_METHODS, put(create_payment_method))
         .route(PAYMENT_METHODS_BY_ID, get(get_payment_method_by_id))

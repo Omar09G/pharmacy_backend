@@ -161,11 +161,12 @@ pub async fn delete_sale_payment(
 
 pub async fn update_sale_payment(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<SalePaymentRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let sp = schemas::sale_payments::Entity::find_by_id(payload.id)
+    let sp = schemas::sale_payments::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

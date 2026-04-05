@@ -3,6 +3,10 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::{
+    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
+};
+
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct SaleRequest {
@@ -52,14 +56,14 @@ impl TryFrom<SaleRequest> for schemas::sales::ActiveModel {
             customer_id: ActiveValue::Set(request.customer_id),
             user_id: ActiveValue::Set(request.user_id),
             invoice_no: ActiveValue::Set(request.invoice_no),
-            date: ActiveValue::Set(request.date),
+            date: ActiveValue::Set(get_current_timestamp_now()),
             subtotal: ActiveValue::Set(request.subtotal),
             tax_total: ActiveValue::Set(request.tax_total),
             discount_total: ActiveValue::Set(request.discount_total),
             total: ActiveValue::Set(request.total),
             status: ActiveValue::Set(request.status),
             is_credit: ActiveValue::Set(request.is_credit),
-            created_at: ActiveValue::Set(request.created_at),
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
         })
     }
 }
@@ -71,14 +75,14 @@ impl From<schemas::sales::Model> for SaleDetailResponse {
             customer_id: model.customer_id,
             user_id: model.user_id,
             invoice_no: model.invoice_no,
-            date: model.date,
+            date: get_current_timestamp_at_zone_mexico(model.date),
             subtotal: model.subtotal,
             tax_total: model.tax_total,
             discount_total: model.discount_total,
             total: model.total,
             status: model.status,
             is_credit: model.is_credit,
-            created_at: model.created_at,
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
         }
     }
 }
@@ -90,14 +94,14 @@ impl From<schemas::sales::ActiveModel> for SaleDetailResponse {
             customer_id: model.customer_id.unwrap(),
             user_id: model.user_id.unwrap(),
             invoice_no: model.invoice_no.unwrap(),
-            date: model.date.unwrap(),
+            date: get_current_timestamp_at_zone_mexico(model.date.unwrap()),
             subtotal: model.subtotal.unwrap(),
             tax_total: model.tax_total.unwrap(),
             discount_total: model.discount_total.unwrap(),
             total: model.total.unwrap(),
             status: model.status.unwrap(),
             is_credit: model.is_credit.unwrap(),
-            created_at: model.created_at.unwrap(),
+            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
         }
     }
 }

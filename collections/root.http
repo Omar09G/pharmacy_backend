@@ -788,6 +788,7 @@ Content-Type: application/json;charset=UTF-8
 PUT {{base}}/purchase_item
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
+
 {
 	"id": 1,
 	"purchaseId": 2,
@@ -795,7 +796,9 @@ Content-Type: application/json;charset=UTF-8
 	"lotId": 2,
 	"qty": 10.00,
 	"unitCost": 150.00,
-	"discount": 0.00
+	"discount": 0.00,
+	"taxAmount": 75.00,
+	"lineTotal": 1500.00
 }
 ### Get Purchase Item by ID
 GET  {{base}}/purchase_item/1
@@ -808,3 +811,161 @@ Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
 
 ### Update Purchase Item
+PATCH {{base}}/purchase_item/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"purchaseId": 2,
+	"productId": 1,
+	"lotId": 2,
+	"qty": 5.00,
+	"unitCost": 20.00,
+	"discount": 0.00,
+	"taxAmount": 25.00,
+	"lineTotal": 2000.00
+}
+#########purchase_payments########33##########################
+### Create Purchase Payment
+PUT {{base}}/purchase_payment
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"purchaseId": 2,
+	"methodId": 6,
+	"amount": 300.00,
+	"paidAt": "2024-06-01T12:00:00Z",
+	"reference": "Pago inicial"
+}
+### Get Purchase Payment by ID
+GET  {{base}}/purchase_payment/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Purchase Payments
+GET  {{base}}/purchase_payment?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Purchase Payment
+PATCH {{base}}/purchase_payment/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"purchaseId": 2,
+	"methodId": 6,
+	"amount": 300.00,
+	"paidAt": "2024-06-01T12:00:00Z",
+	"reference": "Pago inicial"
+}
+### Delete Purchase Payment
+DELETE  {{base}}/purchase_payment/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+############SALES##########################
+### Create Sale
+PUT {{base}}/sale
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"customerId": 1,
+	"userId": 2,
+	"invoiceNo": "INV-001",
+	"date": "2024-06-01T12:00:00Z",
+	"subtotal": 200.00,
+	"taxTotal": 100.00,
+	"discountTotal": 0.00,
+	"total": 300.00,
+	"status": "PENDING",
+	"isCredit": false,
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Get Sale by ID
+GET  {{base}}/sale/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Sales
+GET  {{base}}/sale?page=1&limit=10&total=0&dateInit=2026-04-04&dateEnd=2026-04-05
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Sale
+PATCH {{base}}/sale/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"customerId": 1,
+	"userId": 2,
+	"invoiceNo": "INV-001",
+	"date": "2024-06-01T12:00:00Z",
+	"subtotal": 200.00,
+	"taxTotal": 100.00,
+	"discountTotal": 0.00,
+	"total": 300.00,
+	"status": "COMPLETED",
+	"isCredit": false,
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Delete Sale
+DELETE  {{base}}/sale/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#######SALE ITEMS##########################
+### Create Sale Item
+PUT {{base}}/sale_item
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"saleId": 2,
+	"productId": 1,
+	"lotId": 2,
+	"qty": 2.00,
+	"unitPrice": 15.00,
+	"discount": 0.00,
+	"taxAmount": 15.00,
+	"lineTotal": 30.00
+}
+### Get Sale Item by ID
+GET  {{base}}/sale_item/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Get All Sale Items
+GET  {{base}}/sale_item?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#####sale_payments##########################
+### Create Sale Payment
+PUT {{base}}/sale_payment
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"saleId": 2,
+	"methodId": 6,
+	"amount": 30.00,
+	"paidAt": "2024-06-01T12:00:00Z",
+	"reference": "Pago inicial"
+}
+
+### Get Sale Payment by ID
+GET  {{base}}/sale_payment/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Sale Payments
+GET  {{base}}/sale_payment?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Sale Payment

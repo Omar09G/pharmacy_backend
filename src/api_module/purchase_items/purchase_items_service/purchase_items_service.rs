@@ -36,7 +36,7 @@ pub async fn create_purchase_item(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     if new_pi.id.is_not_set() {
-        return Err(ApiError::ValidationError(
+        return Err(ApiError::NotFoundErrorDescription(
             "Failed to create purchase item".to_string(),
         ));
     }
@@ -63,7 +63,7 @@ pub async fn get_purchase_item_by_id(
             "Purchase item retrieved successfully".to_string(),
             1,
         ))),
-        None => Err(ApiError::ValidationError(
+        None => Err(ApiError::NotFoundErrorDescription(
             "Purchase item not found".to_string(),
         )),
     }
@@ -107,6 +107,12 @@ pub async fn get_purchase_items(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    if items.is_empty() {
+        return Err(ApiError::NotFoundErrorDescription(
+            "No purchase items found".to_string(),
+        ));
+    }
+
     Ok(Json(ApiResponse::success(
         items
             .into_iter()
@@ -137,7 +143,7 @@ pub async fn delete_purchase_item(
                 0,
             )))
         }
-        None => Err(ApiError::ValidationError(
+        None => Err(ApiError::NotFoundErrorDescription(
             "Purchase item not found".to_string(),
         )),
     }
@@ -179,7 +185,7 @@ pub async fn update_purchase_item(
                 0,
             )))
         }
-        None => Err(ApiError::ValidationError(
+        None => Err(ApiError::NotFoundErrorDescription(
             "Purchase item not found".to_string(),
         )),
     }
