@@ -3,6 +3,8 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::get_current_timestamp_now;
+
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscountRequest {
@@ -73,10 +75,10 @@ impl TryFrom<DiscountRequest> for schemas::discounts::ActiveModel {
             min_qty: ActiveValue::Set(request.min_qty),
             max_uses: ActiveValue::Set(request.max_uses),
             priority: ActiveValue::Set(request.priority),
-            start_at: ActiveValue::Set(request.start_at),
-            end_at: ActiveValue::Set(request.end_at),
+            start_at: ActiveValue::Set(Some(get_current_timestamp_now())),
+            end_at: ActiveValue::Set(Some(get_current_timestamp_now())),
             active: ActiveValue::Set(request.active),
-            created_at: ActiveValue::Set(request.created_at),
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
             created_by: ActiveValue::Set(request.created_by),
         })
     }

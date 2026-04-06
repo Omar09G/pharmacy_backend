@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
@@ -74,6 +75,11 @@ pub async fn get_audit_logs(
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
+    info!(
+        "Fetching audit logs with pagination: page {}, limit {}",
+        pagination.page, pagination.limit
+    );
+
     let mut select = schemas::audit_log::Entity::find();
 
     if let Some(entity_type) = pagination.entity_type.clone()
@@ -115,6 +121,14 @@ pub async fn get_audit_logs(
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    if items.is_empty() {
+        return Ok(Json(ApiResponse::success(
+            Vec::new(),
+            "No audit logs found".to_string(),
+            0,
+        )));
+    }
 
     Ok(Json(ApiResponse::success(
         items

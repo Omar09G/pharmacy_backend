@@ -1,7 +1,8 @@
 @base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTQwMzA1MywiaWF0IjoxNzc1MzE2NjUzLCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.W24VdQcyDca_uQU7xiK91BYPMDXkTX934b03UU6VjkR6Tfse4nqTrQFvTvND73xAJy9YGzELkjHkDWOqgbkPLCWNlp0V65mFG5hU-njohdIBnTagxu9nVwLqpLrf5Y609XLw71sOPaQoVEzZxZDSqnWUWd7E_vFJxVx1EnnR2BgPQLhy9oq8aLyeYoF8qVQiM5UaiexxFmsJe81VwylX_wQR6UApmHcAjWWBf5kpb0tc3lIumh-NxYMov3j9PH2pwFAk8RdkrLciizJvf5HvArA3G0mVJtZtx_kNDV_9CpBSmcUKu45xExjDqp44HCEUAxrsg9wVP5iomZnCChVHHA
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTU3OTkyNywiaWF0IjoxNzc1NDkzNTI3LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.dmeKHx_nM0t-H54fsIOeNje74hRLDBi88QZU7HniSxxnYm2zTapZLl__pd96ZpGgudcEnsAsnOdFvO8QKm9t0W5ub-92jUEkHI5KiAv78aD_niZhrtW9HjLkXELp9Jblv6hDSwe7mf9WOSdlmcrufEYMFbhyrUCjFOM9OnHVZKNUegohu1yvSAqXJPzWMEtEswZthRDLCk5JO4kIGR2hdmM0vcyc3Qb0WTEWU7ftKRVJROfKTVTIzOP40C56Lj7YGL8_g5GO2ce7BFx1yMKxB5JjdP2xG8OaGgJ6Cbltr3uM2G7xchEs-aYQD96_InbEdbFn6v3w_PTtl0XR7ObKlg
+
 
 ###LOGIN
 POST {{base}}/auth/login
@@ -969,3 +970,278 @@ GET  {{base}}/sale_payment?page=1&limit=10&total=0
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8
 ### Update Sale Payment
+PATCH {{base}}/sale_payment/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"saleId": 2,
+	"methodId": 6,
+	"amount": 30.00,
+	"paidAt": "2024-06-01T12:00:00Z",
+	"reference": "Pago inicial"
+}
+### Delete Sale Payment
+DELETE  {{base}}/sale_payment/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#####CUSTOMER_CREDIT_ACCOUNT##########################
+### Create Customer Credit Account
+PUT {{base}}/customer_credit_account
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"customerId": 1,
+	"balance": 1000.00,
+	"limitAmount": 5000.00,
+	"lastOverdueDate": "2024-06-01"
+}
+
+### Get Customer Credit Account by ID
+GET  {{base}}/customer_credit_account/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Customer Credit Accounts
+GET  {{base}}/customer_credit_account?page=1&limit=10&total=0&customerId=1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Customer Credit Account
+PATCH {{base}}/customer_credit_account/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+{
+	"id": 1,
+	"customerId": 1,
+	"balance": 1500.00,
+	"limitAmount": 5000.00,
+	"lastOverdueDate": "2024-06-01"
+}
+### Delete Customer Credit Account
+DELETE  {{base}}/customer_credit_account/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#########DISCOUNTS##########################
+### Create Discount
+PUT {{base}}/discount
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+    "code": "DISCOUNT2024",
+    "name": "Summer Sale",
+    "description": "Discount for summer season",
+    "discountType": "percentage",
+    "value": 10.0,
+	"appliesTo": "product",
+    "productId": 1,
+    "categoryId": 1,
+    "customerId": 1,
+    "minQty": 1.0,
+    "maxUses": 10,
+    "priority": 1,
+    "startAt": "2024-06-01T12:00:00Z",
+    "endAt": "2024-06-30T12:00:00Z",
+    "active": true,
+    "createdAt": "2024-06-01T12:00:00Z",
+    "createdBy": 2
+}
+### Get Discount by ID
+GET  {{base}}/discount/2
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Discounts
+GET  {{base}}/discount?page=1&limit=10&total=0&name=Summer%20Sale&productId=1&categoryId=1&customerId=1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Discount
+PATCH {{base}}/discount/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"code": "DISCOUNT2024",
+	"name": "Summer Sale",
+	"description": "Discount for summer season",
+	"discountType": "percentage",
+	"value": 15.0,
+	"appliesTo": "product",
+	"productId": 1,
+	"categoryId": 1,
+	"customerId": 1,
+	"minQty": 1.0,
+	"maxUses": 10,
+	"priority": 1,
+	"startAt": "2024-06-01T12:00:00Z",
+	"endAt": "2024-06-30T12:00:00Z",
+	"active": true,
+	"createdAt": "2024-06-01T12:00:00Z",
+	"createdBy": 2
+}
+
+### Delete Discount
+DELETE  {{base}}/discount/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+########INVENTORY_MOVEMENT##########################
+### Create Inventory Movement
+PUT {{base}}/inventory_movement
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+    "productId": 1,
+    "lotId": 2,
+    "locationId": 1,
+    "changeQty": 10.0,
+    "reason": "Stock adjustment",
+    "referenceType": "some_reference_type",
+    "referenceId": 1,
+    "cost": 100.0,
+    "createdAt": "2024-06-01T12:00:00Z",
+    "createdBy": 2
+}
+### Get Inventory Movement by ID
+GET  {{base}}/inventory_movement/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Inventory Movements
+GET  {{base}}/inventory_movement?page=1&limit=10&total=0&productId=1&locationId=1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update Inventory Movement
+PATCH {{base}}/inventory_movement/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"productId": 1,
+	"lotId": 2,
+	"locationId": 1,
+	"changeQty": 15.0,
+	"reason": "Stock adjustment",
+	"referenceType": "some_reference_type",
+	"referenceId": 1,
+	"cost": 100.0,
+	"createdAt": "2024-06-01T12:00:00Z",
+	"createdBy": 2
+}
+### Delete Inventory Movement
+DELETE  {{base}}/inventory_movement
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+##############cash_journals##########################
+### Create Cash Journal
+PUT {{base}}/cash_journal
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+    "id": 1,
+    "name": "Cash Journal 1",
+    "description": "Description of Cash Journal 1",
+    "openingAmount": 1000.0,
+    "openedAt": "2024-06-01T12:00:00Z",
+    "closedAt": null,
+    "openedBy": 2,
+    "closedBy": null,
+    "status": "OPEN",
+    "createdAt": "2024-06-01T12:00:00Z"
+}
+
+### Get Cash Journal by ID
+GET  {{base}}/cash_journal/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Cash Journals
+GET  {{base}}/cash_journal?page=1&limit=10&total=0&status=OPEN
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+### Update Cash Journal
+PATCH {{base}}/cash_journal/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Cash Journal 1",
+	"description": "Description of Cash Journal 1",
+	"openingAmount": 1000.0,
+	"openedAt": "2024-06-01T12:00:00Z",
+	"closedAt": null,
+	"openedBy": 2,
+	"closedBy": null,
+	"status": "CLOSED",
+	"createdAt": "2024-06-01T12:00:00Z"
+}
+### Delete Cash Journal
+DELETE  {{base}}/cash_journal/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#########cash_entries##########################
+### Create Cash Entry
+PUT {{base}}/cash_entry
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+    "name": "Cash Entry 1",
+    "entryType": "other",
+    "amount": 100.0,
+    "methodId": 6,
+    "relatedType": "SALE",
+    "relatedId": 1,
+    "description": "Description of Cash Entry 1",
+    "recordedAt": "2024-06-01T12:00:00Z",
+    "recordedBy": 2
+}
+
+### Get Cash Entry by ID
+GET  {{base}}/cash_entry/5
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Get All Cash Entries
+GET  {{base}}/cash_entry?page=1&limit=10&total=0&entryType=other
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+### Update Cash Entry
+PATCH {{base}}/cash_entry/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"name": "Cash Entry 1",
+	"entryType": "other",
+	"amount": 150.0,
+	"methodId": 6,
+	"relatedType": "SALE",
+	"relatedId": 1,
+	"description": "Description of Cash Entry 1",
+	"recordedAt": "2024-06-01T12:00:00Z",
+	"recordedBy": 2
+}
+### Delete Cash Entry
+DELETE  {{base}}/cash_entry/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+##########AUDIT_LOGS##########################
+### Get All Audit Logs
+GET  {{base}}/audit_log?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8

@@ -239,18 +239,17 @@ const CASH_ENTRY: &str = route!("/cash_entry");
 const CASH_ENTRY_BY_ID: &str = route!("/cash_entry/{:id}");
 const CASH_ENTRIES_LIST: &str = route!("/cash_entry");
 const CASH_ENTRY_DELETE: &str = route!("/cash_entry/{:id}");
+const CASH_ENTRY_UPDATE: &str = route!("/cash_entry/{:id}");
 
 /*Metodos CASH_JOURNAL */
 const CASH_JOURNAL: &str = route!("/cash_journal");
 const CASH_JOURNAL_BY_ID: &str = route!("/cash_journal/{:id}");
 const CASH_JOURNALS_LIST: &str = route!("/cash_journal");
 const CASH_JOURNAL_DELETE: &str = route!("/cash_journal/{:id}");
+const CASH_JOURNAL_UPDATE: &str = route!("/cash_journal/{:id}");
 
 /*Metodos AUDIT_LOG */
-const AUDIT_LOG: &str = route!("/audit_log");
-const AUDIT_LOG_BY_ID: &str = route!("/audit_log/{:id}");
 const AUDIT_LOGS_LIST: &str = route!("/audit_log");
-const AUDIT_LOG_DELETE: &str = route!("/audit_log/{:id}");
 
 /*Metodos SALE_PAYMENT  */
 const SALE_PAYMENT: &str = route!("/sale_payment");
@@ -264,12 +263,14 @@ const DISCOUNT: &str = route!("/discount");
 const DISCOUNT_BY_ID: &str = route!("/discount/{:id}");
 const DISCOUNTS_LIST: &str = route!("/discount");
 const DISCOUNT_DELETE: &str = route!("/discount/{:id}");
+const DISCOUNT_UPDATE: &str = route!("/discount/{:id}");
 
 /*Metodos INVENTORY_MOVEMENT */
 const INVENTORY_MOVEMENT: &str = route!("/inventory_movement");
 const INVENTORY_MOVEMENT_BY_ID: &str = route!("/inventory_movement/{:id}");
 const INVENTORY_MOVEMENTS_LIST: &str = route!("/inventory_movement");
 const INVENTORY_MOVEMENT_DELETE: &str = route!("/inventory_movement/{:id}");
+const INVENTORY_MOVEMENT_UPDATE: &str = route!("/inventory_movement/{:id}");
 
 /*Metodos PRODUCT_BARCODE  */
 const PRODUCT_BARCODE: &str = route!("/product_barcode");
@@ -429,19 +430,15 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(CASH_ENTRY_BY_ID, get(get_cash_entry_by_id))
         .route(CASH_ENTRIES_LIST, get(get_cash_entries))
         .route(CASH_ENTRY_DELETE, delete(delete_cash_entry))
-        .route(CASH_ENTRY, patch(update_cash_entry))
+        .route(CASH_ENTRY_UPDATE, patch(update_cash_entry))
         // Cash Journal routes
         .route(CASH_JOURNAL, put(create_cash_journal))
         .route(CASH_JOURNAL_BY_ID, get(get_cash_journal_by_id))
         .route(CASH_JOURNALS_LIST, get(get_cash_journals))
         .route(CASH_JOURNAL_DELETE, delete(delete_cash_journal))
-        .route(CASH_JOURNAL, patch(update_cash_journal))
+        .route(CASH_JOURNAL_UPDATE, patch(update_cash_journal))
         // Audit Log routes
-        .route(AUDIT_LOG, put(create_audit_log))
-        .route(AUDIT_LOG_BY_ID, get(get_audit_log_by_id))
         .route(AUDIT_LOGS_LIST, get(get_audit_logs))
-        .route(AUDIT_LOG_DELETE, delete(delete_audit_log))
-        .route(AUDIT_LOG, patch(update_audit_log))
         // Purchase routes
         .route(PURCHASE, put(create_purchase))
         .route(PURCHASE_BY_ID, get(get_purchase_by_id))
@@ -465,13 +462,13 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(DISCOUNT_BY_ID, get(get_discount_by_id))
         .route(DISCOUNTS_LIST, get(get_discounts))
         .route(DISCOUNT_DELETE, delete(delete_discount))
-        .route(DISCOUNT, patch(update_discount))
+        .route(DISCOUNT_UPDATE, patch(update_discount))
         // Inventory Movement routes
         .route(INVENTORY_MOVEMENT, put(create_inventory_movement))
         .route(INVENTORY_MOVEMENT_BY_ID, get(get_inventory_movement_by_id))
         .route(INVENTORY_MOVEMENTS_LIST, get(get_inventory_movements))
         .route(INVENTORY_MOVEMENT_DELETE, delete(delete_inventory_movement))
-        .route(INVENTORY_MOVEMENT, patch(update_inventory_movement))
+        .route(INVENTORY_MOVEMENT_UPDATE, patch(update_inventory_movement))
         // Sale Item routes
         .route(SALE_ITEM, put(create_sale_item))
         .route(SALE_ITEM_BY_ID, get(get_sale_item_by_id))

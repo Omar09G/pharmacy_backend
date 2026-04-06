@@ -169,11 +169,12 @@ pub async fn delete_inventory_movement(
 
 pub async fn update_inventory_movement(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<InventoryMovementRequest>,
 ) -> Result<Json<ApiResponse<InventoryMovementIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let im = schemas::inventory_movements::Entity::find_by_id(payload.id)
+    let im = schemas::inventory_movements::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

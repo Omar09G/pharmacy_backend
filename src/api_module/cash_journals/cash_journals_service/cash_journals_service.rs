@@ -146,11 +146,12 @@ pub async fn delete_cash_journal(
 
 pub async fn update_cash_journal(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<CashJournalRequest>,
 ) -> Result<Json<ApiResponse<CashJournalIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let cj = schemas::cash_journals::Entity::find_by_id(payload.id)
+    let cj = schemas::cash_journals::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

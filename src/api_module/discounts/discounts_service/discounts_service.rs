@@ -149,11 +149,12 @@ pub async fn delete_discount(
 
 pub async fn update_discount(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<DiscountRequest>,
 ) -> Result<Json<ApiResponse<DiscountIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let d = schemas::discounts::Entity::find_by_id(payload.id)
+    let d = schemas::discounts::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

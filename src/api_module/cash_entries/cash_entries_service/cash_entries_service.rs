@@ -161,11 +161,12 @@ pub async fn delete_cash_entry(
 
 pub async fn update_cash_entry(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<CashEntryRequest>,
 ) -> Result<Json<ApiResponse<CashEntryIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let ce = schemas::cash_entries::Entity::find_by_id(payload.id)
+    let ce = schemas::cash_entries::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
