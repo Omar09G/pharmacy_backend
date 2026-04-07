@@ -75,10 +75,14 @@ pub async fn list_tax_profiles(
         .order_by_asc(schemas::tax_profiles::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let tax_profiles = paginator
         .fetch_page(to_page_index(pagination.page))
@@ -172,10 +176,14 @@ pub async fn search_tax_profiles_by_name(
         .order_by_asc(schemas::tax_profiles::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let tax_profiles = paginator
         .fetch_page(to_page_index(pagination.page))

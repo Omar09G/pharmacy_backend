@@ -115,10 +115,14 @@ pub async fn get_customers(
         .order_by_asc(schemas::customers::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+     let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let customers = paginator
         .fetch_page(page_index)
@@ -179,10 +183,14 @@ pub async fn get_customers_by_name(
         .order_by_asc(schemas::customers::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+     let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let customers = paginator
         .fetch_page(page_index)

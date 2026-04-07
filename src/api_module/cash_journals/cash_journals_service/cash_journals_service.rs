@@ -98,10 +98,15 @@ pub async fn get_cash_journals(
         .order_by_asc(schemas::cash_journals::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    // If client provided a total (>0) use it; otherwise query the paginator for the count.
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let items = paginator
         .fetch_page(page_index)

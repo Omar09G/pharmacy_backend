@@ -90,10 +90,15 @@ pub async fn get_permissions_by_name(
         .filter(schemas::permissions::Column::Name.eq(name_str))
         .order_by_asc(schemas::permissions::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+     
+     let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let items = paginator
         .fetch_page(to_page_index(pagination.page))
@@ -116,10 +121,15 @@ pub async fn get_permissions(
     let paginator = schemas::permissions::Entity::find()
         .order_by_asc(schemas::permissions::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let items = paginator
         .fetch_page(to_page_index(pagination.page))

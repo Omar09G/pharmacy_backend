@@ -9,7 +9,10 @@ use log::{error, info};
 use std::net::SocketAddr;
 
 use crate::{
-    config::config_database::config_db::{close_db_connection, get_db_context},
+    config::{
+        config_database::config_db::{close_db_connection, get_db_context},
+        config_jwt::validate_jwt::init_jwt_keys_if_needed,
+    },
     controller::api_controller::get_config_router,
 };
 #[tokio::main]
@@ -36,6 +39,10 @@ async fn main() {
         });
 
     info!("Starting Pharmacy Backend API...");
+
+    if let Err(e) = init_jwt_keys_if_needed() {
+        error!("Failed to initialize JWT keys: {}", e);
+    }
 
     let port: u16 = std::env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())

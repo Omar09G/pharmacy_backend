@@ -30,10 +30,16 @@ pub async fn get_login(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
         .ok_or_else(|| ApiError::Unauthorized)?;
 
-    let is_valid_password =
-        verify_password(&payload.password, &user.password_hash).map_err(|e| {
-            error!("Error: {}", e);
-
+    let pwd = payload.password.clone();
+    let user_hash = user.password_hash.clone();
+    let is_valid_password = tokio::task::spawn_blocking(move || verify_password(&pwd, &user_hash))
+        .await
+        .map_err(|e| {
+            error!("Join error verifying password: {}", e);
+            ApiError::Unauthorized
+        })?
+        .map_err(|e| {
+            error!("Error verifying password: {}", e);
             ApiError::Unauthorized
         })?;
 

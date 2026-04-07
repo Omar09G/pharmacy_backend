@@ -105,12 +105,14 @@ use crate::api_module::user_role::user_role_service::user_role_service::{
 };
 use crate::config::config_database::config_db_context::AppContext;
 use crate::config::config_middleware::auth_jwt::auth_middleware;
+use crate::config::config_middleware::content_type::content_type_middleware;
 use crate::config::config_middleware::cors::cors_middleware;
 
 use crate::api_module::tax_profiles::tax_profiles_service::tax_profiles_service::{
     create_tax_profile, delete_tax_profile, get_tax_profile_by_id, list_tax_profiles,
     update_tax_profile,
 };
+use crate::config::config_middleware::rate_limit::rate_limit_middleware;
 
 // API route constants
 // Base API prefix and helper macro to compose routes at compile time.
@@ -513,7 +515,10 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(TAX_PROFILES_UPDATE, patch(update_tax_profile))
         .with_state(app_ctx.clone())
         // CORS middleware must be the outermost layer so it runs before auth
+        // Order: auth -> content_type -> rate_limit -> cors (cors outermost)
         .layer(from_fn(auth_middleware))
+        .layer(from_fn(content_type_middleware))
+        .layer(from_fn(rate_limit_middleware))
         .layer(from_fn(cors_middleware));
 
     Ok(router)

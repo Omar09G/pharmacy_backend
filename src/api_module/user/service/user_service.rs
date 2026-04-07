@@ -40,15 +40,27 @@ pub async fn create_user(
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let user_create = schemas::users::ActiveModel::try_from(payload)
+    // Offload Argon2 hashing to blocking thread to avoid blocking async runtime
+    let plain_password = payload.password_hash.clone();
+    let new_password_hash = tokio::task::spawn_blocking(move || generate_hash(&plain_password))
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
         .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
-    if user_create.username.is_not_set()
-        || user_create.password_hash.is_not_set()
-        || user_create.status.is_not_set()
-    {
-        return Err(ApiError::Validation(validator::ValidationErrors::new()));
-    }
+    let user_create = schemas::users::ActiveModel {
+        id: ActiveValue::NotSet,
+        username: ActiveValue::Set(payload.username),
+        password_hash: ActiveValue::Set(new_password_hash),
+        full_name: ActiveValue::Set(payload.full_name),
+        email: ActiveValue::Set(payload.email),
+        phone: ActiveValue::Set(payload.phone),
+        status: ActiveValue::Set(payload.status),
+        created_at: ActiveValue::Set(get_current_timestamp_now()),
+        created_by: ActiveValue::NotSet,
+        updated_at: ActiveValue::NotSet,
+        updated_by: ActiveValue::NotSet,
+        deleted_at: ActiveValue::NotSet,
+    };
 
     let new_user = user_create
         .save(&app_ctx.conn)
@@ -102,10 +114,14 @@ pub async fn get_all_users(
         .order_by_asc(schemas::users::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let users = paginator
         .fetch_page(to_page_index(pagination.page))
@@ -179,8 +195,13 @@ pub async fn change_user_password(
 
     let mut user_active_model = user.into_active_model();
 
-    let new_password_hash = generate_hash(&payload.password)
-        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
+    let plain = payload.password.clone();
+    let new_password_hash = tokio::task::spawn_blocking(move || {
+        crate::config::config_pass::config_password::generate_hash(&plain)
+    })
+    .await
+    .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     user_active_model.password_hash = ActiveValue::Set(new_password_hash);
     user_active_model.updated_at = ActiveValue::Set(Some(get_current_timestamp_now()));

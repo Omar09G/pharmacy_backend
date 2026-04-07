@@ -116,10 +116,14 @@ pub async fn get_purchases(
         .order_by_asc(schemas::purchases::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-    let total_items = paginator
-        .num_items()
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+     let total_items = if pagination.total > 0 {
+        pagination.total
+    } else {
+        paginator
+            .num_items()
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+    };
 
     let items = paginator
         .fetch_page(page_index)

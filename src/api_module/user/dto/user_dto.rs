@@ -2,9 +2,8 @@ use sea_orm::{ActiveValue, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::{
-    api_utils::api_utils_fun::{get_current_timestamp_at_zone_mexico, get_current_timestamp_now},
-    config::config_pass::config_password::generate_hash,
+use crate::api_utils::api_utils_fun::{
+    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
 };
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
@@ -24,7 +23,7 @@ pub struct UserDto {
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Validate)]
+#[derive(Deserialize, Serialize, Debug, Validate, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserRequestDto {
     pub id: i64,
@@ -83,7 +82,9 @@ impl TryFrom<UserRequestDto> for schemas::users::ActiveModel {
     type Error = String;
 
     fn try_from(dto: UserRequestDto) -> Result<Self, Self::Error> {
-        let password_hash = generate_hash(&dto.password_hash)?;
+        // NOTE: DTO contains the plain password in `password_hash` field at this stage.
+        // Password hashing must be performed outside of this conversion (e.g., spawn_blocking in handlers).
+        let password_hash = dto.password_hash;
 
         Ok(Self {
             id: ActiveValue::NotSet,
