@@ -2,6 +2,7 @@ use axum::routing::{delete, get, patch, post, put};
 use axum::{Router, middleware::from_fn};
 use log::info;
 
+use crate::api_module::add_product::add_product_service::add_product_service::{add_product, get_product_by_bar_code, get_products_with_details};
 use crate::api_module::inventory_locations::inventory_location_service::inventory_location_service::{create_inventory_location, delete_inventory_location, get_inventory_location_by_id, get_inventory_locations, update_inventory_location};
 use crate::api_module::login::service::login_service::{get_login, get_profile};
 use crate::api_module::payment_methods::payment_methods_service::payment_methods_service::{
@@ -69,7 +70,7 @@ use crate::api_module::cash_journals::cash_journals_service::cash_journals_servi
     update_cash_journal,
 };
 use crate::api_module::audit_log::audit_log_service::audit_log_service::{
-    create_audit_log, delete_audit_log, get_audit_log_by_id, get_audit_logs, update_audit_log,
+    get_audit_logs,
 };
 use crate::api_module::purchases::purchases_service::purchases_service::{
     create_purchase, delete_purchase, get_purchase_by_id, get_purchases, update_purchase,
@@ -308,11 +309,19 @@ const TAX_PROFILES_BY_ID: &str = route!("/tax_profiles/{:id}");
 const TAX_PROFILES_DELETE: &str = route!("/tax_profiles/{:id}");
 const TAX_PROFILES_UPDATE: &str = route!("/tax_profiles/{:id}");
 
+const ADD_PRODUCT: &str = route!("/add_product");
+const ADD_PRODUCT_BY_DETAIL: &str = route!("/add_product");
+const ADD_PRODUCT_BY_BARCODE: &str = route!("/add_product/{:barcode}");
+
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()
         .route(LOGIN, post(get_login))
         .route(PROFILE, get(get_profile))
+        //ADD PRODUCT routes
+        .route(ADD_PRODUCT, put(add_product))
+        .route(ADD_PRODUCT_BY_DETAIL, get(get_products_with_details))
+        .route(ADD_PRODUCT_BY_BARCODE, get(get_product_by_bar_code))
         // User routes
         .route(USER, put(create_user))
         .route(USER_BY_ID, get(get_user_by_id))

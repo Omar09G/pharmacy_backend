@@ -1,7 +1,7 @@
 @base = http://localhost:8080/v1/api
 @contentType = application/json;charset=UTF-8
 
-@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTU3OTkyNywiaWF0IjoxNzc1NDkzNTI3LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.dmeKHx_nM0t-H54fsIOeNje74hRLDBi88QZU7HniSxxnYm2zTapZLl__pd96ZpGgudcEnsAsnOdFvO8QKm9t0W5ub-92jUEkHI5KiAv78aD_niZhrtW9HjLkXELp9Jblv6hDSwe7mf9WOSdlmcrufEYMFbhyrUCjFOM9OnHVZKNUegohu1yvSAqXJPzWMEtEswZthRDLCk5JO4kIGR2hdmM0vcyc3Qb0WTEWU7ftKRVJROfKTVTIzOP40C56Lj7YGL8_g5GO2ce7BFx1yMKxB5JjdP2xG8OaGgJ6Cbltr3uM2G7xchEs-aYQD96_InbEdbFn6v3w_PTtl0XR7ObKlg
+@accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTY2NzkxNywiaWF0IjoxNzc1NTgxNTE3LCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.eQfMIAFMDChgkxJNBY7KBh2bfUHwgvMjebYQvrbLFmoT1gH1-m0DgaC0tvYs6R6ixG6sd-KgqsI25JEEuf0GI5kOB2Qn14MBhj3qG0p6uq5ZvMbTg3ZJtnguOqovu0WKAh_LkNInwJEeTAy8qmPSlLuh8qFVza-KmFlDRUwtIt0rUfXAxI4r7eSlruDO3dCu2KVBpfanLEIBMxw6SbQWnLZyQEquPJXfD8SFr9lz_Hd37aROC1Z2-wg0wv0eMsz6rMGSuZ_KhfusTIGKoetqLPWUJ1DraZa8cnOJflsTjStkdSD8t6Enlu1VD-o1sIwHfGwFPHxw3LXkRSppCiYhGQ
 
 
 ###LOGIN
@@ -1243,5 +1243,49 @@ Content-Type: application/json;charset=UTF-8
 ##########AUDIT_LOGS##########################
 ### Get All Audit Logs
 GET  {{base}}/audit_log?page=1&limit=10&total=0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#####ADD - PRODUCT TO APP 
+PUT {{base}}/add_product
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+{
+	"id": 1,
+	"sku": "SKU8765",
+	"name": "Jabón Líquido 500ml",
+	"barcode": "7721248765",
+	"barcodeType": "EAN-13",
+	"description": "Jabón Líquido 500ml",
+	"lotNumber": "LOT-001",
+	"qtyOnHand": 100,
+	"expiryDate": "2024-12-31",
+	"purchaseId": 2,
+	"priceType": "RETAIL",
+	"price": 100.0,
+	"brand": "Brand Name",
+	"categoryId": 1,
+	"unitId": 1,
+	"isSellable": true,
+	"trackBatches": true,
+	"taxProfileId": 1,
+	"defaultCost": 50.0,
+	"purchasePrice": 60.0,
+	"wholesalePrice": 70.0,
+	"salePrice": 80.0,
+	"defaultPrice": 90.0,
+	"createdAt": "2024-06-01T12:00:00Z",
+	"updatedAt": "2024-06-01T12:00:00Z",
+	"deletedAt": null
+}
+
+### get product by barcode
+GET  {{base}}/add_product/7721248765
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json;charset=UTF-8
+
+#### GET PRODUCT PAGINATED
+GET  {{base}}/add_product?page=1&limit=10&total=0
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json;charset=UTF-8

@@ -1,3 +1,5 @@
+pub mod add_product;
+pub mod add_sale;
 pub mod audit_log;
 pub mod cash_entries;
 pub mod cash_journals;

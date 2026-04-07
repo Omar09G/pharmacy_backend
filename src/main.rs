@@ -9,7 +9,7 @@ use log::{error, info};
 use std::net::SocketAddr;
 
 use crate::{
-    config::config_database::config_db::get_db_context,
+    config::config_database::config_db::{close_db_connection, get_db_context},
     controller::api_controller::get_config_router,
 };
 #[tokio::main]
@@ -71,5 +71,6 @@ async fn main() {
         error!("Server error: {}", e);
         std::process::exit(1);
     }
+    close_db_connection(ctx_bd.conn).await;
     info!("Server stopped");
 }
