@@ -24,7 +24,7 @@ pub async fn configure_database() -> Result<DatabaseConnection, String> {
         .set_schema_search_path("pharmacy") // set default Postgres schema
         .min_connections(1);
 
-    let db = sea_orm::Database::connect(option_conection)
+    let db = sea_orm::Database::connect(db_url)
         .await
         .map_err(|e| e.to_string())?;
 

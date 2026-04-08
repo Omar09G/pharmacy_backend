@@ -22,6 +22,7 @@ pub mod purchases;
 pub mod role;
 pub mod role_permissions;
 pub mod sale_items;
+pub mod sale_payment_allocations;
 pub mod sale_payments;
 pub mod sales;
 pub mod suppliers;

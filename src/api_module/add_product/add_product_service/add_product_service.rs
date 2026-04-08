@@ -6,8 +6,8 @@ use axum::{
 use log::info;
 use sea_orm::entity::prelude::*;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    TransactionTrait,
 };
 use validator::Validate;
 
@@ -266,8 +266,13 @@ pub async fn get_products_with_details(
 
     // If client provided a total (>0) use it; otherwise query the paginator for the count.
     let total_items = if pagination.total > 0 {
+        info!(
+            "Using client-provided total items for pagination: {}",
+            pagination.total
+        );
         pagination.total
     } else {
+        info!("Counting total items for pagination...");
         paginator
             .num_items()
             .await

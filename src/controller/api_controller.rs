@@ -3,6 +3,7 @@ use axum::{Router, middleware::from_fn};
 use log::info;
 
 use crate::api_module::add_product::add_product_service::add_product_service::{add_product, get_product_by_bar_code, get_products_with_details};
+use crate::api_module::add_sale::add_sale_service::add_sale_service::{cancel_add_sale,create_add_sale, get_add_sale_by_id, get_add_sales_with_details};
 use crate::api_module::inventory_locations::inventory_location_service::inventory_location_service::{create_inventory_location, delete_inventory_location, get_inventory_location_by_id, get_inventory_locations, update_inventory_location};
 use crate::api_module::login::service::login_service::{get_login, get_profile};
 use crate::api_module::payment_methods::payment_methods_service::payment_methods_service::{
@@ -315,6 +316,9 @@ const ADD_PRODUCT: &str = route!("/add_product");
 const ADD_PRODUCT_BY_DETAIL: &str = route!("/add_product");
 const ADD_PRODUCT_BY_BARCODE: &str = route!("/add_product/{:barcode}");
 
+const ADD_SALE: &str = route!("/add_sale");
+const ADD_SALE_BY_ID: &str = route!("/add_sale/{:id}");
+
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()
@@ -513,6 +517,11 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(TAX_PROFILES, get(list_tax_profiles))
         .route(TAX_PROFILES_DELETE, delete(delete_tax_profile))
         .route(TAX_PROFILES_UPDATE, patch(update_tax_profile))
+        // Add SALE routes
+        .route(ADD_SALE, put(create_add_sale))
+        .route(ADD_SALE_BY_ID, get(get_add_sale_by_id))
+        .route(ADD_SALE, get(get_add_sales_with_details))
+        .route(ADD_SALE_BY_ID, patch(cancel_add_sale))
         .with_state(app_ctx.clone())
         // CORS middleware must be the outermost layer so it runs before auth
         // Order: auth -> content_type -> rate_limit -> cors (cors outermost)

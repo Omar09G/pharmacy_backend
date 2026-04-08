@@ -1,11 +1,11 @@
 use crate::api_utils::api_error::ApiError;
 use chrono::Offset;
+use chrono::Timelike;
 use chrono::{FixedOffset, Utc};
 use chrono_tz::America::Mexico_City;
 use lazy_static::lazy_static;
 use regex::Regex;
 use sea_orm::entity::prelude::*;
-
 use validator::ValidationError;
 // 1. Definir la expresión regular para caracteres especiales permitidos.
 // Acepta alfanuméricos, guion bajo y arroba.
@@ -187,6 +187,30 @@ pub fn valite_date_time_range(start_date_time: &str, end_date_time: &str) -> Res
         ));
     }
     Ok(())
+}
+
+pub fn valite_date_time_range_date(
+    start_date_time: &str,
+    end_date_time: &str,
+) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
+    let start = parce_date_str_to_date_time_with_timezone_opt(start_date_time)?;
+    let end = parce_date_str_to_date_time_with_timezone_opt(end_date_time)?;
+
+    if let (Some(start_dt), Some(end_dt)) = (start, end) {
+        // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
+        let adjusted_end = end_dt
+            .with_hour(23)
+            .and_then(|dt| dt.with_minute(59))
+            .and_then(|dt| dt.with_second(59))
+            .unwrap_or(end_dt);
+
+        if start_dt > adjusted_end {
+            return Err(ApiError::ValidationError(
+                "Start date-time cannot be after end date-time".to_string(),
+            ));
+        }
+    }
+    Ok((start, end))
 }
 
 pub fn valite_date_time_range_opt(

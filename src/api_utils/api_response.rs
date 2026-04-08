@@ -222,4 +222,6 @@ pub struct PaginationParams {
     pub action: Option<String>,
     pub entity_id: Option<i64>,
     pub changed_by: Option<i64>,
+    pub payment_id: Option<i64>,
+    pub credit_invoice_id: Option<i64>,
 }
