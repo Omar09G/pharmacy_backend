@@ -3,9 +3,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::{
-    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
-};
+use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -61,7 +59,7 @@ impl From<schemas::product_lots::Model> for ProductLotDetailResponse {
             qty_on_hand: model.qty_on_hand,
             expiry_date: model.expiry_date,
             purchase_id: model.purchase_id,
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
+            created_at: model.created_at,
         }
     }
 }
@@ -75,7 +73,7 @@ impl From<schemas::product_lots::ActiveModel> for ProductLotDetailResponse {
             qty_on_hand: model.qty_on_hand.unwrap(),
             expiry_date: model.expiry_date.unwrap(),
             purchase_id: model.purchase_id.unwrap(),
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
+            created_at: model.created_at.unwrap(),
         }
     }
 }

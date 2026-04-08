@@ -82,7 +82,7 @@ pub async fn get_roles(
         .order_by_asc(schemas::roles::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -146,7 +146,7 @@ pub async fn get_roles_by_name(
         .order_by_asc(schemas::roles::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -185,7 +185,6 @@ pub async fn update_role(
 
             role_active_model.name = ActiveValue::Set(payload.name);
             role_active_model.description = ActiveValue::Set(payload.description);
-            role_active_model.created_at = ActiveValue::Set(payload.created_at);
 
             let updated_role = role_active_model
                 .save(&app_ctx.conn)

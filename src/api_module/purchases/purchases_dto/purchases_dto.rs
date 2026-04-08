@@ -3,9 +3,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::{
-    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
-};
+use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -67,12 +65,12 @@ impl From<schemas::purchases::Model> for PurchaseDetailResponse {
             id: model.id,
             supplier_id: model.supplier_id,
             invoice_no: model.invoice_no,
-            date: get_current_timestamp_at_zone_mexico(model.date),
+            date: model.date,
             subtotal: model.subtotal,
             tax_total: model.tax_total,
             total: model.total,
             status: model.status,
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
+            created_at: model.created_at,
             created_by: model.created_by,
         }
     }
@@ -84,12 +82,12 @@ impl From<schemas::purchases::ActiveModel> for PurchaseDetailResponse {
             id: model.id.unwrap(),
             supplier_id: model.supplier_id.unwrap(),
             invoice_no: model.invoice_no.unwrap(),
-            date: get_current_timestamp_at_zone_mexico(model.date.unwrap()),
+            date: model.date.unwrap(),
             subtotal: model.subtotal.unwrap(),
             tax_total: model.tax_total.unwrap(),
             total: model.total.unwrap(),
             status: model.status.unwrap(),
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
+            created_at: model.created_at.unwrap(),
             created_by: model.created_by.unwrap(),
         }
     }

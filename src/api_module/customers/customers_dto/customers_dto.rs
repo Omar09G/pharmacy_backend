@@ -3,9 +3,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::{
-    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
-};
+use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -88,7 +86,7 @@ impl From<schemas::customers::Model> for CustomerDetailResponse {
             credit_limit: model.credit_limit,
             terms_days: model.terms_days,
             status: model.status,
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
+            created_at: model.created_at,
         }
     }
 }
@@ -105,7 +103,7 @@ impl From<schemas::customers::ActiveModel> for CustomerDetailResponse {
             credit_limit: model.credit_limit.unwrap(),
             terms_days: model.terms_days.unwrap(),
             status: model.status.unwrap(),
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
+            created_at: model.created_at.unwrap(),
         }
     }
 }

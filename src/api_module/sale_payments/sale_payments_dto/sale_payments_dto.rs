@@ -3,9 +3,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::{
-    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
-};
+use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -56,7 +54,7 @@ impl From<schemas::sale_payments::Model> for SalePaymentDetailResponse {
             sale_id: model.sale_id,
             amount: model.amount,
             method_id: model.method_id,
-            paid_at: get_current_timestamp_at_zone_mexico(model.paid_at),
+            paid_at: model.paid_at,
             reference: model.reference,
         }
     }
@@ -69,7 +67,7 @@ impl From<schemas::sale_payments::ActiveModel> for SalePaymentDetailResponse {
             sale_id: model.sale_id.unwrap(),
             amount: model.amount.unwrap(),
             method_id: model.method_id.unwrap(),
-            paid_at: get_current_timestamp_at_zone_mexico(model.paid_at.unwrap()),
+            paid_at: model.paid_at.unwrap(),
             reference: model.reference.unwrap(),
         }
     }

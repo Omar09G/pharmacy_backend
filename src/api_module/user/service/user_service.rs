@@ -13,7 +13,8 @@ use validator::Validate;
 use crate::{
     api_module::{
         user::dto::user_dto::{
-            UserChangePasswordRequest, UserChangeStatusRequest, UserRequestDto, UserResponse,
+            UserChangePasswordRequest, UserChangeStatusRequest, UserIdResponse, UserRequestDto,
+            UserResponse, UserUpdateRequestDto,
         },
         utils::utils::{ACTIVE_STATUS, INACTIVE_STATUS},
     },
@@ -37,11 +38,13 @@ Returns:      - Result<Json<ApiResponse<UserResponse>>, ApiError>: Resultado de 
 pub async fn create_user(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<UserRequestDto>,
-) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
+) -> Result<Json<ApiResponse<UserIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
+    let role = payload.role.clone();
+
     // Offload Argon2 hashing to blocking thread to avoid blocking async runtime
-    let plain_password = payload.password_hash.clone();
+    let plain_password = payload.password.clone();
     let new_password_hash = tokio::task::spawn_blocking(move || generate_hash(&plain_password))
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
@@ -67,8 +70,41 @@ pub async fn create_user(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let user_id_str: i64 = new_user.id.unwrap();
+
+    info!(
+        "Creating user role with user_id: {} and role: {}",
+        user_id_str, role
+    );
+
+    //Buscar el ID del ROLE "USER" para asignarlo al nuevo usuario creado
+    let role = schemas::roles::Entity::find()
+        .filter(schemas::roles::Column::Name.eq(role))
+        .one(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+        .ok_or_else(|| ApiError::NotFound)?;
+
+    let role_id_str: i64 = role.id;
+
+    let user_role_create = schemas::user_roles::ActiveModel {
+        user_id: ActiveValue::Set(user_id_str),
+        role_id: ActiveValue::Set(role_id_str),
+    };
+
+    if user_role_create.user_id.is_not_set() || user_role_create.role_id.is_not_set() {
+        return Err(ApiError::Validation(validator::ValidationErrors::new()));
+    }
+
+    user_role_create
+        .insert(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    info!("User role created successfully");
+
     Ok(Json(ApiResponse::success(
-        UserResponse::from(new_user),
+        UserIdResponse { id: user_id_str },
         "User created successfully".to_string(),
         1,
     )))
@@ -128,12 +164,38 @@ pub async fn get_all_users(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let mut users_with_roles: Vec<UserResponse> = Vec::new();
+
+    //Relacion con USER-ROLE para validar Nombre del ROLE
+    for user in &users {
+        let user_role = schemas::user_roles::Entity::find()
+            .filter(schemas::user_roles::Column::UserId.eq(user.id))
+            .one(&app_ctx.conn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+        if let Some(user_role) = user_role {
+            let role = schemas::roles::Entity::find_by_id(user_role.role_id)
+                .one(&app_ctx.conn)
+                .await
+                .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            if let Some(role) = role {
+                users_with_roles.push(UserResponse::from((user.clone(), role.name)));
+            } else {
+                users_with_roles.push(UserResponse::from((user.clone(), "".to_string())));
+            }
+        } else {
+            users_with_roles.push(UserResponse::from((user.clone(), "".to_string())));
+        }
+    }
+
     if users.is_empty() {
         return Err(ApiError::NotFound);
     }
 
     Ok(Json(ApiResponse::success(
-        users.into_iter().map(UserResponse::from).collect(),
+        users_with_roles,
         "Users retrieved successfully".to_string(),
         total_items as i32,
     )))
@@ -248,7 +310,7 @@ pub async fn delete_user(
 pub async fn update_user(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
-    Json(payload): Json<UserRequestDto>,
+    Json(payload): Json<UserUpdateRequestDto>,
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -270,7 +332,7 @@ pub async fn update_user(
         user_active_model.phone = ActiveValue::Set(Some(str_phone.clone()));
     }
     user_active_model.updated_at = ActiveValue::Set(Some(get_current_timestamp_now()));
-    user_active_model.updated_by = ActiveValue::Set(Some(payload.updated_by.unwrap_or(0)));
+    user_active_model.updated_by = ActiveValue::Set(Some(payload.updated_by));
 
     let updated_user = user_active_model
         .save(&app_ctx.conn)

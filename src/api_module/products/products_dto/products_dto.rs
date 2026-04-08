@@ -3,9 +3,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::{
-    get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
-};
+use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -126,9 +124,9 @@ impl From<schemas::products::Model> for ProductDetailResponse {
             wholesale_price: model.wholesale_price,
             sale_price: model.sale_price,
             default_price: model.default_price,
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at),
-            updated_at: model.updated_at.map(get_current_timestamp_at_zone_mexico),
-            deleted_at: model.deleted_at.map(get_current_timestamp_at_zone_mexico),
+            created_at: model.created_at,
+            updated_at: model.updated_at,
+            deleted_at: model.deleted_at,
         }
     }
 }
@@ -151,15 +149,9 @@ impl From<schemas::products::ActiveModel> for ProductDetailResponse {
             wholesale_price: model.wholesale_price.unwrap(),
             sale_price: model.sale_price.unwrap(),
             default_price: model.default_price.unwrap(),
-            created_at: get_current_timestamp_at_zone_mexico(model.created_at.unwrap()),
-            updated_at: model
-                .updated_at
-                .unwrap()
-                .map(get_current_timestamp_at_zone_mexico),
-            deleted_at: model
-                .deleted_at
-                .unwrap()
-                .map(get_current_timestamp_at_zone_mexico),
+            created_at: model.created_at.unwrap(),
+            updated_at: model.updated_at.unwrap(),
+            deleted_at: model.deleted_at.unwrap(),
         }
     }
 }

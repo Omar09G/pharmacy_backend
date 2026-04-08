@@ -133,8 +133,8 @@ const USER_BY_ID: &str = route!("/user/{:id}");
 const USER_CHANGE_PASSWORD: &str = route!("/user/password");
 const USER_CHANGE_STATUS: &str = route!("/user/status");
 const USER_LIST: &str = route!("/user");
-const USER_DELETE: &str = route!("/user");
-const USER_UPDATE: &str = route!("/user");
+const USER_DELETE: &str = route!("/user/{:id}");
+const USER_UPDATE: &str = route!("/user/{:id}");
 
 /*Metodos USER_ROLE  */
 const USER_ROLE: &str = route!("/user_role");
