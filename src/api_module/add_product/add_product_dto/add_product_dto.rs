@@ -13,7 +13,6 @@ use validator::Validate;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductAddRequest {
-    pub id: i64,
     pub sku: Option<String>,
     pub name: String,
     pub barcode: String,
@@ -45,7 +44,6 @@ pub struct ProductAddRequest {
 impl From<&ProductAddRequest> for ProductRequest {
     fn from(request: &ProductAddRequest) -> Self {
         Self {
-            id: request.id,
             sku: request.sku.clone(),
             name: request.name.clone(),
             description: request.description.clone(),
@@ -70,7 +68,6 @@ impl From<&ProductAddRequest> for ProductRequest {
 impl From<(&ProductAddRequest, i64)> for ProductBarcodeRequest {
     fn from((request, product_id): (&ProductAddRequest, i64)) -> Self {
         Self {
-            id: request.id,
             product_id,
             barcode: request.barcode.clone(),
             barcode_type: request.barcode_type.clone(),
@@ -82,7 +79,6 @@ impl From<(&ProductAddRequest, i64)> for ProductBarcodeRequest {
 impl From<(&ProductAddRequest, i64)> for ProductLotRequest {
     fn from((request, product_id): (&ProductAddRequest, i64)) -> Self {
         Self {
-            id: request.id,
             product_id,
             lot_number: request.lot_number.clone(),
             qty_on_hand: request.qty_on_hand.clone(),
@@ -96,7 +92,6 @@ impl From<(&ProductAddRequest, i64)> for ProductLotRequest {
 impl From<(&ProductAddRequest, i64)> for ProductPriceRequest {
     fn from((request, product_id): (&ProductAddRequest, i64)) -> Self {
         Self {
-            id: request.id,
             product_id,
             price_type: request.price_type.clone(),
             price: request.price.clone(),

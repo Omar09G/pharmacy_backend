@@ -25,7 +25,6 @@ pub struct CustomerDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomerRequest {
-    pub id: i64,
     pub name: String,
     pub document_id: Option<String>,
     pub phone: Option<String>,

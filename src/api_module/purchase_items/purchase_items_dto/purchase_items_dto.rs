@@ -6,7 +6,6 @@ use validator::Validate;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchaseItemRequest {
-    pub id: i64,
     pub purchase_id: i64,
     pub product_id: i64,
     pub lot_id: Option<i64>,

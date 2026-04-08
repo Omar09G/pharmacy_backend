@@ -12,7 +12,6 @@ pub struct PermissionDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionRequest {
-    pub id: i64,
     #[validate(length(
         min = 3,
         max = 50,

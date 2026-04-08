@@ -8,7 +8,6 @@ use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscountRequest {
-    pub id: i64,
     pub code: Option<String>,
     pub name: String,
     pub description: Option<String>,

@@ -5,17 +5,7 @@ use validator::Validate;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
-pub struct RoleDto {
-    pub id: i64,
-    pub name: String,
-    pub description: Option<String>,
-    pub created_at: DateTimeWithTimeZone,
-}
-
-#[derive(Deserialize, Serialize, Debug, Validate)]
-#[serde(rename_all = "camelCase")]
 pub struct RoleRequest {
-    pub id: i64,
     pub name: String,
     pub description: Option<String>,
     pub created_at: DateTimeWithTimeZone,

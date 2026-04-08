@@ -6,7 +6,6 @@ use validator::Validate;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditLogRequest {
-    pub id: i64,
     pub entity_type: String,
     pub table_name: Option<String>,
     pub entity_id: Option<i64>,

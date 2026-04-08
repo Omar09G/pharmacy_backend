@@ -116,7 +116,7 @@ pub async fn get_purchases(
         .order_by_asc(schemas::purchases::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -166,11 +166,12 @@ pub async fn delete_purchase(
 
 pub async fn update_purchase(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<PurchaseRequest>,
 ) -> Result<Json<ApiResponse<PurchaseIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let p = schemas::purchases::Entity::find_by_id(payload.id)
+    let p = schemas::purchases::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

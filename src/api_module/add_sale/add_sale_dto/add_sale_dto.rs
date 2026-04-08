@@ -15,7 +15,6 @@ use crate::api_module::{
 #[serde(rename_all = "camelCase")]
 
 pub struct SaleAddRequest {
-    pub id: i64,
     pub customer_id: Option<i64>,
     pub user_id: Option<i64>,
     pub invoice_no: Option<String>,
@@ -38,7 +37,6 @@ pub struct SaleAddRequest {
 
 pub struct SaleAddItemRequest {
     pub id: i64,
-    pub sale_id: i64,
     pub product_id: i64,
     pub lot_id: Option<i64>,
     pub qty: Decimal,
@@ -80,7 +78,6 @@ pub struct SaleAddDetailResponse {
 impl From<&SaleAddRequest> for SaleRequest {
     fn from(request: &SaleAddRequest) -> Self {
         Self {
-            id: request.id,
             customer_id: request.customer_id,
             user_id: request.user_id,
             invoice_no: request.invoice_no.clone(),
@@ -100,7 +97,6 @@ impl From<&SaleAddRequest> for SaleRequest {
 impl From<(&SaleAddRequest, i64)> for SalePaymentRequest {
     fn from((request, sale_id): (&SaleAddRequest, i64)) -> Self {
         Self {
-            id: request.id,
             sale_id: Some(sale_id),
             amount: request.total,
             method_id: request.method_id,
@@ -114,7 +110,6 @@ impl From<(&SaleAddRequest, i64)> for SalePaymentRequest {
 impl From<(&SaleAddRequest, i64, i64)> for SalePaymentAllocationRequest {
     fn from((request, payment_id, sale_id): (&SaleAddRequest, i64, i64)) -> Self {
         Self {
-            id: request.id,
             payment_id: payment_id, // Usamos el mismo ID para el pago y la asignación
             credit_invoice_id: Some(sale_id), // Usamos el ID de la venta como referencia para la factura de crédito
             amount: request.total,

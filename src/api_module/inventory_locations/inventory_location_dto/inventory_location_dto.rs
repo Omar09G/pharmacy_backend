@@ -14,7 +14,6 @@ pub struct InventoryLocationDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct InventoryLocationRequest {
-    pub id: i64,
     #[validate(length(min = 1, message = "Name must not be empty"))]
     pub name: String,
     pub r#type: Option<String>,

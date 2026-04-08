@@ -9,22 +9,7 @@ use crate::api_utils::api_utils_fun::{
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
-pub struct SupplierDto {
-    pub id: i64,
-    pub name: String,
-    pub tax_id: Option<String>,
-    pub contact_person: Option<String>,
-    pub phone: Option<String>,
-    pub email: Option<String>,
-    pub address: Option<String>,
-    pub notes: Option<String>,
-    pub created_at: DateTimeWithTimeZone,
-}
-
-#[derive(Deserialize, Serialize, Debug, Validate)]
-#[serde(rename_all = "camelCase")]
 pub struct SupplierRequest {
-    pub id: i64,
     pub name: String,
     pub tax_id: Option<String>,
     pub contact_person: Option<String>,

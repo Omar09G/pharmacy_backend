@@ -6,27 +6,9 @@ use crate::api_utils::api_utils_fun::{
     get_current_timestamp_at_zone_mexico, get_current_timestamp_now,
 };
 
-#[derive(Deserialize, Serialize, Debug, Validate)]
-#[serde(rename_all = "camelCase")]
-pub struct UserDto {
-    pub id: i64,
-    pub username: String,
-    pub password_hash: String,
-    pub full_name: Option<String>,
-    pub email: Option<String>,
-    pub phone: Option<String>,
-    pub status: String,
-    pub created_at: DateTimeWithTimeZone,
-    pub created_by: Option<i64>,
-    pub updated_at: Option<DateTimeWithTimeZone>,
-    pub updated_by: Option<i64>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
-}
-
 #[derive(Deserialize, Serialize, Debug, Validate, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserRequestDto {
-    pub id: i64,
     #[validate(
         length(
             min = 3,
@@ -82,14 +64,10 @@ impl TryFrom<UserRequestDto> for schemas::users::ActiveModel {
     type Error = String;
 
     fn try_from(dto: UserRequestDto) -> Result<Self, Self::Error> {
-        // NOTE: DTO contains the plain password in `password_hash` field at this stage.
-        // Password hashing must be performed outside of this conversion (e.g., spawn_blocking in handlers).
-        let password_hash = dto.password_hash;
-
         Ok(Self {
             id: ActiveValue::NotSet,
             username: ActiveValue::Set(dto.username),
-            password_hash: ActiveValue::Set(password_hash),
+            password_hash: ActiveValue::Set(dto.password_hash),
             full_name: ActiveValue::Set(dto.full_name),
             email: ActiveValue::Set(dto.email),
             phone: ActiveValue::Set(dto.phone),

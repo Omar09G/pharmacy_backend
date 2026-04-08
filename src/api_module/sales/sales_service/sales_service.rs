@@ -142,6 +142,7 @@ pub async fn get_sales(
     let total_items = if pagination.total > 0 {
         pagination.total
     } else {
+        info!("Counting total items for sales pagination");
         paginator
             .num_items()
             .await

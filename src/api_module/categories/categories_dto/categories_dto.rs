@@ -14,7 +14,6 @@ pub struct CategoryDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CategoryRequest {
-    pub id: i64,
     pub name: String,
     pub parent_id: Option<i64>,
     pub description: Option<String>,

@@ -171,11 +171,12 @@ pub async fn delete_audit_log(
 
 pub async fn update_audit_log(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<AuditLogRequest>,
 ) -> Result<Json<ApiResponse<AuditLogIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let al = schemas::audit_log::Entity::find_by_id(payload.id)
+    let al = schemas::audit_log::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

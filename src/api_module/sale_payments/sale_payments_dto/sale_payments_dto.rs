@@ -10,7 +10,6 @@ use crate::api_utils::api_utils_fun::{
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct SalePaymentRequest {
-    pub id: i64,
     pub sale_id: Option<i64>,
     pub amount: Decimal,
     pub method_id: Option<i64>,

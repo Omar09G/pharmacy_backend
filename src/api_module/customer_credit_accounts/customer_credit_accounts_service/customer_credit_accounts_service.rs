@@ -99,7 +99,6 @@ pub async fn get_customer_credit_accounts(
             .await
             .map_err(|e| ApiError::Unexpected(Box::new(e)))?
     };
-    
 
     let items = paginator
         .fetch_page(page_index)
@@ -144,11 +143,12 @@ pub async fn delete_customer_credit_account(
 
 pub async fn update_customer_credit_account(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<CustomerCreditAccountRequest>,
 ) -> Result<Json<ApiResponse<CustomerCreditAccountIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let cca = schemas::customer_credit_accounts::Entity::find_by_id(payload.id)
+    let cca = schemas::customer_credit_accounts::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

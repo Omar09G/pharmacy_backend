@@ -10,7 +10,6 @@ use crate::api_utils::api_utils_fun::{
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductPriceRequest {
-    pub id: i64,
     pub product_id: i64,
     pub price_type: String,
     pub price: Decimal,

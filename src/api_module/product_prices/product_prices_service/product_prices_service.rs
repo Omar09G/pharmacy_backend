@@ -112,7 +112,7 @@ pub async fn get_product_prices(
         .order_by_asc(schemas::product_prices::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -164,11 +164,12 @@ pub async fn delete_product_price(
 
 pub async fn update_product_price(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<ProductPriceRequest>,
 ) -> Result<Json<ApiResponse<ProductPriceIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let pp = schemas::product_prices::Entity::find_by_id(payload.id)
+    let pp = schemas::product_prices::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

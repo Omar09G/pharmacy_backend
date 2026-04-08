@@ -139,11 +139,12 @@ pub async fn delete_sale_payment_allocation(
 
 pub async fn update_sale_payment_allocation(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<SalePaymentAllocationRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentAllocationIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let spa = schemas::sale_payment_allocations::Entity::find_by_id(payload.id)
+    let spa = schemas::sale_payment_allocations::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

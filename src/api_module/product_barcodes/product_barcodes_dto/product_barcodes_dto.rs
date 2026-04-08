@@ -10,7 +10,6 @@ use crate::api_utils::api_utils_fun::{
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductBarcodeDto {
-    pub id: i64,
     pub product_id: i64,
     pub barcode: String,
     pub barcode_type: Option<String>,
@@ -20,7 +19,6 @@ pub struct ProductBarcodeDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductBarcodeRequest {
-    pub id: i64,
     pub product_id: i64,
     pub barcode: String,
     pub barcode_type: Option<String>,

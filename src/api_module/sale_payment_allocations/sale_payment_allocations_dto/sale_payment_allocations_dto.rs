@@ -6,7 +6,6 @@ use validator::Validate;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct SalePaymentAllocationRequest {
-    pub id: i64,
     pub payment_id: i64,
     pub credit_invoice_id: Option<i64>,
     pub amount: Decimal,

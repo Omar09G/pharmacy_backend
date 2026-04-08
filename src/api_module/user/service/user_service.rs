@@ -247,11 +247,12 @@ pub async fn delete_user(
 
 pub async fn update_user(
     State(app_ctx): State<AppContext>,
+    Path(id): Path<i64>,
     Json(payload): Json<UserRequestDto>,
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let user = schemas::users::Entity::find_by_id(payload.id)
+    let user = schemas::users::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?

@@ -4,15 +4,6 @@ use validator::Validate;
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
-pub struct UnitDto {
-    pub id: i64,
-    pub code: String,
-    pub name: String,
-    pub precision: i32,
-}
-
-#[derive(Deserialize, Serialize, Debug, Validate)]
-#[serde(rename_all = "camelCase")]
 pub struct UnitResponse {
     pub id: i64,
     pub code: String,
@@ -29,7 +20,6 @@ pub struct UnitIdResponse {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct UnitRequest {
-    pub id: i64,
     #[validate(length(min = 1, message = "Code must not be empty"))]
     pub code: String,
     #[validate(length(min = 1, message = "Name must not be empty"))]

@@ -6,7 +6,6 @@ use validator::Validate;
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CashEntryRequest {
-    pub id: i64,
     pub name: String,
     pub entry_type: String,
     pub amount: Decimal,

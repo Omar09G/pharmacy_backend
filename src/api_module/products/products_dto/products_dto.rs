@@ -33,7 +33,6 @@ pub struct ProductDto {
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductRequest {
-    pub id: i64,
     pub sku: Option<String>,
     pub name: String,
     pub description: Option<String>,
