@@ -52,7 +52,8 @@ pub async fn get_customer_credit_account_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<CustomerCreditAccountDetailResponse>>, ApiError> {
-    let cca = schemas::customer_credit_accounts::Entity::find_by_id(id)
+    let cca = schemas::customer_credit_accounts::Entity::find()
+        .filter(schemas::customer_credit_accounts::Column::CustomerId.eq(id))
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -119,7 +120,8 @@ pub async fn delete_customer_credit_account(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    let cca = schemas::customer_credit_accounts::Entity::find_by_id(id)
+    let cca = schemas::customer_credit_accounts::Entity::find()
+        .filter(schemas::customer_credit_accounts::Column::CustomerId.eq(id))
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
@@ -147,6 +149,13 @@ pub async fn update_customer_credit_account(
     Json(payload): Json<CustomerCreditAccountRequest>,
 ) -> Result<Json<ApiResponse<CustomerCreditAccountIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
+
+    //Validar ID , si no llega error de validacion
+    if id <= 0 {
+        return Err(ApiError::ValidationError(
+            "Invalid customer credit account ID".to_string(),
+        ));
+    }
 
     let cca = schemas::customer_credit_accounts::Entity::find_by_id(id)
         .one(&app_ctx.conn)

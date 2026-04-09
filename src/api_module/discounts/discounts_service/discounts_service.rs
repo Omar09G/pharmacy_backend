@@ -103,7 +103,7 @@ pub async fn get_discounts(
         .order_by_asc(schemas::discounts::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -173,9 +173,9 @@ pub async fn update_discount(
             d_active.discount_type = ActiveValue::Set(payload.discount_type);
             d_active.value = ActiveValue::Set(payload.value);
             d_active.applies_to = ActiveValue::Set(payload.applies_to);
-            d_active.product_id = ActiveValue::Set(payload.product_id);
+            // d_active.product_id = ActiveValue::Set(payload.product_id);
             d_active.category_id = ActiveValue::Set(payload.category_id);
-            d_active.customer_id = ActiveValue::Set(payload.customer_id);
+            //  d_active.customer_id = ActiveValue::Set(payload.customer_id);
             d_active.min_qty = ActiveValue::Set(payload.min_qty);
             d_active.max_uses = ActiveValue::Set(payload.max_uses);
             d_active.priority = ActiveValue::Set(payload.priority);
