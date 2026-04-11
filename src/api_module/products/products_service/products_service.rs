@@ -3,15 +3,17 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
 };
+use std::collections::HashMap;
 use validator::Validate;
 
 use crate::{
     api_module::products::products_dto::products_dto::{
-        ProductDetailResponse, ProductIdResponse, ProductRequest,
+        ProductDetailResponse, ProductIdResponse, ProductRequest, ProductResponse,
     },
     api_utils::api_utils_fun::get_current_timestamp_now,
 };
@@ -77,9 +79,11 @@ pub async fn get_product_by_id(
 pub async fn get_products(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
-) -> Result<Json<ApiResponse<Vec<ProductDetailResponse>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<ProductResponse>>>, ApiError> {
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
+
+    let mut products_detail_responses: Vec<ProductResponse> = Vec::new();
 
     let mut select = schemas::products::Entity::find();
 
@@ -138,12 +142,68 @@ pub async fn get_products(
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    // Batch load related records to avoid N+1 queries
+    let product_ids: Vec<i64> = products.iter().map(|p| p.id).collect();
+
+    if !product_ids.is_empty() {
+        let product_barcodes_list = schemas::product_barcodes::Entity::find()
+            .filter(schemas::product_barcodes::Column::ProductId.is_in(product_ids.clone()))
+            .all(&app_ctx.conn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+        let product_lots_list = schemas::product_lots::Entity::find()
+            .filter(schemas::product_lots::Column::ProductId.is_in(product_ids.clone()))
+            .all(&app_ctx.conn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+        let product_prices_list = schemas::product_prices::Entity::find()
+            .filter(schemas::product_prices::Column::ProductId.is_in(product_ids.clone()))
+            .all(&app_ctx.conn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+        let mut barcodes_map: HashMap<i64, schemas::product_barcodes::Model> = HashMap::new();
+        for b in product_barcodes_list {
+            barcodes_map.entry(b.product_id).or_insert(b);
+        }
+
+        let mut lots_map: HashMap<i64, schemas::product_lots::Model> = HashMap::new();
+        for l in product_lots_list {
+            lots_map.entry(l.product_id).or_insert(l);
+        }
+
+        let mut prices_map: HashMap<i64, schemas::product_prices::Model> = HashMap::new();
+        for pr in product_prices_list {
+            prices_map.entry(pr.product_id).or_insert(pr);
+        }
+
+        for product in products.iter() {
+            let id_product = product.id;
+
+            let barcode_opt = barcodes_map.get(&id_product);
+            let lot_opt = lots_map.get(&id_product);
+            let price_opt = prices_map.get(&id_product);
+
+            if barcode_opt.is_none() || lot_opt.is_none() || price_opt.is_none() {
+                info!("Related data not found for product ID {}", id_product);
+                continue;
+            }
+
+            let product_response_detail = ProductResponse::from((
+                product.clone(),
+                barcode_opt.unwrap().clone(),
+                lot_opt.unwrap().clone(),
+                price_opt.unwrap().clone(),
+            ));
+
+            products_detail_responses.push(product_response_detail);
+        }
+    }
 
     Ok(Json(ApiResponse::success(
-        products
-            .into_iter()
-            .map(ProductDetailResponse::from)
-            .collect(),
+        products_detail_responses,
         "Products retrieved successfully".to_string(),
         total_items as i32,
     )))

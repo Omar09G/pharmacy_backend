@@ -13,13 +13,11 @@ use validator::Validate;
 
 use crate::{
     api_module::{
-        add_product::add_product_dto::add_product_dto::{
-            ProductAddRequest, ProductAddResponseDetail,
+        add_product::add_product_dto::add_product_dto::ProductAddResponseDetail,
+        products::products_dto::products_dto::{
+            ProductBarcodeRequestAdd, ProductIdResponse, ProductLotRequestAdd,
+            ProductPriceRequestAdd, ProductRequestDetail,
         },
-        product_barcodes::product_barcodes_dto::product_barcodes_dto::ProductBarcodeRequest,
-        product_lots::ProductLotRequest,
-        product_prices::ProductPriceRequest,
-        products::products_dto::products_dto::{ProductIdResponse, ProductRequest},
     },
     api_utils::{
         api_error::ApiError,
@@ -31,19 +29,12 @@ use crate::{
 
 pub async fn add_product(
     State(app_ctx): State<AppContext>,
-    Json(payload): Json<ProductAddRequest>,
+    Json(payload): Json<ProductRequestDetail>,
 ) -> Result<Json<ApiResponse<ProductIdResponse>>, ApiError> {
     info!("Adding new product: {:?}", payload);
 
     //Valida el payload
     payload.validate().map_err(ApiError::Validation)?;
-
-    //Crea el producto (usar referencia para no mover `payload`)
-    let new_product_create = ProductRequest::from(&payload);
-
-    new_product_create
-        .validate()
-        .map_err(ApiError::Validation)?;
 
     // Ejecutar creación en una transacción: guardar producto, barcode, price y lot
     let txn = app_ctx
@@ -54,8 +45,8 @@ pub async fn add_product(
 
     // Encapsular la lógica en un bloque para capturar errores y poder hacer rollback en caso de fallo
     let op_result = (async {
-        // Asigna a ActiveModel
-        let new_product_active_model = schemas::products::ActiveModel::try_from(new_product_create)
+        // Asigna a ActiveModel (usar clone para no mover `payload`)
+        let new_product_active_model = schemas::products::ActiveModel::try_from(payload.clone())
             .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
         // Se guarda el producto para obtener el ID generado (usar la transacción)
@@ -75,27 +66,14 @@ pub async fn add_product(
         let product_id = new_product.id.clone().unwrap();
 
         // Crear requests derivados usando la referencia al payload
-        let new_product_barcode = ProductBarcodeRequest::from((&payload, product_id));
-        let new_product_price = ProductPriceRequest::from((&payload, product_id));
-        let new_product_lot = ProductLotRequest::from((&payload, product_id));
-
-        // Validaciones
-        new_product_barcode
-            .validate()
-            .map_err(ApiError::Validation)?;
-        new_product_price.validate().map_err(ApiError::Validation)?;
-        new_product_lot.validate().map_err(ApiError::Validation)?;
-
-        // Convertir a ActiveModel y guardar (en transacción)
-        let new_product_barcode_active_model =
-            schemas::product_barcodes::ActiveModel::try_from(new_product_barcode)
-                .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
+        let new_product_barcode_active_model = ProductBarcodeRequestAdd::into_active_model(
+            payload.barcodes_detail.clone(),
+            product_id,
+        );
         let new_product_price_active_model =
-            schemas::product_prices::ActiveModel::try_from(new_product_price)
-                .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
+            ProductPriceRequestAdd::into_active_model(payload.prices_detail.clone(), product_id);
         let new_product_lot_active_model =
-            schemas::product_lots::ActiveModel::try_from(new_product_lot)
-                .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
+            ProductLotRequestAdd::into_active_model(payload.lots_detail.clone(), product_id);
 
         // Se guardan el barcode, precio y lote
         let new_pb = new_product_barcode_active_model
