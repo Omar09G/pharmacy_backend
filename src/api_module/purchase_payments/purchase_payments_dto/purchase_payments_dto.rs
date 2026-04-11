@@ -5,7 +5,7 @@ use validator::Validate;
 
 use crate::api_utils::api_utils_fun::get_current_timestamp_now;
 
-#[derive(Deserialize, Serialize, Debug, Validate)]
+#[derive(Deserialize, Serialize, Debug, Validate, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchasePaymentRequest {
     pub purchase_id: i64,

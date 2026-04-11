@@ -10,8 +10,11 @@ use sea_orm::{
 use validator::Validate;
 
 use crate::{
-    api_module::purchases::purchases_dto::purchases_dto::{
-        PurchaseDetailResponse, PurchaseIdResponse, PurchaseRequest,
+    api_module::purchases::{
+        PurchaseUpdateRequest,
+        purchases_dto::purchases_dto::{
+            PurchaseDetailResponse, PurchaseIdResponse, PurchaseRequest,
+        },
     },
     api_utils::api_utils_fun::get_current_timestamp_now,
 };
@@ -30,6 +33,9 @@ pub async fn create_purchase(
 ) -> Result<Json<ApiResponse<PurchaseIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
+    //Copiar payload a una variable para crear el pago después de crear la compra
+    let purchase_payments = payload.clone().payment;
+
     let p_create = schemas::purchases::ActiveModel::try_from(payload)
         .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
@@ -41,6 +47,28 @@ pub async fn create_purchase(
     if new_p.id.is_not_set() {
         return Err(ApiError::ValidationError(
             "Failed to create purchase".to_string(),
+        ));
+    }
+
+    let id_created = new_p.id.clone().unwrap();
+
+    let payment_create = schemas::purchase_payments::ActiveModel {
+        id: ActiveValue::NotSet,
+        purchase_id: ActiveValue::Set(id_created),
+        amount: ActiveValue::Set(purchase_payments.amount),
+        method_id: ActiveValue::Set(purchase_payments.method_id),
+        paid_at: ActiveValue::Set(get_current_timestamp_now()),
+        reference: ActiveValue::NotSet,
+    };
+
+    let new_payment = payment_create
+        .save(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    if new_payment.id.is_not_set() {
+        return Err(ApiError::ValidationError(
+            "Failed to create purchase payment".to_string(),
         ));
     }
 
@@ -167,7 +195,7 @@ pub async fn delete_purchase(
 pub async fn update_purchase(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
-    Json(payload): Json<PurchaseRequest>,
+    Json(payload): Json<PurchaseUpdateRequest>,
 ) -> Result<Json<ApiResponse<PurchaseIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -181,7 +209,6 @@ pub async fn update_purchase(
             let mut p_active = p.into_active_model();
 
             p_active.status = ActiveValue::Set(payload.status);
-            p_active.created_at = ActiveValue::Set(get_current_timestamp_now());
 
             let updated = p_active
                 .save(&app_ctx.conn)

@@ -19,6 +19,15 @@ pub struct CashJournalRequest {
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
+pub struct CashJournalUpdateRequest {
+    pub id: i64,
+    pub closed_at: Option<DateTimeWithTimeZone>,
+    pub closed_by: Option<i64>,
+    pub status: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct CashJournalIdResponse {
     pub id: i64,
 }

@@ -9,8 +9,11 @@ use sea_orm::{
 };
 use validator::Validate;
 
-use crate::api_module::cash_journals::cash_journals_dto::cash_journals_dto::{
-    CashJournalDetailResponse, CashJournalIdResponse, CashJournalRequest,
+use crate::api_module::cash_journals::{
+    CashJournalUpdateRequest,
+    cash_journals_dto::cash_journals_dto::{
+        CashJournalDetailResponse, CashJournalIdResponse, CashJournalRequest,
+    },
 };
 use crate::{
     api_utils::{
@@ -152,7 +155,7 @@ pub async fn delete_cash_journal(
 pub async fn update_cash_journal(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
-    Json(payload): Json<CashJournalRequest>,
+    Json(payload): Json<CashJournalUpdateRequest>,
 ) -> Result<Json<ApiResponse<CashJournalIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -165,15 +168,9 @@ pub async fn update_cash_journal(
         Some(cj) => {
             let mut cj_active = cj.into_active_model();
 
-            cj_active.name = ActiveValue::Set(payload.name);
-            cj_active.description = ActiveValue::Set(payload.description);
-            cj_active.opening_amount = ActiveValue::Set(payload.opening_amount);
-            cj_active.opened_at = ActiveValue::Set(payload.opened_at);
             cj_active.closed_at = ActiveValue::Set(payload.closed_at);
-            cj_active.opened_by = ActiveValue::Set(payload.opened_by);
             cj_active.closed_by = ActiveValue::Set(payload.closed_by);
             cj_active.status = ActiveValue::Set(payload.status);
-            cj_active.created_at = ActiveValue::Set(payload.created_at);
 
             let updated = cj_active
                 .save(&app_ctx.conn)

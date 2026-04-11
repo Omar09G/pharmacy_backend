@@ -194,7 +194,7 @@ pub fn valite_date_time_range_date(
     end_date_time: &str,
 ) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
     let start = parce_date_str_to_date_time_with_timezone_opt(start_date_time)?;
-    let end = parce_date_str_to_date_time_with_timezone_opt(end_date_time)?;
+    let mut end = parce_date_str_to_date_time_with_timezone_opt(end_date_time)?;
 
     if let (Some(start_dt), Some(end_dt)) = (start, end) {
         // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
@@ -209,6 +209,7 @@ pub fn valite_date_time_range_date(
                 "Start date-time cannot be after end date-time".to_string(),
             ));
         }
+        end = Some(adjusted_end);
     }
     Ok((start, end))
 }

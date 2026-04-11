@@ -3,9 +3,12 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::get_current_timestamp_now;
+use crate::{
+    api_module::purchase_payments::PurchasePaymentRequest,
+    api_utils::api_utils_fun::get_current_timestamp_now,
+};
 
-#[derive(Deserialize, Serialize, Debug, Validate)]
+#[derive(Deserialize, Serialize, Debug, Validate, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchaseRequest {
     pub supplier_id: Option<i64>,
@@ -17,6 +20,14 @@ pub struct PurchaseRequest {
     pub status: String,
     pub created_at: DateTimeWithTimeZone,
     pub created_by: Option<i64>,
+    pub payment: PurchasePaymentRequest,
+}
+
+#[derive(Deserialize, Serialize, Debug, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct PurchaseUpdateRequest {
+    pub supplier_id: Option<i64>,
+    pub status: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
@@ -60,18 +71,18 @@ impl TryFrom<PurchaseRequest> for schemas::purchases::ActiveModel {
 }
 
 impl From<schemas::purchases::Model> for PurchaseDetailResponse {
-    fn from(model: schemas::purchases::Model) -> Self {
+    fn from(purchase: schemas::purchases::Model) -> Self {
         Self {
-            id: model.id,
-            supplier_id: model.supplier_id,
-            invoice_no: model.invoice_no,
-            date: model.date,
-            subtotal: model.subtotal,
-            tax_total: model.tax_total,
-            total: model.total,
-            status: model.status,
-            created_at: model.created_at,
-            created_by: model.created_by,
+            id: purchase.id,
+            supplier_id: purchase.supplier_id,
+            invoice_no: purchase.invoice_no,
+            date: purchase.date,
+            subtotal: purchase.subtotal,
+            tax_total: purchase.tax_total,
+            total: purchase.total,
+            status: purchase.status,
+            created_at: purchase.created_at,
+            created_by: purchase.created_by,
         }
     }
 }

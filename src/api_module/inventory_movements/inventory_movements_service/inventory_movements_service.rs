@@ -3,14 +3,18 @@ use axum::{
     extract::{Path, Query, State},
 };
 
+use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
 };
 use validator::Validate;
 
-use crate::api_module::inventory_movements::inventory_movements_dto::inventory_movements_dto::{
-    InventoryMovementDetailResponse, InventoryMovementIdResponse, InventoryMovementRequest,
+use crate::{
+    api_module::inventory_movements::inventory_movements_dto::inventory_movements_dto::{
+        InventoryMovementDetailResponse, InventoryMovementIdResponse, InventoryMovementRequest,
+    },
+    api_utils::api_utils_fun::valite_date_time_range_date,
 };
 use crate::{
     api_utils::{
@@ -101,27 +105,34 @@ pub async fn get_inventory_movements(
     }
 
     // date range
-    if let Some(date_init) = pagination.date_init.clone()
-        && !date_init.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::inventory_movements::Column::CreatedAt.gte(dt_utc));
-    }
+    let start_date = pagination.date_init.clone().unwrap_or_default();
+    let end_date = pagination.date_init.clone().unwrap_or_default();
 
-    if let Some(date_end) = pagination.date_end.clone()
-        && !date_end.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::inventory_movements::Column::CreatedAt.lte(dt_utc));
+    let (date_ini, date_end) = valite_date_time_range_date(&start_date, &end_date)?;
+
+    info!(
+        "Filtering inventory movements with date range: {} - {}",
+        start_date, end_date
+    );
+    info!(
+        "Fecha convertida a DateTimeWithTimeZone: {:?} - {:?}",
+        date_ini, date_end
+    );
+
+    if !start_date.is_empty() && !end_date.is_empty() {
+        select = select
+            .filter(schemas::inventory_movements::Column::CreatedAt.between(date_ini, date_end));
+    } else if !start_date.is_empty() {
+        select = select.filter(schemas::inventory_movements::Column::CreatedAt.gte(date_ini));
+    } else if !end_date.is_empty() {
+        select = select.filter(schemas::inventory_movements::Column::CreatedAt.lte(date_end));
     }
 
     let paginator = select
         .order_by_asc(schemas::inventory_movements::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator

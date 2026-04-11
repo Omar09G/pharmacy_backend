@@ -15,6 +15,7 @@ use crate::api_module::permissions::permissions_service::permissions_service::{
     get_permissions_by_name, update_permission,
 };
 
+use crate::api_module::product_lots::{adjust_product_lot, get_product_lot_by_barcode};
 use crate::api_module::role::role_service::role_service::{
     create_role, delete_role, get_role_by_id, get_roles, get_roles_by_name, update_role,
 };
@@ -220,6 +221,8 @@ const PRODUCT_LOT: &str = route!("/product_lot");
 const PRODUCT_LOT_BY_ID: &str = route!("/product_lot/{:id}");
 const PRODUCT_LOT_DELETE: &str = route!("/product_lot/{:id}");
 const PRODUCT_LOT_UPDATE: &str = route!("/product_lot/{:id}");
+const PRODUCT_LOT_ADJUST: &str = route!("/product_lot/adjust/{:id}");
+const PRODUCT_LOT_BY_BARCODE: &str = route!("/product_lot/barcode/{:barcode}");
 /*Metodos PURCHASE_ITEM */
 const PURCHASE_ITEM: &str = route!("/purchase_item");
 const PURCHASE_ITEM_BY_ID: &str = route!("/purchase_item/{:id}");
@@ -428,6 +431,8 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .route(PRODUCT_LOT_DELETE, delete(delete_product_lot))
         .route(PRODUCT_LOT, get(get_product_lots))
         .route(PRODUCT_LOT_UPDATE, patch(update_product_lot))
+        .route(PRODUCT_LOT_ADJUST, patch(adjust_product_lot))
+        .route(PRODUCT_LOT_BY_BARCODE, get(get_product_lot_by_barcode))
         // Purchase Item routes
         .route(PURCHASE_ITEM, put(create_purchase_item))
         .route(PURCHASE_ITEM_BY_ID, get(get_purchase_item_by_id))
