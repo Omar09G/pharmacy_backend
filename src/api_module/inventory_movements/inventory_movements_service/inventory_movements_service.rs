@@ -106,7 +106,7 @@ pub async fn get_inventory_movements(
 
     // date range
     let start_date = pagination.date_init.clone().unwrap_or_default();
-    let end_date = pagination.date_init.clone().unwrap_or_default();
+    let end_date = pagination.date_end.clone().unwrap_or_default();
 
     let (date_ini, date_end) = validate_date_time_range_date(&start_date, &end_date)?;
 

@@ -22,7 +22,7 @@ struct TokenBucket {
 
 // Configuration
 const LOGIN_WINDOW_SECS: u64 = 60; // window in seconds
-const LOGIN_CAPACITY: f64 = 15.0; // max tokens per window
+const LOGIN_CAPACITY: f64 = 30.0; // max tokens per window
 const MAX_BUCKETS: usize = 100_000; // safety cap to avoid unbounded memory growth
 
 fn refill_rate_per_sec() -> f64 {

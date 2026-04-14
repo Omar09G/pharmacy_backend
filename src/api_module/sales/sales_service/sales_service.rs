@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, Query, State},
 };
 
-use chrono::Timelike;
 use log::info;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
@@ -13,7 +12,7 @@ use validator::Validate;
 
 use crate::{
     api_module::sales::sales_dto::sales_dto::{SaleDetailResponse, SaleIdResponse, SaleRequest},
-    api_utils::api_utils_fun::parse_date_str_to_date_time_with_timezone_opt,
+    api_utils::api_utils_fun::parse_mexico_date_range_to_utc,
 };
 use crate::{
     api_utils::{
@@ -104,27 +103,21 @@ pub async fn get_sales(
         select = select.filter(schemas::sales::Column::Status.eq(status));
     }
 
-    let fecha_init = parse_date_str_to_date_time_with_timezone_opt(
+    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
         &pagination.date_init.clone().unwrap_or_default(),
-    )?;
-    let fecha_end = parse_date_str_to_date_time_with_timezone_opt(
         &pagination.date_end.clone().unwrap_or_default(),
     )?;
-    // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
-    let fecha_end = fecha_end.and_then(|d| {
-        d.with_hour(23)
-            .and_then(|dt| dt.with_minute(59))
-            .and_then(|dt| dt.with_second(59))
-    });
 
     info!(
-        "Applying filters - customer_id: {:?}, user_id: {:?}, invoice_no: {:?}, status: {:?}, date_init: {:?}, date_end: {:?}",
+        "Applying filters - customer_id: {:?}, user_id: {:?}, invoice_no: {:?}, status: {:?}, date_init: {:?}, date_end: {:?}, pagination_date_init: {:?}, pagination_date_end: {:?}",
         pagination.customer_id,
         pagination.user_id,
         pagination.invoice_no,
         pagination.status,
         fecha_init,
-        fecha_end
+        fecha_end,
+        pagination.date_init,
+        pagination.date_end,
     );
     // date range
     if let Some(date_init) = fecha_init {

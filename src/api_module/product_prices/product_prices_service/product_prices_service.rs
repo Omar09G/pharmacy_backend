@@ -9,6 +9,7 @@ use sea_orm::{
 };
 use validator::Validate;
 
+use crate::api_utils::api_utils_fun::parse_mexico_date_range_to_utc;
 use crate::{
     api_module::product_prices::product_prices_dto::product_prices_dto::{
         ProductPriceDetailResponse, ProductPriceIdResponse, ProductPriceRequest,
@@ -91,21 +92,18 @@ pub async fn get_product_prices(
         select = select.filter(schemas::product_prices::Column::PriceType.eq(price_type_filter));
     }
 
-    // date range can use date_init / date_end if provided
-    if let Some(date_init) = pagination.date_init.clone()
-        && !date_init.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::product_prices::Column::StartsAt.gte(dt_utc));
+    // date range (YYYY-MM-DD interpreted as Mexico City local time → UTC)
+    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+        &pagination.date_init.clone().unwrap_or_default(),
+        &pagination.date_end.clone().unwrap_or_default(),
+    )?;
+
+    if let Some(date_init) = fecha_init {
+        select = select.filter(schemas::product_prices::Column::StartsAt.gte(date_init));
     }
 
-    if let Some(date_end) = pagination.date_end.clone()
-        && !date_end.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::product_prices::Column::EndsAt.lte(dt_utc));
+    if let Some(date_end) = fecha_end {
+        select = select.filter(schemas::product_prices::Column::EndsAt.lte(date_end));
     }
 
     let paginator = select

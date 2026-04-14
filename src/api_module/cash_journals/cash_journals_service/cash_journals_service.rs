@@ -9,11 +9,14 @@ use sea_orm::{
 };
 use validator::Validate;
 
-use crate::api_module::cash_journals::{
-    CashJournalUpdateRequest,
-    cash_journals_dto::cash_journals_dto::{
-        CashJournalDetailResponse, CashJournalIdResponse, CashJournalRequest,
+use crate::{
+    api_module::cash_journals::{
+        CashJournalUpdateRequest,
+        cash_journals_dto::cash_journals_dto::{
+            CashJournalDetailResponse, CashJournalIdResponse, CashJournalRequest,
+        },
     },
+    api_utils::api_utils_fun::parse_mexico_date_range_to_utc,
 };
 use crate::{
     api_utils::{
@@ -95,6 +98,19 @@ pub async fn get_cash_journals(
 
     if let Some(user) = pagination.user_id {
         select = select.filter(schemas::cash_journals::Column::OpenedBy.eq(user));
+    }
+    //Llamado para convertir fecga a formato locala a UTC para la consulta
+    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+        &pagination.date_init.clone().unwrap_or_default(),
+        &pagination.date_end.clone().unwrap_or_default(),
+    )?;
+
+    if let Some(date_init) = fecha_init {
+        select = select.filter(schemas::cash_journals::Column::OpenedAt.gte(date_init));
+    }
+
+    if let Some(date_end) = fecha_end {
+        select = select.filter(schemas::cash_journals::Column::OpenedAt.lte(date_end));
     }
 
     let paginator = select

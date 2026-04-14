@@ -26,6 +26,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .merge(routes::finance_routes::routes())
         .merge(routes::catalog_routes::routes())
         .merge(routes::audit_routes::routes())
+        .merge(routes::dashboard_routes::routes())
         .with_state(app_ctx.clone())
         // Layer order (innermost first): idempotency -> auth -> content_type -> rate_limit -> cors -> security_headers
         .layer(from_fn(idempotency_middleware))

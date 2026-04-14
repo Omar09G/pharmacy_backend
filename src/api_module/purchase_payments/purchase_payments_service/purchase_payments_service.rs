@@ -12,6 +12,7 @@ use validator::Validate;
 use crate::api_module::purchase_payments::purchase_payments_dto::purchase_payments_dto::{
     PurchasePaymentDetailResponse, PurchasePaymentIdResponse, PurchasePaymentRequest,
 };
+use crate::api_utils::api_utils_fun::parse_mexico_date_range_to_utc;
 use crate::{
     api_utils::{
         api_error::ApiError,
@@ -92,21 +93,18 @@ pub async fn get_purchase_payments(
         select = select.filter(schemas::purchase_payments::Column::Reference.eq(reference));
     }
 
-    // paid_at date range using date_init/date_end if provided
-    if let Some(date_init) = pagination.date_init.clone()
-        && !date_init.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_init)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::purchase_payments::Column::PaidAt.gte(dt_utc));
+    // paid_at date range (YYYY-MM-DD interpreted as Mexico City local time → UTC)
+    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+        &pagination.date_init.clone().unwrap_or_default(),
+        &pagination.date_end.clone().unwrap_or_default(),
+    )?;
+
+    if let Some(date_init) = fecha_init {
+        select = select.filter(schemas::purchase_payments::Column::PaidAt.gte(date_init));
     }
 
-    if let Some(date_end) = pagination.date_end.clone()
-        && !date_end.is_empty()
-        && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&date_end)
-    {
-        let dt_utc = dt.with_timezone(&chrono::Utc);
-        select = select.filter(schemas::purchase_payments::Column::PaidAt.lte(dt_utc));
+    if let Some(date_end) = fecha_end {
+        select = select.filter(schemas::purchase_payments::Column::PaidAt.lte(date_end));
     }
 
     let paginator = select

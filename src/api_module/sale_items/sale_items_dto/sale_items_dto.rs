@@ -29,6 +29,7 @@ pub struct SaleItemDetailResponse {
     pub id: i64,
     pub sale_id: i64,
     pub product_id: i64,
+    pub product_name: Option<String>,
     pub lot_id: Option<i64>,
     pub qty: Decimal,
     pub unit_price: Decimal,
@@ -61,6 +62,7 @@ impl From<schemas::sale_items::Model> for SaleItemDetailResponse {
             id: model.id,
             sale_id: model.sale_id,
             product_id: model.product_id,
+            product_name: None, // Este campo se llenará en el servicio con un JOIN
             lot_id: model.lot_id,
             qty: model.qty,
             unit_price: model.unit_price,
@@ -77,6 +79,7 @@ impl From<schemas::sale_items::ActiveModel> for SaleItemDetailResponse {
             id: model.id.unwrap(),
             sale_id: model.sale_id.unwrap(),
             product_id: model.product_id.unwrap(),
+            product_name: None, // Este campo se llenará en el servicio con un JOIN
             lot_id: model.lot_id.unwrap(),
             qty: model.qty.unwrap(),
             unit_price: model.unit_price.unwrap(),

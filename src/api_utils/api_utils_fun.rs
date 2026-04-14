@@ -1,6 +1,5 @@
 use crate::api_utils::api_error::ApiError;
 use chrono::Offset;
-use chrono::Timelike;
 use chrono::{FixedOffset, Utc};
 use chrono_tz::America::Mexico_City;
 use regex::Regex;
@@ -145,6 +144,58 @@ pub fn parse_date_str_to_date_time_with_timezone_mexico(
     }
 }
 
+/// Parse a `YYYY-MM-DD` date range interpreting them as Mexico City local dates,
+/// converting to UTC for database queries.
+/// - `date_init` → Mexico 00:00:00 → UTC
+/// - `date_end`  → Mexico 23:59:59 → UTC
+/// Handles DST automatically via `chrono_tz`.
+pub fn parse_mexico_date_range_to_utc(
+    date_init: &str,
+    date_end: &str,
+) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
+    let start = parse_mexico_date_to_utc(date_init, 0, 0, 0)?;
+    let end = parse_mexico_date_to_utc(date_end, 23, 59, 59)?;
+
+    if let (Some(s), Some(e)) = (start, end) {
+        if s > e {
+            return Err(ApiError::ValidationError(
+                "Start date cannot be after end date".to_string(),
+            ));
+        }
+    }
+    Ok((start, end))
+}
+
+/// Parse a single `YYYY-MM-DD` string as Mexico City local time with the given
+/// hour/min/sec, then convert to UTC. Returns `None` for empty strings.
+fn parse_mexico_date_to_utc(
+    date_str: &str,
+    hour: u32,
+    min: u32,
+    sec: u32,
+) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
+    if date_str.is_empty() {
+        return Ok(None);
+    }
+    let naive_date = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+        .map_err(|e| ApiError::ValidationError(format!("Invalid date: {}", e)))?;
+    let naive_dt = naive_date
+        .and_hms_opt(hour, min, sec)
+        .ok_or_else(|| ApiError::ValidationError("Invalid time".to_string()))?;
+    // Interpret as Mexico City local time
+    let mexico_dt = naive_dt
+        .and_local_timezone(Mexico_City)
+        .single()
+        .ok_or_else(|| {
+            ApiError::ValidationError("Ambiguous or invalid Mexico City local time".to_string())
+        })?;
+    // Convert to UTC with fixed offset +00:00
+    let utc_dt = mexico_dt.with_timezone(&Utc);
+    Ok(Some(
+        utc_dt.with_timezone(&FixedOffset::east_opt(0).unwrap()),
+    ))
+}
+
 pub fn parse_date_str_to_date_time_with_timezone_opt(
     date_str: &str,
 ) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
@@ -195,25 +246,7 @@ pub fn validate_date_time_range_date(
     start_date_time: &str,
     end_date_time: &str,
 ) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
-    let start = parse_date_str_to_date_time_with_timezone_opt(start_date_time)?;
-    let mut end = parse_date_str_to_date_time_with_timezone_opt(end_date_time)?;
-
-    if let (Some(start_dt), Some(end_dt)) = (start, end) {
-        // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
-        let adjusted_end = end_dt
-            .with_hour(23)
-            .and_then(|dt| dt.with_minute(59))
-            .and_then(|dt| dt.with_second(59))
-            .unwrap_or(end_dt);
-
-        if start_dt > adjusted_end {
-            return Err(ApiError::ValidationError(
-                "Start date-time cannot be after end date-time".to_string(),
-            ));
-        }
-        end = Some(adjusted_end);
-    }
-    Ok((start, end))
+    parse_mexico_date_range_to_utc(start_date_time, end_date_time)
 }
 
 pub fn validate_date_time_range_opt(

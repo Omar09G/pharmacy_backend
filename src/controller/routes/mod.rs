@@ -1,6 +1,7 @@
 pub mod audit_routes;
 pub mod auth_routes;
 pub mod catalog_routes;
+pub mod dashboard_routes;
 pub mod finance_routes;
 pub mod inventory_routes;
 pub mod product_routes;

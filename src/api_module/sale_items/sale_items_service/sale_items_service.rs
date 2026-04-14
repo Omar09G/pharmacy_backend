@@ -88,7 +88,7 @@ pub async fn get_sale_items(
         .order_by_asc(schemas::sale_items::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -102,11 +102,33 @@ pub async fn get_sale_items(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    //Buscar por cada item el nombre del producto en batch
+    let product_ids: Vec<i64> = items.iter().map(|i| i.product_id).collect();
+    let products = schemas::products::Entity::find()
+        .filter(schemas::products::Column::Id.is_in(product_ids))
+        .all(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    let product_map: std::collections::HashMap<i64, String> = products
+        .into_iter()
+        .map(|p| (p.id, p.name))
+        .collect();
+
+    let items_with_product_name: Vec<SaleItemDetailResponse> = items
+        .into_iter()
+        .map(|item| {
+            let product_name = product_map
+                .get(&item.product_id)
+                .cloned()
+                .unwrap_or_else(|| "Unknown Product".to_string());
+            let mut item_detail = SaleItemDetailResponse::from(item);
+            item_detail.product_name = Some(product_name);
+            item_detail
+        })
+        .collect();
+
     Ok(Json(ApiResponse::success(
-        items
-            .into_iter()
-            .map(SaleItemDetailResponse::from)
-            .collect(),
+        items_with_product_name,
         "Sale items retrieved successfully".to_string(),
         total_items as i32,
     )))
