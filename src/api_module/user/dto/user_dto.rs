@@ -186,5 +186,6 @@ pub struct UserUpdateRequestDto {
     #[validate(email(message = "Email must be a valid email address"))]
     pub email: Option<String>,
     pub phone: Option<String>,
+    pub status: Option<String>,
     pub updated_by: i64,
 }

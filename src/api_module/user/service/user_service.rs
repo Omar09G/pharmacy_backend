@@ -283,20 +283,17 @@ pub async fn change_user_password(
 
 pub async fn delete_user(
     State(app_ctx): State<AppContext>,
-    Query(payload): Query<UserChangeStatusRequest>,
+    Path(user_id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    info!(
-        "Attempting to delete user with username: {}",
-        payload.username
-    );
-    payload.validate().map_err(ApiError::Validation)?;
+    info!("Attempting to delete user with ID: {}", user_id);
 
-    let user = schemas::users::Entity::find()
-        .filter(schemas::users::Column::Username.eq(payload.username.clone()))
+    let user = schemas::users::Entity::find_by_id(user_id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
         .ok_or_else(|| ApiError::NotFound)?;
+
+    info!("User found: {:?}", user);
 
     user.delete(&app_ctx.conn).await?;
 
@@ -333,6 +330,10 @@ pub async fn update_user(
     }
     user_active_model.updated_at = ActiveValue::Set(Some(get_current_timestamp_now()));
     user_active_model.updated_by = ActiveValue::Set(Some(payload.updated_by));
+
+    if let Some(str_status) = &payload.status {
+        user_active_model.status = ActiveValue::Set(str_status.clone());
+    }
 
     let updated_user = user_active_model
         .save(&app_ctx.conn)
