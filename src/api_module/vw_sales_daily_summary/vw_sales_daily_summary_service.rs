@@ -60,7 +60,7 @@ pub async fn get_vw_sales_daily_summary(
     let select = schemas::vw_t_sales_daily_summary::Entity::find();
 
     let paginator = select
-        .order_by_asc(schemas::vw_t_sales_daily_summary::Column::Day)
+        .order_by_desc(schemas::vw_t_sales_daily_summary::Column::Day)
         .paginate(&app_ctx.conn, page_limit);
 
     let total_items = if pagination.total > 0 {

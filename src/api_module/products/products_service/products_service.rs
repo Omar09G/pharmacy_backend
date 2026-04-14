@@ -96,7 +96,7 @@ pub async fn get_products(
     if let Some(name_filter) = pagination.name.clone()
         && !name_filter.is_empty()
     {
-        select = select.filter(schemas::products::Column::Name.eq(name_filter));
+        select = select.filter(schemas::products::Column::Name.starts_with(name_filter));
     }
 
     if let Some(brand_filter) = pagination.brand.clone()

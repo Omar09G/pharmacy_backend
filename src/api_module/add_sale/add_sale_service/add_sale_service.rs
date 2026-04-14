@@ -156,11 +156,6 @@ pub async fn create_add_sale(
         );
 
         for item_active_model in item_active_models {
-            // Extract product_id, lot_id, qty before save (from ActiveValue)
-            let item_product_id = item_active_model.product_id.clone().unwrap();
-            let item_lot_id = item_active_model.lot_id.clone().unwrap();
-            let item_qty = item_active_model.qty.clone().unwrap();
-
             let saved_item = item_active_model
                 .save(&txn)
                 .await
@@ -172,51 +167,6 @@ pub async fn create_add_sale(
                 ));
             }
             info!("Sale item created with ID: {}", saved_item.id.unwrap());
-
-            // Deduct inventory from the appropriate product lot
-            let lot = if let Some(lot_id) = item_lot_id {
-                // Use the specified lot
-                schemas::product_lots::Entity::find_by_id(lot_id)
-                    .one(&txn)
-                    .await
-                    .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-            } else {
-                // FIFO: find the oldest lot with sufficient stock for this product
-                schemas::product_lots::Entity::find()
-                    .filter(schemas::product_lots::Column::ProductId.eq(item_product_id))
-                    .filter(schemas::product_lots::Column::QtyOnHand.gte(item_qty))
-                    .order_by_asc(schemas::product_lots::Column::CreatedAt)
-                    .one(&txn)
-                    .await
-                    .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-            };
-
-            let lot = lot.ok_or_else(|| {
-                ApiError::ValidationError(format!(
-                    "Insufficient stock for product_id {}",
-                    item_product_id
-                ))
-            })?;
-
-            if lot.qty_on_hand < item_qty {
-                return Err(ApiError::ValidationError(format!(
-                    "Insufficient stock in lot {}: available {}, requested {}",
-                    lot.id, lot.qty_on_hand, item_qty
-                )));
-            }
-
-            let mut lot_active = lot.into_active_model();
-            let new_qty = lot_active.qty_on_hand.clone().unwrap() - item_qty;
-            lot_active.qty_on_hand = ActiveValue::Set(new_qty);
-            lot_active
-                .save(&txn)
-                .await
-                .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-            info!(
-                "Inventory deducted: product_id={}, qty={}, new_qty={}",
-                item_product_id, item_qty, new_qty
-            );
         }
         Ok(new_sale_response)
     })

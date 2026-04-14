@@ -50,7 +50,7 @@ pub fn to_page_index(page: u64) -> u64 {
 /// Parameters: `page` - requested page size from client (u64).
 /// Outputs: page size for paginators (u64), between 1 and 100.
 pub fn to_page_limit(page: u64) -> u64 {
-    if page == 0 { 10 } else { page.min(100) }
+    if page == 0 { 10 } else { page }
 }
 /// Name: `get_current_timestamp_now`
 /// Description: Get the current timestamp in UTC with a fixed offset of 0.

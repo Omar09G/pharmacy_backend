@@ -113,9 +113,9 @@ pub async fn get_jwt_token_with_role(
     name_user: String,
     permissions: Vec<String>,
 ) -> Result<String, String> {
-    // Access tokens: 1 hour; Refresh tokens: 7 days
+    // Access tokens: 1 day; Refresh tokens: 7 days
     let duration = if jwt_type == JWT_TYPE_ACCESS {
-        Duration::hours(1)
+        Duration::days(1)
     } else if jwt_type == JWT_TYPE_REFRESH {
         Duration::days(7)
     } else {
