@@ -6,8 +6,8 @@ use axum::{
 use log::info;
 use sea_orm::entity::prelude::*;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
-    TransactionTrait,
+    ActiveModelTrait, ColumnTrait, EntityTrait, LoaderTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, TransactionTrait,
 };
 use validator::Validate;
 
@@ -264,49 +264,55 @@ pub async fn get_products_with_details(
 
     let mut results: Vec<ProductAddResponseDetail> = Vec::with_capacity(products.len());
 
-    for p in products {
-        // obtener barcode más reciente si existe
-        let pb = schemas::product_barcodes::Entity::find()
-            .filter(schemas::product_barcodes::Column::ProductId.eq(p.id))
-            .order_by_desc(schemas::product_barcodes::Column::Id)
-            .one(&app_ctx.conn)
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    // Batch load related data (3 queries instead of 3*N)
+    let all_barcodes: Vec<Vec<schemas::product_barcodes::Model>> = products
+        .load_many(schemas::product_barcodes::Entity, &app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        let barcode_str = pb.map(|b| b.barcode).unwrap_or_default();
+    let all_lots: Vec<Vec<schemas::product_lots::Model>> = products
+        .load_many(schemas::product_lots::Entity, &app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        // sumar qty_on_hand de lots
-        let lots = schemas::product_lots::Entity::find()
-            .filter(schemas::product_lots::Column::ProductId.eq(p.id))
-            .all(&app_ctx.conn)
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    let all_prices: Vec<Vec<schemas::product_prices::Model>> = products
+        .load_many(schemas::product_prices::Entity, &app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        let mut total_qty = Decimal::new(0, 0);
-        for lot in &lots {
-            total_qty = total_qty + lot.qty_on_hand;
-        }
+    for ((p, barcodes), (lots, prices)) in products
+        .iter()
+        .zip(all_barcodes.iter())
+        .zip(all_lots.iter().zip(all_prices.iter()))
+    {
+        // Most recent barcode
+        let barcode_str = barcodes
+            .last()
+            .map(|b| b.barcode.clone())
+            .unwrap_or_default();
 
-        // precio vigente
-        let price_rec = schemas::product_prices::Entity::find()
-            .filter(schemas::product_prices::Column::ProductId.eq(p.id))
-            .order_by_desc(schemas::product_prices::Column::StartsAt)
-            .order_by_desc(schemas::product_prices::Column::CreatedAt)
-            .one(&app_ctx.conn)
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+        // Sum qty_on_hand from lots
+        let total_qty = lots
+            .iter()
+            .fold(Decimal::new(0, 0), |acc, lot| acc + lot.qty_on_hand);
 
-        let price_value = match price_rec {
-            Some(pr) => pr.price,
-            None => p.sale_price.unwrap_or(Decimal::new(0, 0)),
-        };
+        // Most recent price (by starts_at then created_at)
+        let price_value = prices
+            .iter()
+            .max_by(|a, b| {
+                a.starts_at
+                    .cmp(&b.starts_at)
+                    .then(a.created_at.cmp(&b.created_at))
+            })
+            .map(|pr| pr.price)
+            .unwrap_or_else(|| p.sale_price.unwrap_or(Decimal::new(0, 0)));
 
         results.push(ProductAddResponseDetail {
             id: p.id,
-            sku: p.sku,
-            name: p.name,
+            sku: p.sku.clone(),
+            name: p.name.clone(),
             barcode: barcode_str,
-            description: p.description,
+            description: p.description.clone(),
             qty_on_hand: total_qty,
             price: price_value,
             tax_profile_id: p.tax_profile_id,

@@ -13,7 +13,7 @@ use validator::Validate;
 
 use crate::{
     api_module::sales::sales_dto::sales_dto::{SaleDetailResponse, SaleIdResponse, SaleRequest},
-    api_utils::api_utils_fun::parce_date_str_to_date_time_with_timezone_opt,
+    api_utils::api_utils_fun::parse_date_str_to_date_time_with_timezone_opt,
 };
 use crate::{
     api_utils::{
@@ -104,10 +104,10 @@ pub async fn get_sales(
         select = select.filter(schemas::sales::Column::Status.eq(status));
     }
 
-    let fecha_init = parce_date_str_to_date_time_with_timezone_opt(
+    let fecha_init = parse_date_str_to_date_time_with_timezone_opt(
         &pagination.date_init.clone().unwrap_or_default(),
     )?;
-    let fecha_end = parce_date_str_to_date_time_with_timezone_opt(
+    let fecha_end = parse_date_str_to_date_time_with_timezone_opt(
         &pagination.date_end.clone().unwrap_or_default(),
     )?;
     // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
@@ -185,6 +185,31 @@ pub async fn delete_sale(
     }
 }
 
+/// Validates whether a status transition is allowed for sales.
+/// Valid transitions:
+///   PENDING  → CONFIRMED, CANCEL
+///   CONFIRMED → DELIVERED, CANCEL
+///   DELIVERED → COMPLETED, CANCEL
+///   COMPLETED → (none - terminal)
+///   CANCEL    → (none - terminal)
+fn validate_sale_status_transition(current: &str, new: &str) -> Result<(), ApiError> {
+    let allowed = match current {
+        "PENDING" => &["CONFIRMED", "CANCEL"][..],
+        "CONFIRMED" => &["DELIVERED", "CANCEL"],
+        "DELIVERED" => &["COMPLETED", "CANCEL"],
+        _ => &[], // COMPLETED and CANCEL are terminal states
+    };
+
+    if allowed.contains(&new) {
+        Ok(())
+    } else {
+        Err(ApiError::ValidationError(format!(
+            "Invalid status transition: '{}' → '{}'. Allowed: {:?}",
+            current, new, allowed
+        )))
+    }
+}
+
 pub async fn update_sale(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
@@ -199,6 +224,9 @@ pub async fn update_sale(
 
     match s {
         Some(s) => {
+            // Validate state transition before allowing status change
+            validate_sale_status_transition(&s.status, &payload.status)?;
+
             let mut s_active = s.into_active_model();
 
             //s_active.customer_id = ActiveValue::Set(payload.customer_id);

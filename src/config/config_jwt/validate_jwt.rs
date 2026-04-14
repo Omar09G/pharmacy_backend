@@ -1,20 +1,19 @@
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use lazy_static::lazy_static;
 use log::info;
 use std::env;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::{
     api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH},
     config::config_jwt::dto_jwt::Claims,
 };
 
-lazy_static! {
-    static ref JWT_ENCODING_RS: Mutex<Option<Arc<EncodingKey>>> = Mutex::new(None);
-    static ref JWT_DECODING_RS: Mutex<Option<Arc<DecodingKey>>> = Mutex::new(None);
-    static ref JWT_ALGO: Mutex<Option<Algorithm>> = Mutex::new(None);
-}
+static JWT_ENCODING_RS: LazyLock<Mutex<Option<Arc<EncodingKey>>>> =
+    LazyLock::new(|| Mutex::new(None));
+static JWT_DECODING_RS: LazyLock<Mutex<Option<Arc<DecodingKey>>>> =
+    LazyLock::new(|| Mutex::new(None));
+static JWT_ALGO: LazyLock<Mutex<Option<Algorithm>>> = LazyLock::new(|| Mutex::new(None));
 
 pub fn init_jwt_keys_if_needed() -> Result<(), String> {
     // Fast path
@@ -101,8 +100,9 @@ pub async fn generate_jwt(
     jwt_type: String,
     id_user: i64,
     name_user: String,
+    permissions: Vec<String>,
 ) -> Result<String, String> {
-    get_jwt_token_with_role(username, role, jwt_type, id_user, name_user).await
+    get_jwt_token_with_role(username, role, jwt_type, id_user, name_user, permissions).await
 }
 
 pub async fn get_jwt_token_with_role(
@@ -111,9 +111,19 @@ pub async fn get_jwt_token_with_role(
     jwt_type: String,
     id_user: i64,
     name_user: String,
+    permissions: Vec<String>,
 ) -> Result<String, String> {
+    // Access tokens: 1 hour; Refresh tokens: 7 days
+    let duration = if jwt_type == JWT_TYPE_ACCESS {
+        Duration::hours(1)
+    } else if jwt_type == JWT_TYPE_REFRESH {
+        Duration::days(7)
+    } else {
+        return Err("Invalid token type".to_string());
+    };
+
     let expiration = Utc::now()
-        .checked_add_signed(Duration::hours(24))
+        .checked_add_signed(duration)
         .expect("valid timestamp")
         .timestamp();
 
@@ -123,9 +133,11 @@ pub async fn get_jwt_token_with_role(
         iat: Utc::now().timestamp() as usize,
         company: "Pharmacy".to_string(),
         role: role.clone(),
+        permissions,
         user_name: username.clone(),
         id: id_user,
         name: name_user,
+        token_type: jwt_type.clone(),
     };
 
     info!("Generating {} JWT for user: {}", jwt_type, claims.sub);
@@ -133,17 +145,13 @@ pub async fn get_jwt_token_with_role(
     // Prefer RSA (RS256) if RSA env keys are present; otherwise fallback to HMAC secret
     init_jwt_keys_if_needed()?;
     let token = if let Some(enc_arc) = JWT_ENCODING_RS.lock().unwrap().as_ref().cloned() {
-        info!("Using cached RSA keys for JWT signing");
         let header = Header::new(Algorithm::RS256);
         encode(&header, &claims, &*enc_arc).map_err(|e| e.to_string())?
     } else {
-        info!("Using HMAC secret for JWT signing");
         let jwt_secret = if jwt_type == JWT_TYPE_ACCESS {
             get_jwt_secret()?
-        } else if jwt_type == JWT_TYPE_REFRESH {
-            get_jwt_secret_refresh()?
         } else {
-            return Err("Invalid token type".to_string());
+            get_jwt_secret_refresh()?
         };
 
         encode(
@@ -157,47 +165,50 @@ pub async fn get_jwt_token_with_role(
     Ok(token)
 }
 
-//Validar Token
+//Validar Token — solo acepta access tokens
 pub async fn validate_token(token: &str) -> Result<Claims, String> {
-    // Prefer cached RSA decoding key if available, otherwise fall back to HMAC secret
     init_jwt_keys_if_needed()?;
     let decoded = if let Some(dec_arc) = JWT_DECODING_RS.lock().unwrap().as_ref().cloned() {
-        info!("Validating JWT");
-        decode::<Claims>(&token, &*dec_arc, &Validation::new(Algorithm::RS256))
+        decode::<Claims>(token, &*dec_arc, &Validation::new(Algorithm::RS256))
             .map_err(|e| e.to_string())?
     } else {
-        info!("Validating JWT using secret");
         let jwt_secret = get_jwt_secret()?;
         decode::<Claims>(
-            &token,
+            token,
             &DecodingKey::from_secret(jwt_secret.as_bytes()),
             &Validation::default(),
         )
         .map_err(|e| e.to_string())?
     };
+
+    // Reject refresh tokens used as access tokens
+    if decoded.claims.token_type != JWT_TYPE_ACCESS {
+        return Err("Invalid token type: expected access token".to_string());
+    }
+
     Ok(decoded.claims)
 }
 
-//Validar Token
+//Validar Token Refresh — solo acepta refresh tokens
 pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
     init_jwt_keys_if_needed()?;
     let decoded = if let Some(dec_arc) = JWT_DECODING_RS.lock().unwrap().as_ref().cloned() {
-        decode::<Claims>(&token, &*dec_arc, &Validation::new(Algorithm::RS256))
+        decode::<Claims>(token, &*dec_arc, &Validation::new(Algorithm::RS256))
             .map_err(|e| e.to_string())?
     } else {
         let jwt_secret = get_jwt_secret_refresh()?;
         decode::<Claims>(
-            &token,
+            token,
             &DecodingKey::from_secret(jwt_secret.as_bytes()),
             &Validation::default(),
         )
         .map_err(|e| e.to_string())?
     };
 
-    info!(
-        "Validated JWT Refresh for user with ID: {}",
-        decoded.claims.id
-    );
+    // Reject access tokens used as refresh tokens
+    if decoded.claims.token_type != JWT_TYPE_REFRESH {
+        return Err("Invalid token type: expected refresh token".to_string());
+    }
 
     Ok(decoded.claims)
 }

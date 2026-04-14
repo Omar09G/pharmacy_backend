@@ -4,17 +4,15 @@ use axum::http::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::Response;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use std::time::Instant;
 
 // Async mutex so we don't block the runtime when updating buckets
 use tokio::sync::Mutex as AsyncMutex;
 
-lazy_static! {
-    static ref LOGIN_BUCKETS: AsyncMutex<HashMap<String, TokenBucket>> =
-        AsyncMutex::new(HashMap::new());
-}
+static LOGIN_BUCKETS: LazyLock<AsyncMutex<HashMap<String, TokenBucket>>> =
+    LazyLock::new(|| AsyncMutex::new(HashMap::new()));
 
 #[derive(Clone, Debug)]
 struct TokenBucket {

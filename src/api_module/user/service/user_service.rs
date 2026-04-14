@@ -5,8 +5,8 @@ use axum::{
 
 use log::info;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
-    PaginatorTrait, QueryFilter, QueryOrder,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, LoaderTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, TransactionTrait,
 };
 use validator::Validate;
 
@@ -41,7 +41,7 @@ pub async fn create_user(
 ) -> Result<Json<ApiResponse<UserIdResponse>>, ApiError> {
     payload.validate().map_err(ApiError::Validation)?;
 
-    let role = payload.role.clone();
+    let role_name = payload.role.clone();
 
     // Offload Argon2 hashing to blocking thread to avoid blocking async runtime
     let plain_password = payload.password.clone();
@@ -50,64 +50,81 @@ pub async fn create_user(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
         .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
-    let user_create = schemas::users::ActiveModel {
-        id: ActiveValue::NotSet,
-        username: ActiveValue::Set(payload.username),
-        password_hash: ActiveValue::Set(new_password_hash),
-        full_name: ActiveValue::Set(payload.full_name),
-        email: ActiveValue::Set(payload.email),
-        phone: ActiveValue::Set(payload.phone),
-        status: ActiveValue::Set(payload.status),
-        created_at: ActiveValue::Set(get_current_timestamp_now()),
-        created_by: ActiveValue::NotSet,
-        updated_at: ActiveValue::NotSet,
-        updated_by: ActiveValue::NotSet,
-        deleted_at: ActiveValue::NotSet,
-    };
-
-    let new_user = user_create
-        .save(&app_ctx.conn)
+    // Wrap user + user_role creation in a transaction for atomicity
+    let txn = app_ctx
+        .conn
+        .begin()
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    let user_id_str: i64 = new_user.id.unwrap();
+    let op_result = (async {
+        let user_create = schemas::users::ActiveModel {
+            id: ActiveValue::NotSet,
+            username: ActiveValue::Set(payload.username),
+            password_hash: ActiveValue::Set(new_password_hash),
+            full_name: ActiveValue::Set(payload.full_name),
+            email: ActiveValue::Set(payload.email),
+            phone: ActiveValue::Set(payload.phone),
+            status: ActiveValue::Set(payload.status),
+            created_at: ActiveValue::Set(get_current_timestamp_now()),
+            created_by: ActiveValue::NotSet,
+            updated_at: ActiveValue::NotSet,
+            updated_by: ActiveValue::NotSet,
+            deleted_at: ActiveValue::NotSet,
+        };
 
-    info!(
-        "Creating user role with user_id: {} and role: {}",
-        user_id_str, role
-    );
+        let new_user = user_create
+            .save(&txn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    //Buscar el ID del ROLE "USER" para asignarlo al nuevo usuario creado
-    let role = schemas::roles::Entity::find()
-        .filter(schemas::roles::Column::Name.eq(role))
-        .one(&app_ctx.conn)
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-        .ok_or_else(|| ApiError::NotFound)?;
+        let user_id: i64 = new_user.id.unwrap();
 
-    let role_id_str: i64 = role.id;
+        info!(
+            "Creating user role with user_id: {} and role: {}",
+            user_id, role_name
+        );
 
-    let user_role_create = schemas::user_roles::ActiveModel {
-        user_id: ActiveValue::Set(user_id_str),
-        role_id: ActiveValue::Set(role_id_str),
-    };
+        let role = schemas::roles::Entity::find()
+            .filter(schemas::roles::Column::Name.eq(role_name))
+            .one(&txn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+            .ok_or(ApiError::NotFoundErrorDescription(
+                "Role not found".to_string(),
+            ))?;
 
-    if user_role_create.user_id.is_not_set() || user_role_create.role_id.is_not_set() {
-        return Err(ApiError::Validation(validator::ValidationErrors::new()));
+        let user_role_create = schemas::user_roles::ActiveModel {
+            user_id: ActiveValue::Set(user_id),
+            role_id: ActiveValue::Set(role.id),
+        };
+
+        user_role_create
+            .insert(&txn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+        Ok(user_id)
+    })
+    .await;
+
+    match op_result {
+        Ok(user_id) => {
+            txn.commit()
+                .await
+                .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            info!("User and role created successfully");
+            Ok(Json(ApiResponse::success(
+                UserIdResponse { id: user_id },
+                "User created successfully".to_string(),
+                1,
+            )))
+        }
+        Err(err) => {
+            let _ = txn.rollback().await;
+            Err(err)
+        }
     }
-
-    user_role_create
-        .insert(&app_ctx.conn)
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-    info!("User role created successfully");
-
-    Ok(Json(ApiResponse::success(
-        UserIdResponse { id: user_id_str },
-        "User created successfully".to_string(),
-        1,
-    )))
 }
 /* Name fn: get_user_by_id
 Description:   Funcion para obtener un user por su ID desde la base de datos
@@ -166,28 +183,19 @@ pub async fn get_all_users(
 
     let mut users_with_roles: Vec<UserResponse> = Vec::new();
 
-    //Relacion con USER-ROLE para validar Nombre del ROLE
-    for user in &users {
-        let user_role = schemas::user_roles::Entity::find()
-            .filter(schemas::user_roles::Column::UserId.eq(user.id))
-            .one(&app_ctx.conn)
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+    // Batch load roles for all users (2 queries instead of 2*N)
+    let roles_per_user: Vec<Vec<schemas::roles::Model>> = users
+        .load_many_to_many(
+            schemas::roles::Entity,
+            schemas::user_roles::Entity,
+            &app_ctx.conn,
+        )
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-        if let Some(user_role) = user_role {
-            let role = schemas::roles::Entity::find_by_id(user_role.role_id)
-                .one(&app_ctx.conn)
-                .await
-                .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-
-            if let Some(role) = role {
-                users_with_roles.push(UserResponse::from((user.clone(), role.name)));
-            } else {
-                users_with_roles.push(UserResponse::from((user.clone(), "".to_string())));
-            }
-        } else {
-            users_with_roles.push(UserResponse::from((user.clone(), "".to_string())));
-        }
+    for (user, roles) in users.iter().zip(roles_per_user.iter()) {
+        let role_name = roles.first().map(|r| r.name.clone()).unwrap_or_default();
+        users_with_roles.push(UserResponse::from((user.clone(), role_name)));
     }
 
     if users.is_empty() {
@@ -285,17 +293,27 @@ pub async fn delete_user(
     State(app_ctx): State<AppContext>,
     Path(user_id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    info!("Attempting to delete user with ID: {}", user_id);
+    info!("Attempting to soft-delete user with ID: {}", user_id);
 
     let user = schemas::users::Entity::find_by_id(user_id)
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-        .ok_or_else(|| ApiError::NotFound)?;
+        .ok_or(ApiError::NotFound)?;
 
-    info!("User found: {:?}", user);
+    if user.deleted_at.is_some() {
+        return Err(ApiError::NotFoundErrorDescription(
+            "User already deleted".to_string(),
+        ));
+    }
 
-    user.delete(&app_ctx.conn).await?;
+    let mut user_active = user.into_active_model();
+    user_active.deleted_at = ActiveValue::Set(Some(get_current_timestamp_now()));
+    user_active.status = ActiveValue::Set("DELETED".to_string());
+    user_active
+        .save(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     Ok(Json(ApiResponse::success(
         (),

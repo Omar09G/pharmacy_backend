@@ -108,31 +108,6 @@ impl From<schemas::discounts::Model> for DiscountDetailResponse {
     }
 }
 
-impl From<schemas::discounts::ActiveModel> for DiscountDetailResponse {
-    fn from(model: schemas::discounts::ActiveModel) -> Self {
-        Self {
-            id: model.id.unwrap(),
-            code: model.code.unwrap(),
-            name: model.name.unwrap(),
-            description: model.description.unwrap(),
-            discount_type: model.discount_type.unwrap(),
-            value: model.value.unwrap(),
-            applies_to: model.applies_to.unwrap(),
-            product_id: model.product_id.unwrap(),
-            category_id: model.category_id.unwrap(),
-            customer_id: model.customer_id.unwrap(),
-            min_qty: model.min_qty.unwrap(),
-            max_uses: model.max_uses.unwrap(),
-            priority: model.priority.unwrap(),
-            start_at: model.start_at.unwrap(),
-            end_at: model.end_at.unwrap(),
-            active: model.active.unwrap(),
-            created_at: model.created_at.unwrap(),
-            created_by: model.created_by.unwrap(),
-        }
-    }
-}
-
 impl From<schemas::discounts::Model> for DiscountIdResponse {
     fn from(model: schemas::discounts::Model) -> Self {
         Self { id: model.id }

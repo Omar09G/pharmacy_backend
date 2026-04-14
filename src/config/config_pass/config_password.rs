@@ -2,9 +2,6 @@ use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use password_hash::rand_core::OsRng;
 use password_hash::{PasswordHash, SaltString};
 
-pub fn get_password_salt() -> String {
-    std::env::var("PASSWORD_SALT").unwrap_or_else(|_| "default_salt".to_string())
-}
 pub fn generate_hash(password: &str) -> Result<String, String> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();

@@ -74,10 +74,32 @@ async fn main() {
         }
     };
 
-    if let Err(e) = serve(listener, app).await {
+    // Graceful shutdown: wait for SIGINT (Ctrl+C) or SIGTERM (Docker stop)
+    let shutdown_signal = async {
+        let ctrl_c = tokio::signal::ctrl_c();
+        #[cfg(unix)]
+        let terminate = async {
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                .expect("failed to install SIGTERM handler")
+                .recv()
+                .await;
+        };
+        #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+        tokio::select! {
+            _ = ctrl_c => { info!("Received SIGINT, shutting down..."); }
+            _ = terminate => { info!("Received SIGTERM, shutting down..."); }
+        }
+    };
+
+    if let Err(e) = serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal)
+        .await
+    {
         error!("Server error: {}", e);
         std::process::exit(1);
     }
     close_db_connection(ctx_bd.conn).await;
-    info!("Server stopped");
+    info!("Server stopped gracefully");
 }

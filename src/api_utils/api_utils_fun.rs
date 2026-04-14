@@ -3,15 +3,14 @@ use chrono::Offset;
 use chrono::Timelike;
 use chrono::{FixedOffset, Utc};
 use chrono_tz::America::Mexico_City;
-use lazy_static::lazy_static;
 use regex::Regex;
 use sea_orm::entity::prelude::*;
+use std::sync::LazyLock;
 use validator::ValidationError;
 // 1. Definir la expresión regular para caracteres especiales permitidos.
 // Acepta alfanuméricos, guion bajo y arroba.
-lazy_static! {
-    static ref RE_SPECIAL_CHARS: Regex = Regex::new(r"^[a-zA-Z0-9_@]+$").unwrap();
-}
+static RE_SPECIAL_CHARS: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[a-zA-Z0-9_@]+$").unwrap());
 
 // 2. Función de validación personalizada para usar en el atributo.
 pub fn validate_special_chars(value: &str) -> Result<(), ValidationError> {
@@ -48,11 +47,11 @@ pub fn to_page_index(page: u64) -> u64 {
 }
 
 /// Name: `to_page_limit`
-/// Description: Convert client `page` to offset for paginators (assuming fixed page size of 10).
-/// Parameters: `page` - page number from client (u64).
-/// Outputs: offset for paginators (u64).
+/// Description: Convert client `limit` to page size for paginators, capped at 100.
+/// Parameters: `page` - requested page size from client (u64).
+/// Outputs: page size for paginators (u64), between 1 and 100.
 pub fn to_page_limit(page: u64) -> u64 {
-    if page == 0 { 10 } else { page }
+    if page == 0 { 10 } else { page.min(100) }
 }
 /// Name: `get_current_timestamp_now`
 /// Description: Get the current timestamp in UTC with a fixed offset of 0.
@@ -77,7 +76,7 @@ pub fn get_current_timestamp_at_zone_mexico(
     tz_dt.with_timezone(&fixed_offset)
 }
 
-pub fn parce_date_str_to_date_time_with_timezone(
+pub fn parse_date_str_to_date_time_with_timezone(
     date_str: &str,
 ) -> Result<DateTimeWithTimeZone, ApiError> {
     let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
@@ -93,7 +92,7 @@ pub fn parce_date_str_to_date_time_with_timezone(
     }
 }
 
-pub fn parce_date_time_str_to_date_time_with_timezone(
+pub fn parse_date_time_str_to_date_time_with_timezone(
     date_time_str: &str,
 ) -> Result<DateTimeWithTimeZone, ApiError> {
     let naive = chrono::NaiveDateTime::parse_from_str(date_time_str, "%Y-%m-%dT%H:%M:%S");
@@ -109,7 +108,7 @@ pub fn parce_date_time_str_to_date_time_with_timezone(
     }
 }
 
-pub fn parce_date_time_str_to_date_time_with_timezone_opt(
+pub fn parse_date_time_str_to_date_time_with_timezone_opt(
     date_time_str: &str,
 ) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
     if date_time_str.is_empty() {
@@ -128,7 +127,7 @@ pub fn parce_date_time_str_to_date_time_with_timezone_opt(
     }
 }
 
-pub fn parce_date_str_to_date_time_with_timezone_mexico(
+pub fn parse_date_str_to_date_time_with_timezone_mexico(
     date_str: &str,
 ) -> Result<DateTimeWithTimeZone, ApiError> {
     let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
@@ -146,7 +145,7 @@ pub fn parce_date_str_to_date_time_with_timezone_mexico(
     }
 }
 
-pub fn parce_date_str_to_date_time_with_timezone_opt(
+pub fn parse_date_str_to_date_time_with_timezone_opt(
     date_str: &str,
 ) -> Result<Option<DateTimeWithTimeZone>, ApiError> {
     if date_str.is_empty() {
@@ -165,7 +164,7 @@ pub fn parce_date_str_to_date_time_with_timezone_opt(
     }
 }
 
-pub fn valite_date_range(start_date: &str, end_date: &str) -> Result<(), ApiError> {
+pub fn validate_date_range(start_date: &str, end_date: &str) -> Result<(), ApiError> {
     let start = parse_date_str(start_date)?;
     let end = parse_date_str(end_date)?;
 
@@ -177,9 +176,12 @@ pub fn valite_date_range(start_date: &str, end_date: &str) -> Result<(), ApiErro
     Ok(())
 }
 
-pub fn valite_date_time_range(start_date_time: &str, end_date_time: &str) -> Result<(), ApiError> {
-    let start = parce_date_time_str_to_date_time_with_timezone(start_date_time)?;
-    let end = parce_date_time_str_to_date_time_with_timezone(end_date_time)?;
+pub fn validate_date_time_range(
+    start_date_time: &str,
+    end_date_time: &str,
+) -> Result<(), ApiError> {
+    let start = parse_date_time_str_to_date_time_with_timezone(start_date_time)?;
+    let end = parse_date_time_str_to_date_time_with_timezone(end_date_time)?;
 
     if start > end {
         return Err(ApiError::ValidationError(
@@ -189,12 +191,12 @@ pub fn valite_date_time_range(start_date_time: &str, end_date_time: &str) -> Res
     Ok(())
 }
 
-pub fn valite_date_time_range_date(
+pub fn validate_date_time_range_date(
     start_date_time: &str,
     end_date_time: &str,
 ) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
-    let start = parce_date_str_to_date_time_with_timezone_opt(start_date_time)?;
-    let mut end = parce_date_str_to_date_time_with_timezone_opt(end_date_time)?;
+    let start = parse_date_str_to_date_time_with_timezone_opt(start_date_time)?;
+    let mut end = parse_date_str_to_date_time_with_timezone_opt(end_date_time)?;
 
     if let (Some(start_dt), Some(end_dt)) = (start, end) {
         // Reemplazar la hora de `fecha_end` por 23:59:59 para incluir toda la fecha en el filtro
@@ -214,12 +216,12 @@ pub fn valite_date_time_range_date(
     Ok((start, end))
 }
 
-pub fn valite_date_time_range_opt(
+pub fn validate_date_time_range_opt(
     start_date_time: &str,
     end_date_time: &str,
 ) -> Result<(), ApiError> {
-    let start = parce_date_time_str_to_date_time_with_timezone_opt(start_date_time)?;
-    let end = parce_date_time_str_to_date_time_with_timezone_opt(end_date_time)?;
+    let start = parse_date_time_str_to_date_time_with_timezone_opt(start_date_time)?;
+    let end = parse_date_time_str_to_date_time_with_timezone_opt(end_date_time)?;
 
     if let (Some(start), Some(end)) = (start, end)
         && start > end

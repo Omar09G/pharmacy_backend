@@ -14,7 +14,7 @@ use crate::{
     api_module::inventory_movements::inventory_movements_dto::inventory_movements_dto::{
         InventoryMovementDetailResponse, InventoryMovementIdResponse, InventoryMovementRequest,
     },
-    api_utils::api_utils_fun::valite_date_time_range_date,
+    api_utils::api_utils_fun::validate_date_time_range_date,
 };
 use crate::{
     api_utils::{
@@ -108,7 +108,7 @@ pub async fn get_inventory_movements(
     let start_date = pagination.date_init.clone().unwrap_or_default();
     let end_date = pagination.date_init.clone().unwrap_or_default();
 
-    let (date_ini, date_end) = valite_date_time_range_date(&start_date, &end_date)?;
+    let (date_ini, date_end) = validate_date_time_range_date(&start_date, &end_date)?;
 
     info!(
         "Filtering inventory movements with date range: {} - {}",

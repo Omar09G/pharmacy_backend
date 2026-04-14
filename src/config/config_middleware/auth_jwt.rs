@@ -1,20 +1,19 @@
 use axum::body::Body;
-use axum::http::{Method, Request, StatusCode};
+use axum::http::{Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::Response;
-use log::{error, info};
+use log::error;
 
-use crate::config::config_jwt::validate_jwt::{validate_token, validate_token_refresh};
+use crate::config::config_jwt::validate_jwt::validate_token;
 
 /// Middleware para validar el token JWT en el header `Authorization: Bearer <token>`.
 ///
-/// Permite pasar sin token a las rutas de login y creación de usuario.
-pub async fn auth_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
+/// Solo permite acceso público a la ruta de login.
+pub async fn auth_middleware(mut req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
     let path = req.uri().path().to_string();
-    let method = req.method();
 
-    // Permitir acceso público a login y creación de usuario
-    if path == "/v1/api/auth/login" || (path == "/v1/api/user" && method == Method::PUT) {
+    // Only login and token refresh are public
+    if path == "/v1/api/auth/login" || path == "/v1/api/auth/refresh" {
         return Ok(next.run(req).await);
     }
 
@@ -42,25 +41,17 @@ pub async fn auth_middleware(req: Request<Body>, next: Next) -> Result<Response,
         None => return Err(StatusCode::UNAUTHORIZED),
     };
 
-    // Validar token usando la implementación existente
+    // Validar token: solo access tokens son válidos aquí.
+    // Refresh tokens deben usarse exclusivamente en /auth/refresh.
     match validate_token(&token).await {
-        Ok(_) => Ok(next.run(req).await),
+        Ok(claims) => {
+            // Inject claims into request extensions so handlers can access them
+            req.extensions_mut().insert(claims);
+            Ok(next.run(req).await)
+        }
         Err(e) => {
-            error!(
-                "Error validando token de acceso: {}. Intentando validar como refresh token...",
-                e
-            );
-
-            match validate_token_refresh(&token).await {
-                Ok(claims) => {
-                    info!("Refresh token validado para usuario: {}", claims.sub);
-                    Ok(next.run(req).await)
-                }
-                Err(_) => Err({
-                    error!("Error validando refresh token: {}", e);
-                    StatusCode::UNAUTHORIZED
-                }),
-            }
+            error!("Invalid access token: {}", e);
+            Err(StatusCode::UNAUTHORIZED)
         }
     }
 }

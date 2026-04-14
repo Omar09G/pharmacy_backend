@@ -55,10 +55,12 @@ pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response,
             "access-control-allow-headers",
             HeaderValue::from_static("authorization,content-type"),
         );
-        headers.insert(
-            "access-control-allow-credentials",
-            HeaderValue::from_static("true"),
-        );
+        if !allow_all {
+            headers.insert(
+                "access-control-allow-credentials",
+                HeaderValue::from_static("true"),
+            );
+        }
         return Ok(res);
     }
 
@@ -79,9 +81,11 @@ pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response,
             headers.insert("access-control-allow-origin", val);
         }
     }
-    headers.insert(
-        "access-control-allow-credentials",
-        HeaderValue::from_static("true"),
-    );
+    if !allow_all {
+        headers.insert(
+            "access-control-allow-credentials",
+            HeaderValue::from_static("true"),
+        );
+    }
     Ok(response)
 }

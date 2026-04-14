@@ -136,7 +136,7 @@ impl<T> ApiResponse<T> {
     pub fn with_error_details(data: T, message: String, code_error: u16) -> Self {
         Self {
             data,
-            total: 10,
+            total: 0,
             message,
             status: "error".to_string(),
             code_error,

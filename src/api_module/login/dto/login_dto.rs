@@ -31,16 +31,39 @@ pub struct LoginResponseDTO {
     pub username: String,
     pub role: String,
     pub token: String,
+    pub refresh_token: String,
 }
 
 impl LoginResponseDTO {
-    pub fn new(id: i64, full_name: String, username: String, role: String, token: String) -> Self {
+    pub fn new(
+        id: i64,
+        full_name: String,
+        username: String,
+        role: String,
+        token: String,
+        refresh_token: String,
+    ) -> Self {
         Self {
             id,
             full_name,
             username,
             role,
             token,
+            refresh_token,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct RefreshRequest {
+    #[validate(length(min = 1, message = "refreshToken is required"))]
+    pub refresh_token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefreshResponse {
+    pub token: String,
+    pub refresh_token: String,
 }

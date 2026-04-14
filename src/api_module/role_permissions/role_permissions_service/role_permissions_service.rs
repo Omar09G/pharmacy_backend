@@ -47,8 +47,7 @@ pub async fn create_role_permissions(
 
     warn!(
         "Attempting to create role permissions with role_id: {} and permission_id: {}",
-        role_permissions_create.role_id.clone().unwrap(),
-        role_permissions_create.permission_id.clone().unwrap()
+        role_id_str, permission_id_str
     );
 
     role_permissions_create
@@ -103,8 +102,8 @@ pub async fn get_role_permissions(
         .filter(schemas::role_permissions::Column::RoleId.eq(role_id))
         .order_by_asc(schemas::role_permissions::Column::PermissionId)
         .paginate(&app_ctx.conn, page_limit);
-    
-     let total_items = if pagination.total > 0 {
+
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -193,8 +192,10 @@ pub async fn update_role_permissions(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let role_permission = role_permission_update.ok_or(ApiError::NotFound)?;
+
     Ok(Json(ApiResponse::success(
-        RolePermissionsResponse::from(role_permission_update.unwrap()),
+        RolePermissionsResponse::from(role_permission),
         "Role permissions updated successfully".to_string(),
         1,
     )))

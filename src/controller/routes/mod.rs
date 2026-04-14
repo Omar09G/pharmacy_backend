@@ -1,0 +1,10 @@
+pub mod audit_routes;
+pub mod auth_routes;
+pub mod catalog_routes;
+pub mod finance_routes;
+pub mod inventory_routes;
+pub mod product_routes;
+pub mod purchase_routes;
+pub mod rbac_routes;
+pub mod sales_routes;
+pub mod user_routes;
