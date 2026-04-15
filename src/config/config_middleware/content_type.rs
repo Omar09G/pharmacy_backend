@@ -19,6 +19,12 @@ pub async fn content_type_middleware(
         return Ok(next.run(req).await);
     }
 
+    // Endpoints that accept empty bodies — skip content-type check
+    let path = req.uri().path();
+    if path == "/v1/api/auth/logout" || path == "/v1/api/auth/refresh" {
+        return Ok(next.run(req).await);
+    }
+
     // For POST/PUT/PATCH and others with bodies, require application/json
     if method == Method::POST || method == Method::PUT || method == Method::PATCH {
         let ct = req

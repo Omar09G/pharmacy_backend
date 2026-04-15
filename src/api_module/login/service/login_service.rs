@@ -1,6 +1,4 @@
-use crate::api_module::login::dto::login_dto::{
-    LoginRequest, LoginResponseDTO, RefreshRequest, RefreshResponse,
-};
+use crate::api_module::login::dto::login_dto::{LoginRequest, LoginResponseDTO};
 use crate::api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH};
 use crate::config::config_jwt::validate_jwt::{generate_jwt, validate_token_refresh};
 use crate::{
@@ -10,15 +8,61 @@ use crate::{
 use crate::api_utils::api_error::ApiError;
 
 use crate::config::config_pass::config_password::verify_password;
+use axum::http::header::SET_COOKIE;
+use axum::response::{IntoResponse, Response};
 use axum::{Json, extract::State};
 use log::{error, info};
 use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+use std::env;
 use validator::Validate;
+
+/// Build a `Set-Cookie` header value for an HttpOnly cookie.
+fn build_cookie(name: &str, value: &str, path: &str, max_age_secs: i64) -> String {
+    let secure_flag = if env::var("COOKIE_SECURE").unwrap_or_default() == "true" {
+        "; Secure"
+    } else {
+        ""
+    };
+    format!(
+        "{}={}; HttpOnly; SameSite=Lax; Path={}{secure_flag}; Max-Age={}",
+        name, value, path, max_age_secs
+    )
+}
+
+/// Build an expired `Set-Cookie` header to clear a cookie.
+fn build_expired_cookie(name: &str, path: &str) -> String {
+    let secure_flag = if env::var("COOKIE_SECURE").unwrap_or_default() == "true" {
+        "; Secure"
+    } else {
+        ""
+    };
+    format!(
+        "{}=; HttpOnly; SameSite=Lax; Path={}{secure_flag}; Max-Age=0",
+        name, path
+    )
+}
+
+/// Extract a named cookie value from the `Cookie` header.
+fn extract_cookie(headers: &axum::http::HeaderMap, name: &str) -> Option<String> {
+    headers
+        .get("cookie")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|cookies| {
+            cookies.split(';').find_map(|c| {
+                let c = c.trim();
+                if let Some(val) = c.strip_prefix(&format!("{}=", name)) {
+                    Some(val.to_string())
+                } else {
+                    None
+                }
+            })
+        })
+}
 
 pub async fn get_login(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<LoginRequest>,
-) -> Result<Json<ApiResponse<LoginResponseDTO>>, ApiError> {
+) -> Result<Response, ApiError> {
     info!("Received login request for username: {}", payload.username);
 
     payload.validate().map_err(ApiError::Validation)?;
@@ -90,30 +134,33 @@ pub async fn get_login(
     .await
     .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
-    let response = ApiResponse::success(
-        LoginResponseDTO::new(
-            user.id,
-            full_name,
-            user.username,
-            role.name.clone(),
-            access_token,
-            refresh_token,
-        ),
+    let response_body = ApiResponse::success(
+        LoginResponseDTO::new(user.id, full_name, user.username, role.name.clone()),
         "Login successful".to_string(),
         1,
     );
 
-    Ok(Json(response))
+    // Tokens go ONLY in HttpOnly cookies — never in the JSON body
+    let access_cookie = build_cookie("access_token", &access_token, "/v1/api", 86_400); // 1 day
+    let refresh_cookie = build_cookie("refresh_token", &refresh_token, "/v1/api/auth", 604_800); // 7 days
+
+    let mut response = Json(response_body).into_response();
+    response
+        .headers_mut()
+        .append(SET_COOKIE, access_cookie.parse().unwrap());
+    response
+        .headers_mut()
+        .append(SET_COOKIE, refresh_cookie.parse().unwrap());
+
+    Ok(response)
 }
 
 /// Endpoint: POST /v1/api/auth/refresh
-/// Accepts a valid refresh token and returns a new access token + refresh token pair.
-pub async fn refresh_token(
-    Json(payload): Json<RefreshRequest>,
-) -> Result<Json<ApiResponse<RefreshResponse>>, ApiError> {
-    payload.validate().map_err(ApiError::Validation)?;
+/// Reads the refresh_token from the HttpOnly cookie and returns a new token pair as cookies.
+pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, ApiError> {
+    let refresh_tok = extract_cookie(&headers, "refresh_token").ok_or(ApiError::Unauthorized)?;
 
-    let claims = validate_token_refresh(&payload.refresh_token)
+    let claims = validate_token_refresh(&refresh_tok)
         .await
         .map_err(|_| ApiError::Unauthorized)?;
 
@@ -139,29 +186,49 @@ pub async fn refresh_token(
     .await
     .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
-    let data = RefreshResponse {
-        token: new_access,
-        refresh_token: new_refresh,
-    };
+    let access_cookie = build_cookie("access_token", &new_access, "/v1/api", 86_400);
+    let refresh_cookie = build_cookie("refresh_token", &new_refresh, "/v1/api/auth", 604_800);
 
-    Ok(Json(ApiResponse::success(
-        data,
+    let body = ApiResponse::success(
+        LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role),
         "Token refreshed successfully".to_string(),
         1,
-    )))
+    );
+
+    let mut response = Json(body).into_response();
+    response
+        .headers_mut()
+        .append(SET_COOKIE, access_cookie.parse().unwrap());
+    response
+        .headers_mut()
+        .append(SET_COOKIE, refresh_cookie.parse().unwrap());
+
+    Ok(response)
+}
+
+/// Endpoint: POST /v1/api/auth/logout
+/// Clears the access and refresh HttpOnly cookies.
+pub async fn logout() -> Response {
+    let access_cookie = build_expired_cookie("access_token", "/v1/api");
+    let refresh_cookie = build_expired_cookie("refresh_token", "/v1/api/auth");
+
+    let body = ApiResponse::success((), "Logged out successfully".to_string(), 0);
+    let mut response = Json(body).into_response();
+    response
+        .headers_mut()
+        .append(SET_COOKIE, access_cookie.parse().unwrap());
+    response
+        .headers_mut()
+        .append(SET_COOKIE, refresh_cookie.parse().unwrap());
+
+    response
 }
 
 pub async fn get_profile(
     crate::api_utils::extractors::AuthClaims(claims): crate::api_utils::extractors::AuthClaims,
 ) -> Result<Json<ApiResponse<LoginResponseDTO>>, ApiError> {
-    let token_validate = LoginResponseDTO::new(
-        claims.id,
-        claims.name,
-        claims.user_name,
-        claims.role,
-        String::new(), // Profile doesn't re-expose the token
-        String::new(), // Profile doesn't return a new refresh token
-    );
+    let token_validate =
+        LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role);
 
     Ok(Json(ApiResponse::success(
         token_validate,
