@@ -32,6 +32,7 @@ pub struct SaleIdResponse {
 pub struct SaleDetailResponse {
     pub id: i64,
     pub customer_id: Option<i64>,
+    pub customer_name: Option<String>,
     pub user_id: Option<i64>,
     pub invoice_no: Option<String>,
     pub date: DateTimeWithTimeZone,
@@ -70,6 +71,7 @@ impl From<schemas::sales::Model> for SaleDetailResponse {
         Self {
             id: model.id,
             customer_id: model.customer_id,
+            customer_name: None, // This will be populated separately after fetching the customer name
             user_id: model.user_id,
             invoice_no: model.invoice_no,
             date: model.date,
@@ -89,6 +91,7 @@ impl From<schemas::sales::ActiveModel> for SaleDetailResponse {
         Self {
             id: model.id.unwrap(),
             customer_id: model.customer_id.unwrap(),
+            customer_name: None, // This will be populated separately after fetching the customer name
             user_id: model.user_id.unwrap(),
             invoice_no: model.invoice_no.unwrap(),
             date: model.date.unwrap(),

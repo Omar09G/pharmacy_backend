@@ -8,6 +8,7 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait,
     PaginatorTrait, QueryFilter, QueryOrder,
 };
+use std::collections::HashMap;
 use validator::Validate;
 
 use crate::{
@@ -147,8 +148,38 @@ pub async fn get_sales(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let mut sale_details = items
+        .into_iter()
+        .map(SaleDetailResponse::from)
+        .collect::<Vec<_>>();
+
+    // Batch-fetch customer names in a single query to avoid N+1
+    let customer_ids: Vec<i64> = sale_details
+        .iter()
+        .filter_map(|s| s.customer_id)
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+
+    if !customer_ids.is_empty() {
+        let customers: HashMap<i64, String> = schemas::customers::Entity::find()
+            .filter(schemas::customers::Column::Id.is_in(customer_ids))
+            .all(&app_ctx.conn)
+            .await
+            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+            .into_iter()
+            .map(|c| (c.id, c.name))
+            .collect();
+
+        for sale in &mut sale_details {
+            if let Some(customer_id) = sale.customer_id {
+                sale.customer_name = customers.get(&customer_id).cloned();
+            }
+        }
+    }
+
     Ok(Json(ApiResponse::success(
-        items.into_iter().map(SaleDetailResponse::from).collect(),
+        sale_details,
         "Sales retrieved successfully".to_string(),
         total_items as i32,
     )))
