@@ -16,7 +16,7 @@ use crate::{
             CashJournalDetailResponse, CashJournalIdResponse, CashJournalRequest,
         },
     },
-    api_utils::api_utils_fun::parse_mexico_date_range_to_utc,
+    api_utils::api_utils_fun::parse_local_date_range_to_utc,
 };
 use crate::{
     api_utils::{
@@ -99,8 +99,8 @@ pub async fn get_cash_journals(
     if let Some(user) = pagination.user_id {
         select = select.filter(schemas::cash_journals::Column::OpenedBy.eq(user));
     }
-    //Llamado para convertir fecga a formato locala a UTC para la consulta
-    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+    //Llamado para convertir fecha a formato local a UTC para la consulta
+    let (fecha_init, fecha_end) = parse_local_date_range_to_utc(
         &pagination.date_init.clone().unwrap_or_default(),
         &pagination.date_end.clone().unwrap_or_default(),
     )?;

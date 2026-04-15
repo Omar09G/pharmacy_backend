@@ -262,7 +262,8 @@ pub async fn get_product_lot_by_barcode(
         .map(|pb| pb.product_id)
         .ok_or_else(|| ApiError::ValidationError("Bar code not found".to_string()))?;
 
-    let pl = schemas::product_lots::Entity::find_by_id(id)
+    let pl = schemas::product_lots::Entity::find()
+        .filter(schemas::product_lots::Column::ProductId.eq(id))
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;

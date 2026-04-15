@@ -9,7 +9,7 @@ use sea_orm::{
 };
 use validator::Validate;
 
-use crate::api_utils::api_utils_fun::parse_mexico_date_range_to_utc;
+use crate::api_utils::api_utils_fun::parse_local_date_range_to_utc;
 use crate::{
     api_module::purchases::{
         PurchaseUpdateRequest,
@@ -124,8 +124,8 @@ pub async fn get_purchases(
         select = select.filter(schemas::purchases::Column::Status.eq(status));
     }
 
-    // date range (YYYY-MM-DD interpreted as Mexico City local time → UTC)
-    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+    // date range (YYYY-MM-DD interpreted as local time → UTC)
+    let (fecha_init, fecha_end) = parse_local_date_range_to_utc(
         &pagination.date_init.clone().unwrap_or_default(),
         &pagination.date_end.clone().unwrap_or_default(),
     )?;

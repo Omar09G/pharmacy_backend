@@ -11,7 +11,7 @@ use crate::{
     api_utils::{
         api_error::ApiError,
         api_response::{ApiResponse, PaginationParams},
-        api_utils_fun::{parse_mexico_date_range_to_utc, to_page_index, to_page_limit},
+        api_utils_fun::{parse_local_date_range_to_utc, to_page_index, to_page_limit},
     },
     config::config_database::config_db_context::AppContext,
 };
@@ -29,7 +29,7 @@ pub async fn get_vw_cash_journal_balance(
         pagination.date_end.as_deref(),
     ) {
         (Some(di), Some(de)) if !di.is_empty() && !de.is_empty() => {
-            parse_mexico_date_range_to_utc(di, de)?
+            parse_local_date_range_to_utc(di, de)?
         }
         _ => (None, None),
     };

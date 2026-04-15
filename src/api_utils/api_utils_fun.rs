@@ -1,11 +1,20 @@
 use crate::api_utils::api_error::ApiError;
 use chrono::Offset;
 use chrono::{FixedOffset, Utc};
-use chrono_tz::America::Mexico_City;
+use chrono_tz::Tz;
 use regex::Regex;
 use sea_orm::entity::prelude::*;
 use std::sync::LazyLock;
 use validator::ValidationError;
+
+/// Application timezone loaded from `APP_TIMEZONE` env var (defaults to `America/Mexico_City`).
+static APP_TZ: LazyLock<Tz> = LazyLock::new(|| {
+    let tz_str =
+        std::env::var("APP_TIMEZONE").unwrap_or_else(|_| "America/Mexico_City".to_string());
+    tz_str
+        .parse::<Tz>()
+        .unwrap_or_else(|_| panic!("Invalid APP_TIMEZONE value: {tz_str}"))
+});
 // 1. Definir la expresión regular para caracteres especiales permitidos.
 // Acepta alfanuméricos, guion bajo y arroba.
 static RE_SPECIAL_CHARS: LazyLock<Regex> =
@@ -59,17 +68,15 @@ pub fn get_current_timestamp_now() -> DateTimeWithTimeZone {
     Utc::now().with_timezone(&FixedOffset::east_opt(0).unwrap())
 }
 
-///Name: get_current_timestamp_at_zone_mexico
-///Description: Get the current timestamp in the Mexico City timezone.
-///Outputs: `DateTimeWithTimeZone` representing the current timestamp in Mexico City timezone.
-pub fn get_current_timestamp_at_zone_mexico(
-    date_time: DateTimeWithTimeZone,
-) -> DateTimeWithTimeZone {
-    // Convert the incoming fixed-offset datetime to UTC, then to Mexico City tz (handles DST),
+///Name: get_current_timestamp_at_zone
+///Description: Get the current timestamp in the configured APP_TIMEZONE.
+///Outputs: `DateTimeWithTimeZone` representing the current timestamp in the configured timezone.
+pub fn get_current_timestamp_at_zone(date_time: DateTimeWithTimeZone) -> DateTimeWithTimeZone {
+    // Convert the incoming fixed-offset datetime to UTC, then to APP_TZ (handles DST),
     // and finally to a fixed-offset `DateTimeWithTimeZone` representing the same instant
-    // in the local Mexico City offset.
+    // in the local offset.
     let dt_utc = date_time.with_timezone(&Utc);
-    let tz_dt = dt_utc.with_timezone(&Mexico_City);
+    let tz_dt = dt_utc.with_timezone(&*APP_TZ);
     let fixed_offset = tz_dt.offset().fix();
 
     tz_dt.with_timezone(&fixed_offset)
@@ -126,14 +133,14 @@ pub fn parse_date_time_str_to_date_time_with_timezone_opt(
     }
 }
 
-pub fn parse_date_str_to_date_time_with_timezone_mexico(
+pub fn parse_date_str_to_date_time_with_timezone_local(
     date_str: &str,
 ) -> Result<DateTimeWithTimeZone, ApiError> {
     let naive = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d");
     match naive {
         Ok(d) => {
             let date_time = d.and_hms_opt(0, 0, 0).unwrap();
-            Ok(get_current_timestamp_at_zone_mexico(
+            Ok(get_current_timestamp_at_zone(
                 DateTimeWithTimeZone::from_naive_utc_and_offset(
                     date_time,
                     FixedOffset::east_opt(0).unwrap(),
@@ -144,17 +151,17 @@ pub fn parse_date_str_to_date_time_with_timezone_mexico(
     }
 }
 
-/// Parse a `YYYY-MM-DD` date range interpreting them as Mexico City local dates,
-/// converting to UTC for database queries.
-/// - `date_init` → Mexico 00:00:00 → UTC
-/// - `date_end`  → Mexico 23:59:59 → UTC
+/// Parse a `YYYY-MM-DD` date range interpreting them as local dates in the configured
+/// APP_TIMEZONE, converting to UTC for database queries.
+/// - `date_init` → local 00:00:00 → UTC
+/// - `date_end`  → local 23:59:59 → UTC
 /// Handles DST automatically via `chrono_tz`.
-pub fn parse_mexico_date_range_to_utc(
+pub fn parse_local_date_range_to_utc(
     date_init: &str,
     date_end: &str,
 ) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
-    let start = parse_mexico_date_to_utc(date_init, 0, 0, 0)?;
-    let end = parse_mexico_date_to_utc(date_end, 23, 59, 59)?;
+    let start = parse_local_date_to_utc(date_init, 0, 0, 0)?;
+    let end = parse_local_date_to_utc(date_end, 23, 59, 59)?;
 
     if let (Some(s), Some(e)) = (start, end) {
         if s > e {
@@ -166,9 +173,9 @@ pub fn parse_mexico_date_range_to_utc(
     Ok((start, end))
 }
 
-/// Parse a single `YYYY-MM-DD` string as Mexico City local time with the given
-/// hour/min/sec, then convert to UTC. Returns `None` for empty strings.
-fn parse_mexico_date_to_utc(
+/// Parse a single `YYYY-MM-DD` string as local time in the configured APP_TIMEZONE
+/// with the given hour/min/sec, then convert to UTC. Returns `None` for empty strings.
+fn parse_local_date_to_utc(
     date_str: &str,
     hour: u32,
     min: u32,
@@ -182,15 +189,13 @@ fn parse_mexico_date_to_utc(
     let naive_dt = naive_date
         .and_hms_opt(hour, min, sec)
         .ok_or_else(|| ApiError::ValidationError("Invalid time".to_string()))?;
-    // Interpret as Mexico City local time
-    let mexico_dt = naive_dt
-        .and_local_timezone(Mexico_City)
+    // Interpret as local time in APP_TIMEZONE
+    let local_dt = naive_dt
+        .and_local_timezone(*APP_TZ)
         .single()
-        .ok_or_else(|| {
-            ApiError::ValidationError("Ambiguous or invalid Mexico City local time".to_string())
-        })?;
+        .ok_or_else(|| ApiError::ValidationError("Ambiguous or invalid local time".to_string()))?;
     // Convert to UTC with fixed offset +00:00
-    let utc_dt = mexico_dt.with_timezone(&Utc);
+    let utc_dt = local_dt.with_timezone(&Utc);
     Ok(Some(
         utc_dt.with_timezone(&FixedOffset::east_opt(0).unwrap()),
     ))
@@ -246,7 +251,7 @@ pub fn validate_date_time_range_date(
     start_date_time: &str,
     end_date_time: &str,
 ) -> Result<(Option<DateTimeWithTimeZone>, Option<DateTimeWithTimeZone>), ApiError> {
-    parse_mexico_date_range_to_utc(start_date_time, end_date_time)
+    parse_local_date_range_to_utc(start_date_time, end_date_time)
 }
 
 pub fn validate_date_time_range_opt(

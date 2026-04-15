@@ -12,7 +12,7 @@ use validator::Validate;
 use crate::api_module::purchase_payments::purchase_payments_dto::purchase_payments_dto::{
     PurchasePaymentDetailResponse, PurchasePaymentIdResponse, PurchasePaymentRequest,
 };
-use crate::api_utils::api_utils_fun::parse_mexico_date_range_to_utc;
+use crate::api_utils::api_utils_fun::parse_local_date_range_to_utc;
 use crate::{
     api_utils::{
         api_error::ApiError,
@@ -93,8 +93,8 @@ pub async fn get_purchase_payments(
         select = select.filter(schemas::purchase_payments::Column::Reference.eq(reference));
     }
 
-    // paid_at date range (YYYY-MM-DD interpreted as Mexico City local time → UTC)
-    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+    // paid_at date range (YYYY-MM-DD interpreted as local time → UTC)
+    let (fecha_init, fecha_end) = parse_local_date_range_to_utc(
         &pagination.date_init.clone().unwrap_or_default(),
         &pagination.date_end.clone().unwrap_or_default(),
     )?;

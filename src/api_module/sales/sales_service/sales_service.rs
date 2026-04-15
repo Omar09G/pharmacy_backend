@@ -12,7 +12,7 @@ use validator::Validate;
 
 use crate::{
     api_module::sales::sales_dto::sales_dto::{SaleDetailResponse, SaleIdResponse, SaleRequest},
-    api_utils::api_utils_fun::parse_mexico_date_range_to_utc,
+    api_utils::api_utils_fun::parse_local_date_range_to_utc,
 };
 use crate::{
     api_utils::{
@@ -103,7 +103,7 @@ pub async fn get_sales(
         select = select.filter(schemas::sales::Column::Status.eq(status));
     }
 
-    let (fecha_init, fecha_end) = parse_mexico_date_range_to_utc(
+    let (fecha_init, fecha_end) = parse_local_date_range_to_utc(
         &pagination.date_init.clone().unwrap_or_default(),
         &pagination.date_end.clone().unwrap_or_default(),
     )?;
