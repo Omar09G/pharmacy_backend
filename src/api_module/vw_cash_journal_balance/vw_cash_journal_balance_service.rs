@@ -37,7 +37,7 @@ pub async fn get_vw_cash_journal_balance(
     // Call fn_t_cash_journal_balance(p_cash_journal_id, p_start, p_end)
     let stmt = Statement::from_sql_and_values(
         DatabaseBackend::Postgres,
-        "SELECT pharmacy.fn_t_cash_journal_balance(0, NULL, NULL)",
+        "SELECT pharmacy.fn_t_cash_journal_balance($1, $2, $3)",
         [
             pagination.id.unwrap_or(0).into(),
             date_start.into(),

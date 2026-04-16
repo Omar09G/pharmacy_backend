@@ -2,6 +2,7 @@ use axum::{
     Json,
     extract::{Query, State},
 };
+use log::info;
 use sea_orm::{
     ConnectionTrait, DatabaseBackend, EntityTrait, PaginatorTrait, QueryOrder, Statement,
 };
@@ -34,10 +35,15 @@ pub async fn get_vw_sales_daily_summary(
         _ => (None, None),
     };
 
+    info!(
+        "Fetching sales daily summary with filters - date_start: {:?}, date_end: {:?}, customer_id: {:?}, user_id: {:?}, status: {:?}",
+        date_start, date_end, pagination.customer_id, pagination.user_id, pagination.status
+    );
+
     // Call fn_t_sales_daily_summary(p_start, p_end, p_customer_id, p_user_id, p_status)
     let stmt = Statement::from_sql_and_values(
         DatabaseBackend::Postgres,
-        "SELECT pharmacy.fn_t_sales_daily_summary(NULL, NULL, 0, 0, NULL)",
+        "SELECT pharmacy.fn_t_sales_daily_summary($1, $2, $3, $4, $5)",
         [
             date_start.into(),
             date_end.into(),

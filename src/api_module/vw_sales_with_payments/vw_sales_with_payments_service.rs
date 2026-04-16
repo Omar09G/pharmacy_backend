@@ -37,7 +37,7 @@ pub async fn get_vw_sales_with_payments(
     // Call fn_t_sales_with_payments(p_sale_id, p_customer_id, p_user_id, p_start, p_end, p_is_credit, p_status)
     let stmt = Statement::from_sql_and_values(
         DatabaseBackend::Postgres,
-        "SELECT pharmacy.fn_t_sales_with_payments(0, 0, 0, NULL, NULL, NULL, NULL)",
+        "SELECT pharmacy.fn_t_sales_with_payments($1, $2, $3, $4, $5, $6, $7)",
         [
             pagination.sale_id.unwrap_or(0).into(),
             pagination.customer_id.unwrap_or(0).into(),

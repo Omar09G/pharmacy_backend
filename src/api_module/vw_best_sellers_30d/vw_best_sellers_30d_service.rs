@@ -37,7 +37,7 @@ pub async fn get_vw_best_sellers_30d(
     // Call fn_t_best_sellers_30d(p_days, p_product_id, p_start, p_end)
     let stmt = Statement::from_sql_and_values(
         DatabaseBackend::Postgres,
-        "SELECT pharmacy.fn_t_best_sellers_30d(30, 0, NULL, NULL)",
+        "SELECT pharmacy.fn_t_best_sellers_30d($1, $2, $3, $4)",
         [
             30i32.into(),
             pagination.product_id.unwrap_or(0).into(),

@@ -37,7 +37,7 @@ pub async fn get_vw_daily_cash_cut(
     // Call fn_t_daily_cash_cut(p_start, p_end, p_status)
     let stmt = Statement::from_sql_and_values(
         DatabaseBackend::Postgres,
-        "SELECT pharmacy.fn_t_daily_cash_cut(NULL, NULL, NULL)",
+        "SELECT pharmacy.fn_t_daily_cash_cut($1, $2, $3)",
         [
             date_start.into(),
             date_end.into(),
