@@ -163,7 +163,20 @@ pub async fn get_all_users(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<UserResponse>>>, ApiError> {
-    let paginator = schemas::users::Entity::find()
+    info!(
+        "Fetching users with pagination - page: {}, limit: {}, total: {} , FullName: {:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.full_name
+    );
+
+    let mut select = schemas::users::Entity::find();
+
+    if let Some(full_name) = pagination.full_name.clone() {
+        if !full_name.is_empty() {
+            select = select.filter(schemas::users::Column::FullName.contains(full_name));
+        }
+    }
+
+    let paginator = select
         .order_by_asc(schemas::users::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
 
