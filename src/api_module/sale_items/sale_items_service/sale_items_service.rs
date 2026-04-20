@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_sale_item(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SaleItemRequest>,
 ) -> Result<Json<ApiResponse<SaleItemIdResponse>>, ApiError> {
+    info!("create_sale_item called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let si_create = schemas::sale_items::ActiveModel::try_from(payload)
@@ -52,6 +55,8 @@ pub async fn get_sale_item_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<SaleItemDetailResponse>>, ApiError> {
+    info!("get_sale_item_by_id called with id: {:?}", id);
+
     let si = schemas::sale_items::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -71,6 +76,15 @@ pub async fn get_sale_items(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SaleItemDetailResponse>>>, ApiError> {
+    info!(
+        "get_sale_items called with pagination: page={:?}, limit={:?}, total={:?}, sale_id={:?}, product_id={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.sale_id,
+        pagination.product_id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -138,6 +152,8 @@ pub async fn delete_sale_item(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_sale_item called with id: {:?}", id);
+
     let si = schemas::sale_items::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -163,6 +179,8 @@ pub async fn update_sale_item(
     Path(id): Path<i64>,
     Json(payload): Json<SaleItemRequest>,
 ) -> Result<Json<ApiResponse<SaleItemIdResponse>>, ApiError> {
+    info!("update_sale_item called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let si = schemas::sale_items::Entity::find_by_id(id)

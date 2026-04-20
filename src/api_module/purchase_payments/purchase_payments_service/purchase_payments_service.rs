@@ -21,11 +21,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_purchase_payment(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<PurchasePaymentRequest>,
 ) -> Result<Json<ApiResponse<PurchasePaymentIdResponse>>, ApiError> {
+    info!("create_purchase_payment called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pp_create = schemas::purchase_payments::ActiveModel::try_from(payload)
@@ -53,6 +56,8 @@ pub async fn get_purchase_payment_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<PurchasePaymentDetailResponse>>, ApiError> {
+    info!("get_purchase_payment_by_id called with id: {:?}", id);
+
     let pp = schemas::purchase_payments::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -74,6 +79,18 @@ pub async fn get_purchase_payments(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PurchasePaymentDetailResponse>>>, ApiError> {
+    info!(
+        "get_purchase_payments called with pagination: page={:?}, limit={:?}, total={:?}, purchase_id={:?}, method_id={:?}, reference={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.purchase_id,
+        pagination.method_id,
+        pagination.reference,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -139,6 +156,8 @@ pub async fn delete_purchase_payment(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_purchase_payment called with id: {:?}", id);
+
     let pp = schemas::purchase_payments::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -166,6 +185,11 @@ pub async fn update_purchase_payment(
     Path(id): Path<i64>,
     Json(payload): Json<PurchasePaymentRequest>,
 ) -> Result<Json<ApiResponse<PurchasePaymentIdResponse>>, ApiError> {
+    info!(
+        "update_purchase_payment called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pp = schemas::purchase_payments::Entity::find_by_id(id)

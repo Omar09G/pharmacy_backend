@@ -31,7 +31,7 @@ pub async fn add_product(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<ProductRequestDetail>,
 ) -> Result<Json<ApiResponse<ProductIdResponse>>, ApiError> {
-    info!("Adding new product: {:?}", payload);
+    info!("add_product called with payload: {:?}", payload);
 
     //Valida el payload
     payload.validate().map_err(ApiError::Validation)?;
@@ -137,6 +137,8 @@ pub async fn get_product_by_bar_code(
     State(app_ctx): State<AppContext>,
     Path(barcode): Path<String>,
 ) -> Result<Json<ApiResponse<ProductAddResponseDetail>>, ApiError> {
+    info!("get_product_by_bar_code called with barcode: {:?}", barcode);
+
     if barcode.trim().is_empty() {
         return Err(ApiError::ValidationError(
             "Barcode cannot be empty".to_string(),
@@ -223,6 +225,11 @@ pub async fn get_products_with_details(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductAddResponseDetail>>>, ApiError> {
+    info!(
+        "get_products_with_details called with pagination: sku_filter={:?}, name_filter={:?}",
+        pagination.sku, pagination.name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -334,6 +341,8 @@ pub async fn delete_product(
     State(app_ctx): State<AppContext>,
     Path(product_id): Path<i32>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_product called with product_id: {:?}", product_id);
+
     // Verificar que el producto existe
     let product = schemas::products::Entity::find_by_id(product_id)
         .one(&app_ctx.conn)

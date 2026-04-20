@@ -21,6 +21,18 @@ pub async fn get_vw_sales_daily_summary(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<VwSalesDailySummaryResponse>>>, ApiError> {
+    info!(
+        "get_vw_sales_daily_summary called with pagination: page={:?}, limit={:?}, total={:?}, customer_id={:?}, user_id={:?}, status={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.customer_id,
+        pagination.user_id,
+        pagination.status,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 

@@ -23,6 +23,8 @@ pub async fn create_user_role(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<UserRoleRequest>,
 ) -> Result<Json<ApiResponse<UserRoleResponse>>, ApiError> {
+    info!("create_user_role called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let user_id_str: i64 = payload.user_id;
@@ -134,6 +136,11 @@ pub async fn get_user_roles(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<UserRoleResponse>>>, ApiError> {
+    info!(
+        "get_user_roles called with pagination: page={:?}, limit={:?}, total={:?}, user_id={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.user_id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 

@@ -29,6 +29,11 @@ pub async fn create_inventory_movement(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<InventoryMovementRequest>,
 ) -> Result<Json<ApiResponse<InventoryMovementIdResponse>>, ApiError> {
+    info!(
+        "create_inventory_movement called with payload: {:?}",
+        payload
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let im_create = schemas::inventory_movements::ActiveModel::try_from(payload)
@@ -56,6 +61,8 @@ pub async fn get_inventory_movement_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<InventoryMovementDetailResponse>>, ApiError> {
+    info!("get_inventory_movement_by_id called with id: {:?}", id);
+
     let im = schemas::inventory_movements::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -77,6 +84,20 @@ pub async fn get_inventory_movements(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<InventoryMovementDetailResponse>>>, ApiError> {
+    info!(
+        "get_inventory_movements called with pagination: page={:?}, limit={:?}, total={:?}, product_id={:?}, lot_id={:?}, location_id={:?}, reference_type={:?}, id={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.product_id,
+        pagination.lot_id,
+        pagination.location_id,
+        pagination.reference_type,
+        pagination.id,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -160,6 +181,8 @@ pub async fn delete_inventory_movement(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_inventory_movement called with id: {:?}", id);
+
     let im = schemas::inventory_movements::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -187,6 +210,11 @@ pub async fn update_inventory_movement(
     Path(id): Path<i64>,
     Json(payload): Json<InventoryMovementRequest>,
 ) -> Result<Json<ApiResponse<InventoryMovementIdResponse>>, ApiError> {
+    info!(
+        "update_inventory_movement called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let im = schemas::inventory_movements::Entity::find_by_id(id)

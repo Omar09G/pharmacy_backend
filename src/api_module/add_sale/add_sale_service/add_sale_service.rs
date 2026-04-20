@@ -33,10 +33,7 @@ pub async fn create_add_sale(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SaleAddRequest>,
 ) -> Result<Json<ApiResponse<SaleIdResponse>>, ApiError> {
-    info!(
-        "Received add sale request for invoice_no: {:?}",
-        payload.invoice_no
-    );
+    info!("create_add_sale called with payload: {:?}", payload);
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -196,6 +193,8 @@ pub async fn get_add_sale_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<SaleAddDetailResponse>>, ApiError> {
+    info!("get_add_sale_by_id called with id: {:?}", id);
+
     let sale = schemas::sales::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -382,6 +381,8 @@ pub async fn cancel_add_sale(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("cancel_add_sale called with id: {:?}", id);
+
     let sale = schemas::sales::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await

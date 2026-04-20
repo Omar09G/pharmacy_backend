@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_product_barcode(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<ProductBarcodeRequest>,
 ) -> Result<Json<ApiResponse<ProductBarcodeIdResponse>>, ApiError> {
+    info!("create_product_barcode called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pb_create = schemas::product_barcodes::ActiveModel::from(payload);
@@ -55,6 +58,8 @@ pub async fn get_product_barcode_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<ProductBarcodeDetailResponse>>, ApiError> {
+    info!("get_product_barcode_by_id called with id: {:?}", id);
+
     let pb = schemas::product_barcodes::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -76,6 +81,15 @@ pub async fn get_product_barcodes(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductBarcodeDetailResponse>>>, ApiError> {
+    info!(
+        "get_product_barcodes called with pagination: page={:?}, limit={:?}, total={:?}, barcode={:?}, product_id={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.barcode,
+        pagination.product_id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -95,7 +109,7 @@ pub async fn get_product_barcodes(
         .order_by_asc(schemas::product_barcodes::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -123,6 +137,8 @@ pub async fn delete_product_barcode(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_product_barcode called with id: {:?}", id);
+
     let pb = schemas::product_barcodes::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -149,6 +165,11 @@ pub async fn get_product_barcodes_by_barcode(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductBarcodeDetailResponse>>>, ApiError> {
+    info!(
+        "get_product_barcodes_by_barcode called with pagination: page={:?}, limit={:?}, total={:?}, barcode={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.barcode
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let barcode_filter = pagination.barcode.clone().unwrap_or_default();
@@ -164,7 +185,7 @@ pub async fn get_product_barcodes_by_barcode(
         .order_by_asc(schemas::product_barcodes::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -193,6 +214,11 @@ pub async fn update_product_barcode(
     Path(id): Path<i64>,
     Json(payload): Json<ProductBarcodeRequest>,
 ) -> Result<Json<ApiResponse<ProductBarcodeIdResponse>>, ApiError> {
+    info!(
+        "update_product_barcode called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pb = schemas::product_barcodes::Entity::find_by_id(id)

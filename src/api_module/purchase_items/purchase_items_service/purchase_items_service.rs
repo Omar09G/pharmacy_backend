@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_purchase_item(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<PurchaseItemRequest>,
 ) -> Result<Json<ApiResponse<PurchaseItemIdResponse>>, ApiError> {
+    info!("create_purchase_item called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pi_create = schemas::purchase_items::ActiveModel::try_from(payload)
@@ -52,6 +55,8 @@ pub async fn get_purchase_item_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<PurchaseItemDetailResponse>>, ApiError> {
+    info!("get_purchase_item_by_id called with id: {:?}", id);
+
     let pi = schemas::purchase_items::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -73,6 +78,16 @@ pub async fn get_purchase_items(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PurchaseItemDetailResponse>>>, ApiError> {
+    info!(
+        "get_purchase_items called with pagination: page={:?}, limit={:?}, total={:?}, purchase_id={:?}, product_id={:?}, lot_number={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.purchase_id,
+        pagination.product_id,
+        pagination.lot_number
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -97,7 +112,7 @@ pub async fn get_purchase_items(
         .order_by_asc(schemas::purchase_items::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -131,6 +146,8 @@ pub async fn delete_purchase_item(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_purchase_item called with id: {:?}", id);
+
     let pi = schemas::purchase_items::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -158,6 +175,11 @@ pub async fn update_purchase_item(
     Path(id): Path<i64>,
     Json(payload): Json<PurchaseItemRequest>,
 ) -> Result<Json<ApiResponse<PurchaseItemIdResponse>>, ApiError> {
+    info!(
+        "update_purchase_item called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pi = schemas::purchase_items::Entity::find_by_id(id)

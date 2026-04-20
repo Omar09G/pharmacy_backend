@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_tax_profile(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<TaxProfileRequest>,
 ) -> Result<Json<ApiResponse<TaxProfileIdResponse>>, ApiError> {
+    info!("create_tax_profile called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let tax_profile_create = schemas::tax_profiles::ActiveModel::try_from(payload)
@@ -50,6 +53,8 @@ pub async fn get_tax_profile_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<TaxProfileResponse>>, ApiError> {
+    info!("get_tax_profile_by_id called with id: {:?}", id);
+
     let tax_profile = schemas::tax_profiles::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -71,6 +76,11 @@ pub async fn list_tax_profiles(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<TaxProfileResponse>>>, ApiError> {
+    info!(
+        "list_tax_profiles called with pagination: page={:?}, limit={:?}, total={:?}",
+        pagination.page, pagination.limit, pagination.total
+    );
+
     let paginator = schemas::tax_profiles::Entity::find()
         .order_by_asc(schemas::tax_profiles::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
@@ -103,6 +113,8 @@ pub async fn delete_tax_profile(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_tax_profile called with id: {:?}", id);
+
     let tax_profile = schemas::tax_profiles::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -131,6 +143,8 @@ pub async fn update_tax_profile(
     Path(id): Path<i64>,
     Json(payload): Json<TaxProfileRequest>,
 ) -> Result<Json<ApiResponse<TaxProfileIdResponse>>, ApiError> {
+    info!("update_tax_profile called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let tax_profile = schemas::tax_profiles::Entity::find_by_id(id)
@@ -168,6 +182,14 @@ pub async fn search_tax_profiles_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<TaxProfileResponse>>>, ApiError> {
+    info!(
+        "search_tax_profiles_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name
+    );
+
     let paginator = schemas::tax_profiles::Entity::find()
         .filter(
             schemas::tax_profiles::Column::Name

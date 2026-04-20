@@ -26,7 +26,7 @@ pub async fn create_product_lot(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<ProductLotRequest>,
 ) -> Result<Json<ApiResponse<ProductLotIdResponse>>, ApiError> {
-    info!("Creating product lot: {:?}", payload);
+    info!("create_product_lot called with payload: {:?}", payload);
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -55,7 +55,7 @@ pub async fn get_product_lot_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<ProductLotDetailResponse>>, ApiError> {
-    info!("Retrieving product lot with ID: {}", id);
+    info!("get_product_lot_by_id called with id: {:?}", id);
 
     let pl = schemas::product_lots::Entity::find_by_id(id)
         .one(&app_ctx.conn)
@@ -78,13 +78,17 @@ pub async fn get_product_lots(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductLotDetailResponse>>>, ApiError> {
+    info!(
+        "get_product_lots called with pagination: page={:?}, limit={:?}, total={:?}, product_id={:?}, lot_number={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.product_id,
+        pagination.lot_number
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
-
-    info!(
-        "Retrieving product lots - Page: {}, Limit: {}, Product ID: {:?}, Lot Number: {:?}",
-        pagination.page, pagination.limit, pagination.product_id, pagination.lot_number
-    );
 
     let mut select = schemas::product_lots::Entity::find();
 
@@ -130,7 +134,7 @@ pub async fn delete_product_lot(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    info!("Deleting product lot with ID: {}", id);
+    info!("delete_product_lot called with id: {:?}", id);
 
     let pl = schemas::product_lots::Entity::find_by_id(id)
         .one(&app_ctx.conn)
@@ -159,6 +163,11 @@ pub async fn update_product_lot(
     Path(id): Path<i64>,
     Json(payload): Json<ProductLotRequest>,
 ) -> Result<Json<ApiResponse<ProductLotIdResponse>>, ApiError> {
+    info!(
+        "update_product_lot called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     info!("Updating product lot with ID {}: {:?}", id, payload);
@@ -206,6 +215,11 @@ pub async fn adjust_product_lot(
     Path(id): Path<i64>,
     Json(payload): Json<ProductLotRequest>,
 ) -> Result<Json<ApiResponse<ProductLotIdResponse>>, ApiError> {
+    info!(
+        "adjust_product_lot called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     info!("Adjusting product lot with ID {}: {:?}", id, payload);
@@ -250,7 +264,10 @@ pub async fn get_product_lot_by_barcode(
     State(app_ctx): State<AppContext>,
     Path(bar_code): Path<String>,
 ) -> Result<Json<ApiResponse<ProductLotDetailResponse>>, ApiError> {
-    info!("Retrieving product lot with bar code: {}", bar_code);
+    info!(
+        "get_product_lot_by_barcode called with bar_code: {:?}",
+        bar_code
+    );
 
     let pbar_code = schemas::product_barcodes::Entity::find()
         .filter(schemas::product_barcodes::Column::Barcode.eq(bar_code))

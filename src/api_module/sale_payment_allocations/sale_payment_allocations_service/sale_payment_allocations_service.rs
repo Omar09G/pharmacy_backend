@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_sale_payment_allocation(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SalePaymentAllocationRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentAllocationIdResponse>>, ApiError> {
+    info!("create_sale_payment_allocation called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let spa_create = schemas::sale_payment_allocations::ActiveModel::try_from(payload)
@@ -52,6 +55,8 @@ pub async fn get_sale_payment_allocation_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<SalePaymentAllocationDetailResponse>>, ApiError> {
+    info!("get_sale_payment_allocation_by_id called with id: {:?}", id);
+
     let spa = schemas::sale_payment_allocations::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -73,6 +78,15 @@ pub async fn get_sale_payment_allocations(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SalePaymentAllocationDetailResponse>>>, ApiError> {
+    info!(
+        "get_sale_payment_allocations called with pagination: page={:?}, limit={:?}, total={:?}, payment_id={:?}, credit_invoice_id={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.payment_id,
+        pagination.credit_invoice_id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -115,6 +129,8 @@ pub async fn delete_sale_payment_allocation(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_sale_payment_allocation called with id: {:?}", id);
+
     let spa = schemas::sale_payment_allocations::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -142,6 +158,8 @@ pub async fn update_sale_payment_allocation(
     Path(id): Path<i64>,
     Json(payload): Json<SalePaymentAllocationRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentAllocationIdResponse>>, ApiError> {
+    info!("update_sale_payment_allocation called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let spa = schemas::sale_payment_allocations::Entity::find_by_id(id)

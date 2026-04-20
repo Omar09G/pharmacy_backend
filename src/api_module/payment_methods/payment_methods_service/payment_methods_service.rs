@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_payment_method(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<PaymentMethodRequest>,
 ) -> Result<Json<ApiResponse<PaymentMethodIdResponse>>, ApiError> {
+    info!("create_payment_method called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let payment_method_create = schemas::payment_methods::ActiveModel::try_from(payload)
@@ -50,6 +53,8 @@ pub async fn get_payment_method_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<PaymentMethodResponse>>, ApiError> {
+    info!("get_payment_method_by_id called with id: {:?}", id);
+
     let payment_method = schemas::payment_methods::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -69,6 +74,8 @@ pub async fn delete_payment_method(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_payment_method called with id: {:?}", id);
+
     let payment_method = schemas::payment_methods::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -93,6 +100,11 @@ pub async fn get_payment_methods(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PaymentMethodResponse>>>, ApiError> {
+    info!(
+        "get_payment_methods called with pagination: page={:?}, limit={:?}, total={:?}",
+        pagination.page, pagination.limit, pagination.total
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -100,7 +112,7 @@ pub async fn get_payment_methods(
         .order_by_asc(schemas::payment_methods::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -129,6 +141,11 @@ pub async fn update_payment_method(
     Path(id): Path<i64>,
     Json(payload): Json<PaymentMethodRequest>,
 ) -> Result<Json<ApiResponse<PaymentMethodIdResponse>>, ApiError> {
+    info!(
+        "update_payment_method called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let payment_method = schemas::payment_methods::Entity::find_by_id(id)
@@ -161,6 +178,11 @@ pub async fn search_payment_methods_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PaymentMethodIdResponse>>>, ApiError> {
+    info!(
+        "search_payment_methods_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -177,7 +199,7 @@ pub async fn search_payment_methods_by_name(
         .order_by_asc(schemas::payment_methods::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator

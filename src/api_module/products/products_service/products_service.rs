@@ -30,6 +30,8 @@ pub async fn create_product(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<ProductRequest>,
 ) -> Result<Json<ApiResponse<ProductIdResponse>>, ApiError> {
+    info!("create_product called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let product_create = schemas::products::ActiveModel::try_from(payload)
@@ -61,6 +63,8 @@ pub async fn get_product_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<ProductDetailResponse>>, ApiError> {
+    info!("get_product_by_id called with id: {:?}", id);
+
     let product = schemas::products::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -80,6 +84,21 @@ pub async fn get_products(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductResponse>>>, ApiError> {
+    info!(
+        "get_products called with pagination: page={:?}, limit={:?}, total={:?}, sku={:?}, name={:?}, brand={:?}, category_id={:?}, is_sellable={:?}, track_batches={:?}, price_min={:?}, price_max={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.sku,
+        pagination.name,
+        pagination.brand,
+        pagination.category_id,
+        pagination.is_sellable,
+        pagination.track_batches,
+        pagination.price_min,
+        pagination.price_max
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -213,6 +232,8 @@ pub async fn delete_product(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_product called with id: {:?}", id);
+
     let product = schemas::products::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -238,6 +259,11 @@ pub async fn get_products_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductDetailResponse>>>, ApiError> {
+    info!(
+        "get_products_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let name_filter = pagination.name.clone().unwrap_or_default();
@@ -282,6 +308,11 @@ pub async fn update_product(
     Path(id): Path<i64>,
     Json(payload): Json<ProductRequest>,
 ) -> Result<Json<ApiResponse<ProductIdResponse>>, ApiError> {
+    info!(
+        "update_product called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let product = schemas::products::Entity::find_by_id(id)

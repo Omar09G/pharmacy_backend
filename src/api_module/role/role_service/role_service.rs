@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_role(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<RoleRequest>,
 ) -> Result<Json<ApiResponse<RoleIdResponse>>, ApiError> {
+    info!("create_role called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let role_create = schemas::roles::ActiveModel::try_from(payload)
@@ -56,6 +59,8 @@ pub async fn get_role_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<RoleDetailResponse>>, ApiError> {
+    info!("get_role_by_id called with id: {:?}", id);
+
     let role = schemas::roles::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -75,6 +80,14 @@ pub async fn get_roles(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<RoleDetailResponse>>>, ApiError> {
+    info!(
+        "get_roles called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -107,6 +120,8 @@ pub async fn delete_role(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_role called with id: {:?}", id);
+
     let role = schemas::roles::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -131,6 +146,14 @@ pub async fn get_roles_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<RoleDetailResponse>>>, ApiError> {
+    info!(
+        "get_roles_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let name_filter = pagination.name.clone().unwrap_or_default();
@@ -172,6 +195,8 @@ pub async fn update_role(
     Path(id): Path<i64>,
     Json(payload): Json<RoleRequest>,
 ) -> Result<Json<ApiResponse<RoleIdResponse>>, ApiError> {
+    info!("update_role called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let role = schemas::roles::Entity::find_by_id(id)

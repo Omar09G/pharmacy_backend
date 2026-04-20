@@ -15,11 +15,25 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn get_vw_sales_with_payments(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<VwSalesWithPaymentsResponse>>>, ApiError> {
+    info!(
+        "get_vw_sales_with_payments called with pagination: page={:?}, limit={:?}, total={:?}, sale_id={:?}, customer_id={:?}, user_id={:?}, date_init={:?}, date_end={:?}, status={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.sale_id,
+        pagination.customer_id,
+        pagination.user_id,
+        pagination.date_init,
+        pagination.date_end,
+        pagination.status
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 

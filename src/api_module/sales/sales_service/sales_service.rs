@@ -28,6 +28,8 @@ pub async fn create_sale(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SaleRequest>,
 ) -> Result<Json<ApiResponse<SaleIdResponse>>, ApiError> {
+    info!("create_sale called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let s_create = schemas::sales::ActiveModel::try_from(payload)
@@ -55,6 +57,8 @@ pub async fn get_sale_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<SaleDetailResponse>>, ApiError> {
+    info!("get_sale_by_id called with id: {:?}", id);
+
     let s = schemas::sales::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -74,6 +78,19 @@ pub async fn get_sales(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SaleDetailResponse>>>, ApiError> {
+    info!(
+        "get_sales called with pagination: page={:?}, limit={:?}, total={:?}, customer_id={:?}, user_id={:?}, invoice_no={:?}, status={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.customer_id,
+        pagination.user_id,
+        pagination.invoice_no,
+        pagination.status,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -189,6 +206,8 @@ pub async fn delete_sale(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_sale called with id: {:?}", id);
+
     let s = schemas::sales::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -239,6 +258,8 @@ pub async fn update_sale(
     Path(id): Path<i64>,
     Json(payload): Json<SaleRequest>,
 ) -> Result<Json<ApiResponse<SaleIdResponse>>, ApiError> {
+    info!("update_sale called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let s = schemas::sales::Entity::find_by_id(id)

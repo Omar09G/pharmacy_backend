@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_discount(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<DiscountRequest>,
 ) -> Result<Json<ApiResponse<DiscountIdResponse>>, ApiError> {
+    info!("create_discount called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let d_create = schemas::discounts::ActiveModel::try_from(payload)
@@ -52,6 +55,8 @@ pub async fn get_discount_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<DiscountDetailResponse>>, ApiError> {
+    info!("get_discount_by_id called with id: {:?}", id);
+
     let d = schemas::discounts::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -71,6 +76,18 @@ pub async fn get_discounts(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<DiscountDetailResponse>>>, ApiError> {
+    info!(
+        "get_discounts called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}, product_id={:?}, category_id={:?}, customer_id={:?}, is_sellable={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name,
+        pagination.product_id,
+        pagination.category_id,
+        pagination.customer_id,
+        pagination.is_sellable
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -131,6 +148,8 @@ pub async fn delete_discount(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_discount called with id: {:?}", id);
+
     let d = schemas::discounts::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -156,6 +175,11 @@ pub async fn update_discount(
     Path(id): Path<i64>,
     Json(payload): Json<DiscountRequest>,
 ) -> Result<Json<ApiResponse<DiscountIdResponse>>, ApiError> {
+    info!(
+        "update_discount called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let d = schemas::discounts::Entity::find_by_id(id)

@@ -18,11 +18,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_unit(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<UnitRequest>,
 ) -> Result<Json<ApiResponse<UnitIdResponse>>, ApiError> {
+    info!("create_unit called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let unit_create = schemas::units::ActiveModel::try_from(payload)
@@ -48,6 +51,8 @@ pub async fn get_unit_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<UnitResponse>>, ApiError> {
+    info!("get_unit_by_id called with id: {:?}", id);
+
     let unit = schemas::units::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -70,6 +75,11 @@ pub async fn list_units(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<UnitResponse>>>, ApiError> {
+    info!(
+        "list_units called with pagination: page={:?}, limit={:?}, total={:?}",
+        pagination.page, pagination.limit, pagination.total
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -104,6 +114,8 @@ pub async fn delete_unit(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_unit called with id: {:?}", id);
+
     let unit = schemas::units::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -130,6 +142,8 @@ pub async fn update_unit(
     Path(id): Path<i64>,
     Json(payload): Json<UnitRequest>,
 ) -> Result<Json<ApiResponse<UnitResponse>>, ApiError> {
+    info!("update_unit called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let unit = schemas::units::Entity::find_by_id(id)
@@ -164,6 +178,14 @@ pub async fn search_units_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<UnitResponse>>>, ApiError> {
+    info!(
+        "search_units_by_name called with pagination: page={:?}, limit={:?}, total={:?}, inits_name={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.inits_name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 

@@ -20,11 +20,17 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_inventory_location(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<InventoryLocationRequest>,
 ) -> Result<Json<ApiResponse<InventoryLocationIdResponse>>, ApiError> {
+    info!(
+        "create_inventory_location called with payload: {:?}",
+        payload
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let inventory_location_create = schemas::inventory_locations::ActiveModel::from(payload);
@@ -55,6 +61,8 @@ pub async fn get_inventory_location_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<InventoryLocationResponse>>, ApiError> {
+    info!("get_inventory_location_by_id called with id: {:?}", id);
+
     let inventory_location = schemas::inventory_locations::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -76,6 +84,8 @@ pub async fn delete_inventory_location(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_inventory_location called with id: {:?}", id);
+
     let inventory_location = schemas::inventory_locations::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -102,6 +112,11 @@ pub async fn get_inventory_locations(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<InventoryLocationResponse>>>, ApiError> {
+    info!(
+        "get_inventory_locations called with pagination: page={:?}, limit={:?}, total={:?}",
+        pagination.page, pagination.limit, pagination.total
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -136,6 +151,11 @@ pub async fn update_inventory_location(
     Path(id): Path<i64>,
     Json(payload): Json<InventoryLocationRequest>,
 ) -> Result<Json<ApiResponse<InventoryLocationIdResponse>>, ApiError> {
+    info!(
+        "update_inventory_location called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let inventory_location = schemas::inventory_locations::Entity::find_by_id(id)

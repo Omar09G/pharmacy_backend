@@ -24,11 +24,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_product_price(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<ProductPriceRequest>,
 ) -> Result<Json<ApiResponse<ProductPriceIdResponse>>, ApiError> {
+    info!("create_product_price called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pp_create = schemas::product_prices::ActiveModel::try_from(payload)
@@ -56,6 +59,8 @@ pub async fn get_product_price_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<ProductPriceDetailResponse>>, ApiError> {
+    info!("get_product_price_by_id called with id: {:?}", id);
+
     let pp = schemas::product_prices::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -77,6 +82,17 @@ pub async fn get_product_prices(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<ProductPriceDetailResponse>>>, ApiError> {
+    info!(
+        "get_product_prices called with pagination: page={:?}, limit={:?}, total={:?}, product_id={:?}, price_type={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.product_id,
+        pagination.price_type,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -138,6 +154,8 @@ pub async fn delete_product_price(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_product_price called with id: {:?}", id);
+
     let pp = schemas::product_prices::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -165,6 +183,11 @@ pub async fn update_product_price(
     Path(id): Path<i64>,
     Json(payload): Json<ProductPriceRequest>,
 ) -> Result<Json<ApiResponse<ProductPriceIdResponse>>, ApiError> {
+    info!(
+        "update_product_price called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let pp = schemas::product_prices::Entity::find_by_id(id)

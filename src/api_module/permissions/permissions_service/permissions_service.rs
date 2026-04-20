@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_permission(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<PermissionRequest>,
 ) -> Result<Json<ApiResponse<PermissionResponse>>, ApiError> {
+    info!("create_permission called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let permission_create = schemas::permissions::ActiveModel::try_from(payload)
@@ -56,6 +59,8 @@ pub async fn get_permission_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<PermissionDetailResponse>>, ApiError> {
+    info!("get_permission_by_id called with id: {:?}", id);
+
     let permission = schemas::permissions::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -78,6 +83,11 @@ pub async fn get_permissions_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PermissionDetailResponse>>>, ApiError> {
+    info!(
+        "get_permissions_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.name
+    );
+
     let name_str = pagination.name.clone().unwrap_or_default();
 
     if name_str.is_empty() {
@@ -90,8 +100,8 @@ pub async fn get_permissions_by_name(
         .filter(schemas::permissions::Column::Name.eq(name_str))
         .order_by_asc(schemas::permissions::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
-     
-     let total_items = if pagination.total > 0 {
+
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -118,10 +128,15 @@ pub async fn get_permissions(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PermissionDetailResponse>>>, ApiError> {
+    info!(
+        "get_permissions called with pagination: page={:?}, limit={:?}, total={:?}",
+        pagination.page, pagination.limit, pagination.total
+    );
+
     let paginator = schemas::permissions::Entity::find()
         .order_by_asc(schemas::permissions::Column::Id)
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
-    
+
     let total_items = if pagination.total > 0 {
         pagination.total
     } else {
@@ -150,6 +165,8 @@ pub async fn delete_permission(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_permission called with id: {:?}", id);
+
     let permission = schemas::permissions::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -179,6 +196,11 @@ pub async fn update_permission(
     Path(id): Path<i64>,
     Json(payload): Json<PermissionRequest>,
 ) -> Result<Json<ApiResponse<PermissionResponse>>, ApiError> {
+    info!(
+        "update_permission called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let permission = schemas::permissions::Entity::find_by_id(id)

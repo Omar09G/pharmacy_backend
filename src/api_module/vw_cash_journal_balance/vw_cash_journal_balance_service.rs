@@ -15,11 +15,17 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn get_vw_cash_journal_balance(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<VwCashJournalBalanceResponse>>>, ApiError> {
+    info!(
+        "get_vw_cash_journal_balance called with pagination: page={:?}, limit={:?}, total={:?}, id={:?}, date_init={:?}, date_end={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.id, pagination.date_init, pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 

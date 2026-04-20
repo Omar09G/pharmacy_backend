@@ -20,11 +20,17 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_customer_credit_account(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<CustomerCreditAccountRequest>,
 ) -> Result<Json<ApiResponse<CustomerCreditAccountIdResponse>>, ApiError> {
+    info!(
+        "create_customer_credit_account called with payload: {:?}",
+        payload
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let cca_create = schemas::customer_credit_accounts::ActiveModel::try_from(payload)
@@ -52,6 +58,8 @@ pub async fn get_customer_credit_account_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<CustomerCreditAccountDetailResponse>>, ApiError> {
+    info!("get_customer_credit_account_by_id called with id: {:?}", id);
+
     let cca = schemas::customer_credit_accounts::Entity::find()
         .filter(schemas::customer_credit_accounts::Column::CustomerId.eq(id))
         .one(&app_ctx.conn)
@@ -74,6 +82,11 @@ pub async fn get_customer_credit_accounts(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CustomerCreditAccountDetailResponse>>>, ApiError> {
+    info!(
+        "get_customer_credit_accounts called with pagination: page={:?}, limit={:?}, total={:?}, customer_id={:?}, id={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.customer_id, pagination.id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -120,6 +133,8 @@ pub async fn delete_customer_credit_account(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_customer_credit_account called with id: {:?}", id);
+
     let cca = schemas::customer_credit_accounts::Entity::find()
         .filter(schemas::customer_credit_accounts::Column::CustomerId.eq(id))
         .one(&app_ctx.conn)
@@ -148,6 +163,11 @@ pub async fn update_customer_credit_account(
     Path(id): Path<i64>,
     Json(payload): Json<CustomerCreditAccountRequest>,
 ) -> Result<Json<ApiResponse<CustomerCreditAccountIdResponse>>, ApiError> {
+    info!(
+        "update_customer_credit_account called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     //Validar ID , si no llega error de validacion

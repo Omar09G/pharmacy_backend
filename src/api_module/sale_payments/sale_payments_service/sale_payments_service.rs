@@ -21,11 +21,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_sale_payment(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SalePaymentRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentIdResponse>>, ApiError> {
+    info!("create_sale_payment called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let sp_create = schemas::sale_payments::ActiveModel::try_from(payload)
@@ -53,6 +56,8 @@ pub async fn get_sale_payment_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<SalePaymentDetailResponse>>, ApiError> {
+    info!("get_sale_payment_by_id called with id: {:?}", id);
+
     let sp = schemas::sale_payments::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -74,6 +79,18 @@ pub async fn get_sale_payments(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SalePaymentDetailResponse>>>, ApiError> {
+    info!(
+        "get_sale_payments called with pagination: page={:?}, limit={:?}, total={:?}, sale_id={:?}, method_id={:?}, reference={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.sale_id,
+        pagination.method_id,
+        pagination.reference,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -139,6 +156,8 @@ pub async fn delete_sale_payment(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_sale_payment called with id: {:?}", id);
+
     let sp = schemas::sale_payments::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -166,6 +185,8 @@ pub async fn update_sale_payment(
     Path(id): Path<i64>,
     Json(payload): Json<SalePaymentRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentIdResponse>>, ApiError> {
+    info!("update_sale_payment called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let sp = schemas::sale_payments::Entity::find_by_id(id)

@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_customer(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<CustomerRequest>,
 ) -> Result<Json<ApiResponse<CustomerIdResponse>>, ApiError> {
+    info!("create_customer called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let customer_create = schemas::customers::ActiveModel::try_from(payload)
@@ -56,6 +59,8 @@ pub async fn get_customer_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<CustomerDetailResponse>>, ApiError> {
+    info!("get_customer_by_id called with id: {:?}", id);
+
     let customer = schemas::customers::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -75,6 +80,18 @@ pub async fn get_customers(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CustomerDetailResponse>>>, ApiError> {
+    info!(
+        "get_customers called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}, document_id={:?}, email={:?}, phone={:?}, status={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name,
+        pagination.document_id,
+        pagination.email,
+        pagination.phone,
+        pagination.status
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -115,7 +132,7 @@ pub async fn get_customers(
         .order_by_asc(schemas::customers::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -143,6 +160,8 @@ pub async fn delete_customer(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_customer called with id: {:?}", id);
+
     let customer = schemas::customers::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -168,6 +187,11 @@ pub async fn get_customers_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CustomerDetailResponse>>>, ApiError> {
+    info!(
+        "get_customers_by_name called with pagination: {:?}",
+        pagination
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let name_filter = pagination.name.clone().unwrap_or_default();
@@ -183,7 +207,7 @@ pub async fn get_customers_by_name(
         .order_by_asc(schemas::customers::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -212,6 +236,11 @@ pub async fn update_customer(
     Path(id): Path<i64>,
     Json(payload): Json<CustomerRequest>,
 ) -> Result<Json<ApiResponse<CustomerIdResponse>>, ApiError> {
+    info!(
+        "update_customer called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let customer = schemas::customers::Entity::find_by_id(id)

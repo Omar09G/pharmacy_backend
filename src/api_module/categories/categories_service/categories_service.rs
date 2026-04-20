@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_category(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<CategoryRequest>,
 ) -> Result<Json<ApiResponse<CategoryIdResponse>>, ApiError> {
+    info!("create_category called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let category_create = schemas::categories::ActiveModel::from(payload);
@@ -55,6 +58,8 @@ pub async fn get_category_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<CategoryDetailResponse>>, ApiError> {
+    info!("get_category_by_id called with id: {:?}", id);
+
     let category = schemas::categories::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -74,6 +79,11 @@ pub async fn get_categories(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CategoryDetailResponse>>>, ApiError> {
+    info!(
+        "get_categories called with pagination: name={:?}, parent_id={:?}, page={:?}, limit={:?}, total={:?}",
+        pagination.name, pagination.parent_id, pagination.page, pagination.limit, pagination.total
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -122,6 +132,8 @@ pub async fn delete_category(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_category called with id: {:?}", id);
+
     let category = schemas::categories::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -147,6 +159,11 @@ pub async fn get_categories_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CategoryDetailResponse>>>, ApiError> {
+    info!(
+        "get_categories_by_name called with pagination: {:?}",
+        pagination
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let name_filter = pagination.name.clone().unwrap_or_default();
@@ -191,6 +208,11 @@ pub async fn update_category(
     Path(id): Path<i64>,
     Json(payload): Json<CategoryRequest>,
 ) -> Result<Json<ApiResponse<CategoryIdResponse>>, ApiError> {
+    info!(
+        "update_category called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let category = schemas::categories::Entity::find_by_id(id)

@@ -26,6 +26,8 @@ pub async fn create_role_permissions(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<RolePermissionsRequest>,
 ) -> Result<Json<ApiResponse<RolePermissionsResponse>>, ApiError> {
+    info!("create_role_permissions called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let role_id_str = payload.role_id;
@@ -66,6 +68,8 @@ pub async fn get_role_permissions_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<RolePermissionsResponse>>, ApiError> {
+    info!("get_role_permissions_by_id called with id: {:?}", id);
+
     let role_permissions = schemas::role_permissions::Entity::find()
         .filter(schemas::role_permissions::Column::RoleId.eq(id))
         .one(&app_ctx.conn)
@@ -89,6 +93,14 @@ pub async fn get_role_permissions(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<RolePermissionsResponse>>>, ApiError> {
+    info!(
+        "get_role_permissions called with pagination: page={:?}, limit={:?}, total={:?}, role_id={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.role_id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let role_id = pagination.role_id.unwrap_or_default();

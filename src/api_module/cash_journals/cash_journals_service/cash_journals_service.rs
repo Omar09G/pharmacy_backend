@@ -26,11 +26,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_cash_journal(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<CashJournalRequest>,
 ) -> Result<Json<ApiResponse<CashJournalIdResponse>>, ApiError> {
+    info!("create_cash_journal called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let cj_create = schemas::cash_journals::ActiveModel::try_from(payload)
@@ -58,6 +61,8 @@ pub async fn get_cash_journal_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<CashJournalDetailResponse>>, ApiError> {
+    info!("get_cash_journal_by_id called with id: {:?}", id);
+
     let cj = schemas::cash_journals::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -79,6 +84,15 @@ pub async fn get_cash_journals(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CashJournalDetailResponse>>>, ApiError> {
+    info!(
+        "get_cash_journals called with pagination: name={:?}, status={:?}, user_id={:?}, date_init={:?}, date_end={:?}",
+        pagination.name,
+        pagination.status,
+        pagination.user_id,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -146,6 +160,8 @@ pub async fn delete_cash_journal(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_cash_journal called with id: {:?}", id);
+
     let cj = schemas::cash_journals::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -173,6 +189,11 @@ pub async fn update_cash_journal(
     Path(id): Path<i64>,
     Json(payload): Json<CashJournalUpdateRequest>,
 ) -> Result<Json<ApiResponse<CashJournalIdResponse>>, ApiError> {
+    info!(
+        "update_cash_journal called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let cj = schemas::cash_journals::Entity::find_by_id(id)

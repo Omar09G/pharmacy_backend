@@ -39,6 +39,8 @@ pub async fn create_user(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<UserRequestDto>,
 ) -> Result<Json<ApiResponse<UserIdResponse>>, ApiError> {
+    info!("create_user called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let role_name = payload.role.clone();
@@ -136,6 +138,8 @@ pub async fn get_user_by_id(
     State(app_ctx): State<AppContext>,
     Path(user_id): Path<i64>,
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
+    info!("get_user_by_id called with user_id: {:?}", user_id);
+
     let user = schemas::users::Entity::find_by_id(user_id)
         .one(&app_ctx.conn)
         .await
@@ -164,8 +168,11 @@ pub async fn get_all_users(
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<UserResponse>>>, ApiError> {
     info!(
-        "Fetching users with pagination - page: {}, limit: {}, total: {} , FullName: {:?}",
-        pagination.page, pagination.limit, pagination.total, pagination.full_name
+        "get_all_users called with pagination: page={:?}, limit={:?}, total={:?}, full_name={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.full_name
     );
 
     let mut select = schemas::users::Entity::find();
@@ -226,6 +233,8 @@ pub async fn change_user_status(
     State(app_ctx): State<AppContext>,
     Query(payload): Query<UserChangeStatusRequest>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("change_user_status called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     if payload.status != ACTIVE_STATUS && payload.status != INACTIVE_STATUS {
@@ -267,6 +276,8 @@ pub async fn change_user_password(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<UserChangePasswordRequest>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("change_user_password called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let user = schemas::users::Entity::find()
@@ -306,7 +317,8 @@ pub async fn delete_user(
     State(app_ctx): State<AppContext>,
     Path(user_id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    info!("Attempting to soft-delete user with ID: {}", user_id);
+    info!("delete_user called with user_id: {:?}", user_id);
+
 
     let user = schemas::users::Entity::find_by_id(user_id)
         .one(&app_ctx.conn)
@@ -340,6 +352,8 @@ pub async fn update_user(
     Path(id): Path<i64>,
     Json(payload): Json<UserUpdateRequestDto>,
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
+    info!("update_user called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let user = schemas::users::Entity::find_by_id(id)

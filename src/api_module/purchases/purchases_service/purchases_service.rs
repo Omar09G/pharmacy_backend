@@ -27,11 +27,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_purchase(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<PurchaseRequest>,
 ) -> Result<Json<ApiResponse<PurchaseIdResponse>>, ApiError> {
+    info!("create_purchase called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     //Copiar payload a una variable para crear el pago después de crear la compra
@@ -84,6 +87,8 @@ pub async fn get_purchase_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<PurchaseDetailResponse>>, ApiError> {
+    info!("get_purchase_by_id called with id: {:?}", id);
+
     let p = schemas::purchases::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -103,6 +108,18 @@ pub async fn get_purchases(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<PurchaseDetailResponse>>>, ApiError> {
+    info!(
+        "get_purchases called with pagination: page={:?}, limit={:?}, total={:?}, supplier_id={:?}, invoice_no={:?}, status={:?}, date_init={:?}, date_end={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.supplier_id,
+        pagination.invoice_no,
+        pagination.status,
+        pagination.date_init,
+        pagination.date_end
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -170,6 +187,8 @@ pub async fn delete_purchase(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_purchase called with id: {:?}", id);
+
     let p = schemas::purchases::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -195,6 +214,11 @@ pub async fn update_purchase(
     Path(id): Path<i64>,
     Json(payload): Json<PurchaseUpdateRequest>,
 ) -> Result<Json<ApiResponse<PurchaseIdResponse>>, ApiError> {
+    info!(
+        "update_purchase called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let p = schemas::purchases::Entity::find_by_id(id)

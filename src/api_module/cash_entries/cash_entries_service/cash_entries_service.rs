@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_cash_entry(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<CashEntryRequest>,
 ) -> Result<Json<ApiResponse<CashEntryIdResponse>>, ApiError> {
+    info!("create_cash_entry called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let ce_create = schemas::cash_entries::ActiveModel::try_from(payload)
@@ -52,6 +55,8 @@ pub async fn get_cash_entry_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<CashEntryDetailResponse>>, ApiError> {
+    info!("get_cash_entry_by_id called with id: {:?}", id);
+
     let ce = schemas::cash_entries::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -73,6 +78,16 @@ pub async fn get_cash_entries(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<CashEntryDetailResponse>>>, ApiError> {
+    info!(
+        "get_cash_entries called with pagination: name={:?}, reference_type={:?}, method_id={:?}, reference={:?}, reference_id={:?}, recorded_by={:?}",
+        pagination.name,
+        pagination.reference_type,
+        pagination.method_id,
+        pagination.reference,
+        pagination.reference_id,
+        pagination.recorded_by
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -142,6 +157,8 @@ pub async fn delete_cash_entry(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_cash_entry called with id: {:?}", id);
+
     let ce = schemas::cash_entries::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -169,6 +186,11 @@ pub async fn update_cash_entry(
     Path(id): Path<i64>,
     Json(payload): Json<CashEntryRequest>,
 ) -> Result<Json<ApiResponse<CashEntryIdResponse>>, ApiError> {
+    info!(
+        "update_cash_entry called with payload: {:?}, id: {:?}",
+        payload, id
+    );
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let ce = schemas::cash_entries::Entity::find_by_id(id)

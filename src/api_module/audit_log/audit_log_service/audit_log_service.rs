@@ -26,6 +26,8 @@ pub async fn create_audit_log(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<AuditLogRequest>,
 ) -> Result<Json<ApiResponse<AuditLogIdResponse>>, ApiError> {
+    info!("create_audit_log called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let al_create = schemas::audit_log::ActiveModel::try_from(payload)
@@ -53,6 +55,8 @@ pub async fn get_audit_log_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<AuditLogDetailResponse>>, ApiError> {
+    info!("get_audit_log_by_id called with id: {:?}", id);
+
     let al = schemas::audit_log::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -72,6 +76,8 @@ pub async fn get_audit_logs(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<AuditLogDetailResponse>>>, ApiError> {
+    info!("get_audit_logs called with pagination: {:?}", pagination);
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -149,6 +155,8 @@ pub async fn delete_audit_log(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_audit_log called with id: {:?}", id);
+
     let al = schemas::audit_log::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -174,6 +182,8 @@ pub async fn update_audit_log(
     Path(id): Path<i64>,
     Json(payload): Json<AuditLogRequest>,
 ) -> Result<Json<ApiResponse<AuditLogIdResponse>>, ApiError> {
+    info!("update_audit_log called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let al = schemas::audit_log::Entity::find_by_id(id)

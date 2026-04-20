@@ -15,11 +15,17 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn get_vw_inventory_stock(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<VwInventoryStockResponse>>>, ApiError> {
+    info!(
+        "get_vw_inventory_stock called with pagination: page={:?}, limit={:?}, total={:?}, product_id={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.product_id
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 

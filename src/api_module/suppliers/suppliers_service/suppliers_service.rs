@@ -20,11 +20,14 @@ use crate::{
     },
     config::config_database::config_db_context::AppContext,
 };
+use log::info;
 
 pub async fn create_supplier(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SupplierRequest>,
 ) -> Result<Json<ApiResponse<SupplierIdResponse>>, ApiError> {
+    info!("create_supplier called with payload: {:?}", payload);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let supplier_create = schemas::suppliers::ActiveModel::try_from(payload)
@@ -56,6 +59,8 @@ pub async fn get_supplier_by_id(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<SupplierDetailResponse>>, ApiError> {
+    info!("get_supplier_by_id called with id: {:?}", id);
+
     let supplier = schemas::suppliers::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -75,6 +80,15 @@ pub async fn get_suppliers(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SupplierDetailResponse>>>, ApiError> {
+    info!(
+        "get_suppliers called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}, tax_id={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name,
+        pagination.username
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
@@ -126,6 +140,8 @@ pub async fn delete_supplier(
     State(app_ctx): State<AppContext>,
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
+    info!("delete_supplier called with id: {:?}", id);
+
     let supplier = schemas::suppliers::Entity::find_by_id(id)
         .one(&app_ctx.conn)
         .await
@@ -151,6 +167,13 @@ pub async fn get_suppliers_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SupplierDetailResponse>>>, ApiError> {
+    info!("get_suppliers_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.name
+    );
+
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
     let name_filter = pagination.name.clone().unwrap_or_default();
@@ -195,6 +218,8 @@ pub async fn update_supplier(
     Path(id): Path<i64>,
     Json(payload): Json<SupplierRequest>,
 ) -> Result<Json<ApiResponse<SupplierIdResponse>>, ApiError> {
+    info!("update_supplier called with payload: {:?}, id: {:?}", payload, id);
+
     payload.validate().map_err(ApiError::Validation)?;
 
     let supplier = schemas::suppliers::Entity::find_by_id(id)

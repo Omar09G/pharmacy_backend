@@ -63,7 +63,8 @@ pub async fn get_login(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Response, ApiError> {
-    info!("Received login request for username: {}", payload.username);
+    info!("get_login called with payload: {:?}", payload);
+
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -158,6 +159,8 @@ pub async fn get_login(
 /// Endpoint: POST /v1/api/auth/refresh
 /// Reads the refresh_token from the HttpOnly cookie and returns a new token pair as cookies.
 pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, ApiError> {
+    info!("refresh_token called");
+
     let refresh_tok = extract_cookie(&headers, "refresh_token").ok_or(ApiError::Unauthorized)?;
 
     let claims = validate_token_refresh(&refresh_tok)
@@ -209,6 +212,8 @@ pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, A
 /// Endpoint: POST /v1/api/auth/logout
 /// Clears the access and refresh HttpOnly cookies.
 pub async fn logout() -> Response {
+    info!("logout called");
+
     let access_cookie = build_expired_cookie("access_token", "/v1/api");
     let refresh_cookie = build_expired_cookie("refresh_token", "/v1/api/auth");
 
@@ -227,6 +232,8 @@ pub async fn logout() -> Response {
 pub async fn get_profile(
     crate::api_utils::extractors::AuthClaims(claims): crate::api_utils::extractors::AuthClaims,
 ) -> Result<Json<ApiResponse<LoginResponseDTO>>, ApiError> {
+    info!("get_profile called");
+
     let token_validate =
         LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role);
 
