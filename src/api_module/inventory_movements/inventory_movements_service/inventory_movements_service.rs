@@ -132,10 +132,6 @@ pub async fn get_inventory_movements(
     let (date_ini, date_end) = validate_date_time_range_date(&start_date, &end_date)?;
 
     info!(
-        "Filtering inventory movements with date range: {} - {}",
-        start_date, end_date
-    );
-    info!(
         "Fecha convertida a DateTimeWithTimeZone: {:?} - {:?}",
         date_ini, date_end
     );
@@ -167,11 +163,28 @@ pub async fn get_inventory_movements(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    //Buscar los nombres de los productos para cada movimiento
+    let product_ids: Vec<i64> = items.iter().map(|im| im.product_id).collect();
+    let products = schemas::products::Entity::find()
+        .filter(schemas::products::Column::Id.is_in(product_ids))
+        .all(&app_ctx.conn)
+        .await
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let product_map: std::collections::HashMap<i64, String> =
+        products.into_iter().map(|p| (p.id, p.name)).collect();
+
+    let items = items
+        .into_iter()
+        .map(|im| {
+            let mut detail = InventoryMovementDetailResponse::from(im);
+            detail.product_name = product_map.get(&detail.product_id).cloned();
+            detail
+        })
+        .collect();
+
     Ok(Json(ApiResponse::success(
-        items
-            .into_iter()
-            .map(InventoryMovementDetailResponse::from)
-            .collect(),
+        items,
         "Inventory movements retrieved successfully".to_string(),
         total_items as i32,
     )))

@@ -29,6 +29,7 @@ pub struct InventoryMovementIdResponse {
 pub struct InventoryMovementDetailResponse {
     pub id: i64,
     pub product_id: i64,
+    pub product_name: Option<String>,
     pub lot_id: Option<i64>,
     pub location_id: Option<i64>,
     pub change_qty: Decimal,
@@ -65,6 +66,7 @@ impl From<schemas::inventory_movements::Model> for InventoryMovementDetailRespon
         Self {
             id: model.id,
             product_id: model.product_id,
+            product_name: None,
             lot_id: model.lot_id,
             location_id: model.location_id,
             change_qty: model.change_qty,
@@ -83,6 +85,7 @@ impl From<schemas::inventory_movements::ActiveModel> for InventoryMovementDetail
         Self {
             id: model.id.unwrap(),
             product_id: model.product_id.unwrap(),
+            product_name: None,
             lot_id: model.lot_id.unwrap(),
             location_id: model.location_id.unwrap(),
             change_qty: model.change_qty.unwrap(),
