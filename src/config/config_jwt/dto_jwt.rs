@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Claims {
-    pub sub: String, // Subject (username)
-    pub exp: usize,  // Expiration
-    pub iat: usize,  // Issued At
+    pub sub: String,        // Subject (username)
+    pub exp: usize,         // Expiration
+    pub iat: usize,         // Issued At
+    pub jti: Option<String>, // JWT ID — used for token revocation
     pub user_name: String,
     pub id: i64,
     pub name: String,

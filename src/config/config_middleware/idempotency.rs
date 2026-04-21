@@ -10,7 +10,13 @@ use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 /// In-memory idempotency store. Maps `X-Idempotency-Key` to (cached_response_body, status_code, created_at).
-/// In production, consider replacing with Redis/Postgres for multi-instance deployments.
+///
+/// ⚠️  LIMITATION: This store is local to the process. In multi-instance (horizontal scale)
+/// deployments, idempotency keys will NOT be shared across instances.
+/// For distributed deployments, replace with Redis:
+///   Key  → `idempotency:{X-Idempotency-Key}`
+///   TTL  → 24 hours
+/// Until then, deploy as a single instance behind a load balancer with session affinity (sticky sessions).
 static IDEMPOTENCY_STORE: LazyLock<Mutex<HashMap<String, CachedResponse>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 

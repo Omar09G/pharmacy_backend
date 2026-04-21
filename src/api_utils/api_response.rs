@@ -1,10 +1,34 @@
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use sea_orm::entity::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::borrow::Cow;
 use validator::{ValidationError, ValidationErrors};
 
 use crate::api_utils::api_response;
+
+// ── Pagination deserializers ──────────────────────────────────────────────────
+
+fn deserialize_page<'de, D: Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+    let val = u64::deserialize(d)?;
+    if val < 1 {
+        return Err(serde::de::Error::custom("page must be at least 1"));
+    }
+    if val > 10_000 {
+        return Err(serde::de::Error::custom("page must not exceed 10000"));
+    }
+    Ok(val)
+}
+
+fn deserialize_limit<'de, D: Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+    let val = u64::deserialize(d)?;
+    if val < 1 {
+        return Err(serde::de::Error::custom("limit must be at least 1"));
+    }
+    if val > 10_000 {
+        return Err(serde::de::Error::custom("limit must not exceed 10000"));
+    }
+    Ok(val)
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -168,7 +192,9 @@ impl<T> ApiResponse<T> {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationParams {
+    #[serde(deserialize_with = "deserialize_page")]
     pub page: u64,
+    #[serde(deserialize_with = "deserialize_limit")]
     pub limit: u64,
     pub total: u64,
     pub date_init: Option<String>,

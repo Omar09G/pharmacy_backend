@@ -13,8 +13,11 @@ use std::env;
 /// Always sets `Access-Control-Allow-Credentials: true` so that HttpOnly cookies
 /// are sent cross-origin.
 pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
-    let allowed = env::var("CORS_ALLOWED_ORIGINS").unwrap_or_else(|_| "*".to_string());
-    let allow_all = allowed.trim() == "*";
+    // If CORS_ALLOWED_ORIGINS is not set or empty, deny all cross-origin requests by default.
+    // Set it to "*" explicitly to allow all origins (not recommended in production).
+    let allowed = env::var("CORS_ALLOWED_ORIGINS").unwrap_or_default();
+    let allowed = allowed.trim();
+    let allow_all = allowed == "*";
     let allowed_list: Vec<&str> = if allow_all {
         vec![]
     } else {

@@ -2,6 +2,7 @@ use crate::api_utils::api_error::ApiError;
 use chrono::Offset;
 use chrono::{FixedOffset, Utc};
 use chrono_tz::Tz;
+use flexi_logger::{DeferredNow, Record, style};
 use regex::Regex;
 use sea_orm::entity::prelude::*;
 use std::sync::LazyLock;
@@ -269,4 +270,37 @@ pub fn validate_date_time_range_opt(
         ));
     }
     Ok(())
+}
+
+/// Custom log format: [YYYY-MM-DD HH:MM:SS.mmm TZ] LEVEL [module] message
+pub fn custom_format(
+    w: &mut dyn std::io::Write,
+    now: &mut DeferredNow,
+    record: &Record,
+) -> std::io::Result<()> {
+    write!(
+        w,
+        "[{}] {} [{}] {}",
+        now.format("%Y-%m-%d %H:%M:%S%.3f %:z"),
+        record.level(),
+        record.module_path().unwrap_or("<unknown>"),
+        record.args()
+    )
+}
+
+/// Colored format for stdout
+pub fn custom_format_colored(
+    w: &mut dyn std::io::Write,
+    now: &mut DeferredNow,
+    record: &Record,
+) -> std::io::Result<()> {
+    let level = record.level();
+    write!(
+        w,
+        "[{}] {} [{}] {}",
+        style(level).paint(now.format("%Y-%m-%d %H:%M:%S%.3f %:z").to_string()),
+        style(level).paint(level.to_string()),
+        record.module_path().unwrap_or("<unknown>"),
+        record.args()
+    )
 }

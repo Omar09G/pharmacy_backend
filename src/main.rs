@@ -9,6 +9,7 @@ use log::{error, info};
 use std::net::SocketAddr;
 
 use crate::{
+    api_utils::api_utils_fun::{custom_format, custom_format_colored},
     config::{
         config_database::config_db::{close_db_connection, get_db_context},
         config_jwt::validate_jwt::init_jwt_keys_if_needed,
@@ -19,12 +20,17 @@ use crate::{
 async fn main() {
     dotenvy::dotenv().ok();
     use flexi_logger::FileSpec;
-    let logger = Logger::try_with_str("info").unwrap_or_else(|e| {
+
+    // Read log level from environment (default: info)
+    let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
+    let logger = Logger::try_with_str(&log_level).unwrap_or_else(|e| {
         eprintln!("Logger configuration failed: {}", e);
         std::process::exit(1);
     });
 
     logger
+        .format_for_files(custom_format)
+        .format_for_stdout(custom_format_colored)
         .log_to_file(
             FileSpec::default()
                 .directory("/tmp/log/pharmacy_backend")
@@ -52,9 +58,16 @@ async fn main() {
             std::process::exit(1);
         });
 
+    // Bind address: use SERVER_ADDR env var (default: 0.0.0.0 for Docker compatibility).
+    // Set SERVER_ADDR=127.0.0.1 in development to reduce attack surface.
+    let server_addr = std::env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0".to_string());
     let ctx_bd = get_db_context().await;
-
-    let addr: SocketAddr = SocketAddr::from(([0, 0, 0, 0], port));
+    let addr: SocketAddr = format!("{}:{}", server_addr, port)
+        .parse()
+        .unwrap_or_else(|e| {
+            error!("Invalid server address '{}:{}': {}", server_addr, port, e);
+            std::process::exit(1);
+        });
 
     info!("Starting server on {}", addr);
 
@@ -93,7 +106,7 @@ async fn main() {
         }
     };
 
-    if let Err(e) = serve(listener, app)
+    if let Err(e) = serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .with_graceful_shutdown(shutdown_signal)
         .await
     {

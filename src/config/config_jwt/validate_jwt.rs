@@ -3,10 +3,11 @@ use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, deco
 use log::info;
 use std::env;
 use std::sync::{Arc, LazyLock, Mutex};
+use uuid::Uuid;
 
 use crate::{
     api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH},
-    config::config_jwt::dto_jwt::Claims,
+    config::config_jwt::{dto_jwt::Claims, token_revocation::is_revoked},
 };
 
 static JWT_ENCODING_RS: LazyLock<Mutex<Option<Arc<EncodingKey>>>> =
@@ -131,6 +132,7 @@ pub async fn get_jwt_token_with_role(
         sub: username.clone(),
         exp: expiration as usize,
         iat: Utc::now().timestamp() as usize,
+        jti: Some(Uuid::new_v4().to_string()), // unique ID for revocation support
         company: "Pharmacy".to_string(),
         role: role.clone(),
         permissions,
@@ -186,6 +188,13 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
         return Err("Invalid token type: expected access token".to_string());
     }
 
+    // Reject revoked tokens
+    if let Some(ref jti) = decoded.claims.jti {
+        if is_revoked(jti) {
+            return Err("Token has been revoked".to_string());
+        }
+    }
+
     Ok(decoded.claims)
 }
 
@@ -208,6 +217,13 @@ pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
     // Reject access tokens used as refresh tokens
     if decoded.claims.token_type != JWT_TYPE_REFRESH {
         return Err("Invalid token type: expected refresh token".to_string());
+    }
+
+    // Reject revoked tokens
+    if let Some(ref jti) = decoded.claims.jti {
+        if is_revoked(jti) {
+            return Err("Token has been revoked".to_string());
+        }
     }
 
     Ok(decoded.claims)

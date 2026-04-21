@@ -26,9 +26,10 @@ pub async fn security_headers_middleware(req: Request<Body>, next: Next) -> Resp
         HeaderValue::from_static("default-src 'none'; frame-ancestors 'none'"),
     );
     headers.insert("cache-control", HeaderValue::from_static("no-store"));
+    // 2 years, with preload directive for HSTS preload list registration
     headers.insert(
         "strict-transport-security",
-        HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+        HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
     );
 
     response

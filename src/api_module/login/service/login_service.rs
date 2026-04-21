@@ -1,5 +1,6 @@
 use crate::api_module::login::dto::login_dto::{LoginRequest, LoginResponseDTO};
 use crate::api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH};
+use crate::config::config_jwt::token_revocation::revoke_token;
 use crate::config::config_jwt::validate_jwt::{generate_jwt, validate_token_refresh};
 use crate::{
     api_utils::api_response::ApiResponse, config::config_database::config_db_context::AppContext,
@@ -11,34 +12,44 @@ use crate::config::config_pass::config_password::verify_password;
 use axum::http::header::SET_COOKIE;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, extract::State};
-use log::{error, info};
+use log::{error, info, warn};
 use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
 use std::env;
 use validator::Validate;
 
+/// Returns `"; Secure"` unless `COOKIE_SECURE=false` is explicitly set.
+/// Defaults to secure to prevent accidental insecure deployments.
+fn secure_flag() -> &'static str {
+    if env::var("COOKIE_SECURE")
+        .unwrap_or_else(|_| "true".to_string())
+        .to_lowercase()
+        == "false"
+    {
+        ""
+    } else {
+        "; Secure"
+    }
+}
+
 /// Build a `Set-Cookie` header value for an HttpOnly cookie.
 fn build_cookie(name: &str, value: &str, path: &str, max_age_secs: i64) -> String {
-    let secure_flag = if env::var("COOKIE_SECURE").unwrap_or_default() == "true" {
-        "; Secure"
-    } else {
-        ""
-    };
     format!(
-        "{}={}; HttpOnly; SameSite=Lax; Path={}{secure_flag}; Max-Age={}",
-        name, value, path, max_age_secs
+        "{}={}; HttpOnly; SameSite=Strict; Path={}{secure}; Max-Age={}",
+        name,
+        value,
+        path,
+        max_age_secs,
+        secure = secure_flag()
     )
 }
 
 /// Build an expired `Set-Cookie` header to clear a cookie.
 fn build_expired_cookie(name: &str, path: &str) -> String {
-    let secure_flag = if env::var("COOKIE_SECURE").unwrap_or_default() == "true" {
-        "; Secure"
-    } else {
-        ""
-    };
     format!(
-        "{}=; HttpOnly; SameSite=Lax; Path={}{secure_flag}; Max-Age=0",
-        name, path
+        "{}=; HttpOnly; SameSite=Strict; Path={}{secure}; Max-Age=0",
+        name,
+        path,
+        secure = secure_flag()
     )
 }
 
@@ -146,12 +157,19 @@ pub async fn get_login(
     let refresh_cookie = build_cookie("refresh_token", &refresh_token, "/v1/api/auth", 604_800); // 7 days
 
     let mut response = Json(response_body).into_response();
-    response
-        .headers_mut()
-        .append(SET_COOKIE, access_cookie.parse().unwrap());
-    response
-        .headers_mut()
-        .append(SET_COOKIE, refresh_cookie.parse().unwrap());
+    // B-1 fix: use map_err instead of unwrap() to avoid panics on malformed cookie strings
+    response.headers_mut().append(
+        SET_COOKIE,
+        access_cookie
+            .parse()
+            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid access cookie header"))))?,
+    );
+    response.headers_mut().append(
+        SET_COOKIE,
+        refresh_cookie
+            .parse()
+            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid refresh cookie header"))))?,
+    );
 
     Ok(response)
 }
@@ -199,32 +217,55 @@ pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, A
     );
 
     let mut response = Json(body).into_response();
-    response
-        .headers_mut()
-        .append(SET_COOKIE, access_cookie.parse().unwrap());
-    response
-        .headers_mut()
-        .append(SET_COOKIE, refresh_cookie.parse().unwrap());
+    response.headers_mut().append(
+        SET_COOKIE,
+        access_cookie
+            .parse()
+            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid access cookie header"))))?,
+    );
+    response.headers_mut().append(
+        SET_COOKIE,
+        refresh_cookie
+            .parse()
+            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid refresh cookie header"))))?,
+    );
 
     Ok(response)
 }
 
 /// Endpoint: POST /v1/api/auth/logout
-/// Clears the access and refresh HttpOnly cookies.
-pub async fn logout() -> Response {
+/// Revokes the current refresh token JTI and clears both HttpOnly cookies.
+pub async fn logout(headers: axum::http::HeaderMap) -> Response {
     info!("logout called");
+
+    // Attempt to revoke the refresh token so it can no longer be used even if stolen
+    if let Some(refresh_tok) = extract_cookie(&headers, "refresh_token") {
+        match validate_token_refresh(&refresh_tok).await {
+            Ok(claims) => {
+                if let Some(jti) = claims.jti {
+                    revoke_token(&jti);
+                    info!("Refresh token revoked: jti={}", jti);
+                }
+            }
+            Err(e) => {
+                // Token may be already expired or invalid — still clear cookies
+                warn!("Could not validate refresh token on logout: {}", e);
+            }
+        }
+    }
 
     let access_cookie = build_expired_cookie("access_token", "/v1/api");
     let refresh_cookie = build_expired_cookie("refresh_token", "/v1/api/auth");
 
     let body = ApiResponse::success((), "Logged out successfully".to_string(), 0);
     let mut response = Json(body).into_response();
-    response
-        .headers_mut()
-        .append(SET_COOKIE, access_cookie.parse().unwrap());
-    response
-        .headers_mut()
-        .append(SET_COOKIE, refresh_cookie.parse().unwrap());
+    // Safe: expired cookie strings are always valid header values
+    if let Ok(val) = access_cookie.parse() {
+        response.headers_mut().append(SET_COOKIE, val);
+    }
+    if let Ok(val) = refresh_cookie.parse() {
+        response.headers_mut().append(SET_COOKIE, val);
+    }
 
     response
 }
