@@ -1,5 +1,6 @@
 use crate::api_module::login::dto::login_dto::{LoginRequest, LoginResponseDTO};
 use crate::api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH};
+use crate::api_utils::extractors::AuthClaims;
 use crate::config::config_jwt::token_revocation::revoke_token;
 use crate::config::config_jwt::validate_jwt::{generate_jwt, validate_token_refresh};
 use crate::{
@@ -75,7 +76,6 @@ pub async fn get_login(
     Json(payload): Json<LoginRequest>,
 ) -> Result<Response, ApiError> {
     info!("get_login called with payload: {:?}", payload);
-
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -160,15 +160,19 @@ pub async fn get_login(
     // B-1 fix: use map_err instead of unwrap() to avoid panics on malformed cookie strings
     response.headers_mut().append(
         SET_COOKIE,
-        access_cookie
-            .parse()
-            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid access cookie header"))))?,
+        access_cookie.parse().map_err(|_| {
+            ApiError::Unexpected(Box::new(std::io::Error::other(
+                "invalid access cookie header",
+            )))
+        })?,
     );
     response.headers_mut().append(
         SET_COOKIE,
-        refresh_cookie
-            .parse()
-            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid refresh cookie header"))))?,
+        refresh_cookie.parse().map_err(|_| {
+            ApiError::Unexpected(Box::new(std::io::Error::other(
+                "invalid refresh cookie header",
+            )))
+        })?,
     );
 
     Ok(response)
@@ -219,15 +223,19 @@ pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, A
     let mut response = Json(body).into_response();
     response.headers_mut().append(
         SET_COOKIE,
-        access_cookie
-            .parse()
-            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid access cookie header"))))?,
+        access_cookie.parse().map_err(|_| {
+            ApiError::Unexpected(Box::new(std::io::Error::other(
+                "invalid access cookie header",
+            )))
+        })?,
     );
     response.headers_mut().append(
         SET_COOKIE,
-        refresh_cookie
-            .parse()
-            .map_err(|_| ApiError::Unexpected(Box::new(std::io::Error::other("invalid refresh cookie header"))))?,
+        refresh_cookie.parse().map_err(|_| {
+            ApiError::Unexpected(Box::new(std::io::Error::other(
+                "invalid refresh cookie header",
+            )))
+        })?,
     );
 
     Ok(response)
@@ -271,7 +279,7 @@ pub async fn logout(headers: axum::http::HeaderMap) -> Response {
 }
 
 pub async fn get_profile(
-    crate::api_utils::extractors::AuthClaims(claims): crate::api_utils::extractors::AuthClaims,
+    AuthClaims(claims): AuthClaims,
 ) -> Result<Json<ApiResponse<LoginResponseDTO>>, ApiError> {
     info!("get_profile called");
 
