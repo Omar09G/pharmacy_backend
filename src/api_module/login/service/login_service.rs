@@ -1,4 +1,6 @@
-use crate::api_module::login::dto::login_dto::{LoginRequest, LoginResponseDTO};
+use crate::api_module::login::dto::login_dto::{
+    LoginRequest, LoginResponseDTO, LogoutRequest, RefreshRequest,
+};
 use crate::api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH};
 use crate::api_utils::extractors::AuthClaims;
 use crate::config::config_jwt::token_revocation::revoke_token;
@@ -10,6 +12,7 @@ use crate::{
 use crate::api_utils::api_error::ApiError;
 
 use crate::config::config_pass::config_password::verify_password;
+use axum::body::Bytes;
 use axum::http::header::SET_COOKIE;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, extract::State};
@@ -71,7 +74,17 @@ fn extract_cookie(headers: &axum::http::HeaderMap, name: &str) -> Option<String>
         })
 }
 
+/// Returns true when the request comes from a Capacitor native client.
+fn is_native_client(headers: &axum::http::HeaderMap) -> bool {
+    headers
+        .get("x-client-platform")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.eq_ignore_ascii_case("native"))
+        .unwrap_or(false)
+}
+
 pub async fn get_login(
+    headers: axum::http::HeaderMap,
     State(app_ctx): State<AppContext>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Response, ApiError> {
@@ -147,12 +160,19 @@ pub async fn get_login(
     .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let response_body = ApiResponse::success(
-        LoginResponseDTO::new(user.id, full_name, user.username, role.name.clone()),
+        {
+            let dto = LoginResponseDTO::new(user.id, full_name, user.username, role.name.clone());
+            // For native clients (Capacitor/Android), also include tokens in the body.
+            // Web clients receive tokens exclusively via HttpOnly cookies.
+            if is_native_client(&headers) {
+                dto.with_tokens(access_token.clone(), refresh_token.clone())
+            } else {
+                dto
+            }
+        },
         "Login successful".to_string(),
         1,
     );
-
-    // Tokens go ONLY in HttpOnly cookies — never in the JSON body
     let access_cookie = build_cookie("access_token", &access_token, "/v1/api", 86_400); // 1 day
     let refresh_cookie = build_cookie("refresh_token", &refresh_token, "/v1/api/auth", 604_800); // 7 days
 
@@ -179,11 +199,26 @@ pub async fn get_login(
 }
 
 /// Endpoint: POST /v1/api/auth/refresh
-/// Reads the refresh_token from the HttpOnly cookie and returns a new token pair as cookies.
-pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, ApiError> {
+/// Reads the refresh_token from the HttpOnly cookie (web) or request body (native) and
+/// returns a new token pair as cookies plus body tokens for native clients.
+pub async fn refresh_token(
+    headers: axum::http::HeaderMap,
+    body: Bytes,
+) -> Result<Response, ApiError> {
     info!("refresh_token called");
 
-    let refresh_tok = extract_cookie(&headers, "refresh_token").ok_or(ApiError::Unauthorized)?;
+    // Try body first (native clients send refresh_token in JSON body)
+    let refresh_from_body: Option<String> = if !body.is_empty() {
+        serde_json::from_slice::<RefreshRequest>(&body)
+            .ok()
+            .and_then(|r| r.refresh_token)
+    } else {
+        None
+    };
+
+    let refresh_tok = refresh_from_body
+        .or_else(|| extract_cookie(&headers, "refresh_token"))
+        .ok_or(ApiError::Unauthorized)?;
 
     let claims = validate_token_refresh(&refresh_tok)
         .await
@@ -214,8 +249,17 @@ pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, A
     let access_cookie = build_cookie("access_token", &new_access, "/v1/api", 86_400);
     let refresh_cookie = build_cookie("refresh_token", &new_refresh, "/v1/api/auth", 604_800);
 
+    let response_dto = {
+        let dto = LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role);
+        if is_native_client(&headers) {
+            dto.with_tokens(new_access.clone(), new_refresh.clone())
+        } else {
+            dto
+        }
+    };
+
     let body = ApiResponse::success(
-        LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role),
+        response_dto,
         "Token refreshed successfully".to_string(),
         1,
     );
@@ -243,11 +287,23 @@ pub async fn refresh_token(headers: axum::http::HeaderMap) -> Result<Response, A
 
 /// Endpoint: POST /v1/api/auth/logout
 /// Revokes the current refresh token JTI and clears both HttpOnly cookies.
-pub async fn logout(headers: axum::http::HeaderMap) -> Response {
+/// Native clients may send `{ "refreshToken": "<token>" }` in the request body.
+pub async fn logout(headers: axum::http::HeaderMap, body: Bytes) -> Response {
     info!("logout called");
 
+    // Native clients send the refresh token in the body; web clients use the cookie.
+    let refresh_from_body: Option<String> = if !body.is_empty() {
+        serde_json::from_slice::<LogoutRequest>(&body)
+            .ok()
+            .and_then(|r| r.refresh_token)
+    } else {
+        None
+    };
+
+    let refresh_tok_opt = refresh_from_body.or_else(|| extract_cookie(&headers, "refresh_token"));
+
     // Attempt to revoke the refresh token so it can no longer be used even if stolen
-    if let Some(refresh_tok) = extract_cookie(&headers, "refresh_token") {
+    if let Some(refresh_tok) = refresh_tok_opt {
         match validate_token_refresh(&refresh_tok).await {
             Ok(claims) => {
                 if let Some(jti) = claims.jti {

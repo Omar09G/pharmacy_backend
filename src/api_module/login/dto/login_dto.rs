@@ -30,6 +30,13 @@ pub struct LoginResponseDTO {
     pub full_name: String,
     pub username: String,
     pub role: String,
+    /// Only populated for native clients (`X-Client-Platform: native`).
+    /// Web clients receive tokens exclusively via HttpOnly cookies.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub access_token: Option<String>,
+    /// Only populated for native clients (`X-Client-Platform: native`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh_token: Option<String>,
 }
 
 impl LoginResponseDTO {
@@ -39,6 +46,29 @@ impl LoginResponseDTO {
             full_name,
             username,
             role,
+            access_token: None,
+            refresh_token: None,
         }
     }
+
+    /// Attach tokens to the response body (native clients only).
+    pub fn with_tokens(mut self, access: String, refresh: String) -> Self {
+        self.access_token = Some(access);
+        self.refresh_token = Some(refresh);
+        self
+    }
+}
+
+/// Request body for `/auth/refresh` from native clients.
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RefreshRequest {
+    pub refresh_token: Option<String>,
+}
+
+/// Request body for `/auth/logout` from native clients.
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LogoutRequest {
+    pub refresh_token: Option<String>,
 }

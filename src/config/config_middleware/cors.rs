@@ -60,7 +60,7 @@ pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response,
         );
         headers.insert(
             "access-control-allow-headers",
-            HeaderValue::from_static("authorization,content-type"),
+            HeaderValue::from_static("authorization,content-type,x-client-platform"),
         );
         headers.insert(
             "access-control-allow-credentials",

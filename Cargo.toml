@@ -26,6 +26,8 @@ rand_core = { version = "0.9.5", features = ["std"] }
 regex = "1.7.1"
 uuid = { version = "1.4.2", features = ["v4"] }
 
+serde_json = "1"
+
 # Local workspace crate
 schemas = { path = "schemas" }
 
@@ -36,6 +38,5 @@ flexi_logger = "0.31.8"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
-serde_json = "1"
 tower = { version = "0.5", features = ["util"] }
 axum = { version = "0.8.8", features = ["macros"] }
