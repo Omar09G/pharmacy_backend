@@ -50,6 +50,19 @@ pub async fn create_inventory_movement(
         ));
     }
 
+    // invalidate inventory caches related to this product
+    match new_im.product_id.clone() {
+        sea_orm::ActiveValue::Set(pid) => {
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
+                let _ = crate::config::config_redis::del_key(&format!("inventory:product:{}", pid))
+                    .await;
+                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+            });
+        }
+        _ => {}
+    }
+
     Ok(Json(ApiResponse::success(
         InventoryMovementIdResponse::from(new_im),
         "Inventory movement created successfully".to_string(),
@@ -203,9 +216,16 @@ pub async fn delete_inventory_movement(
 
     match im {
         Some(im) => {
+            let pid = im.product_id;
             im.delete(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
+                let _ = crate::config::config_redis::del_key(&format!("inventory:product:{}", pid))
+                    .await;
+                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+            });
             Ok(Json(ApiResponse::success(
                 (),
                 "Inventory movement deleted successfully".to_string(),
@@ -254,6 +274,23 @@ pub async fn update_inventory_movement(
                 .save(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            match updated.product_id.clone() {
+                sea_orm::ActiveValue::Set(pid) => {
+                    let _ = tokio::spawn(async move {
+                        let _ =
+                            crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
+                        let _ = crate::config::config_redis::del_key(&format!(
+                            "inventory:product:{}",
+                            pid
+                        ))
+                        .await;
+                        let _ =
+                            crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+                    });
+                }
+                _ => {}
+            }
 
             Ok(Json(ApiResponse::success(
                 InventoryMovementIdResponse::from(updated),

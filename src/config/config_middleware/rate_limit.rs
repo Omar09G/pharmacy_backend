@@ -33,8 +33,8 @@ const LOGIN_WINDOW_SECS: f64 = 1_800.0; // 30 minutes
 const REFRESH_CAPACITY: f64 = 30.0;
 const REFRESH_WINDOW_SECS: f64 = 600.0; // 10 minutes
 
-// ── General API: generous — 300 requests / 60 seconds ─────────────────────────
-const API_CAPACITY: f64 = 300.0;
+// ── General API: generous — 100 requests / 60 seconds ─────────────────────────
+const API_CAPACITY: f64 = 100.0;
 const API_WINDOW_SECS: f64 = 60.0;
 
 const MAX_BUCKETS: usize = 100_000; // safety cap against unbounded memory growth
@@ -52,33 +52,53 @@ fn bucket_config(path: &str) -> (&'static str, f64, f64) {
 }
 
 async fn allow_request(ip: &str, bucket_label: &str, capacity: f64, window_secs: f64) -> bool {
-    let key = format!("{}:{}", bucket_label, ip);
-    let now = Instant::now();
-    let refill_rate = capacity / window_secs;
+    // First try distributed Redis counter (fixed window). If Redis fails, fallback to local token bucket.
+    let key = format!("ratelimit:{}:{}", bucket_label, ip);
+    let cap_i = capacity as i64;
+    let win_secs = window_secs as usize;
 
-    let mut buckets = RATE_BUCKETS.lock().await;
+    match crate::config::config_redis::incr_by(&key, 1).await {
+        Ok(cnt) => {
+            if cnt == 1 {
+                let _ = crate::config::config_redis::expire(&key, win_secs).await;
+            }
+            // allow when counter <= capacity
+            cnt <= cap_i
+        }
+        Err(e) => {
+            // Redis failed — fallback to in-memory token bucket
+            let _ = log::warn!(
+                "redis rate limit error, falling back to local bucket: {}",
+                e
+            );
+            let now = Instant::now();
+            let refill_rate = capacity / window_secs;
 
-    if buckets.len() > MAX_BUCKETS && !buckets.contains_key(&key) {
-        return false;
-    }
+            let mut buckets = RATE_BUCKETS.lock().await;
 
-    let bucket = buckets.entry(key).or_insert(TokenBucket {
-        tokens: capacity,
-        last_refill: now,
-        capacity,
-        refill_rate,
-    });
+            if buckets.len() > MAX_BUCKETS && !buckets.contains_key(&key) {
+                return false;
+            }
 
-    let elapsed = now.duration_since(bucket.last_refill).as_secs_f64();
-    let added = elapsed * refill_rate;
-    bucket.tokens = (bucket.tokens + added).min(capacity);
-    bucket.last_refill = now;
+            let bucket = buckets.entry(key).or_insert(TokenBucket {
+                tokens: capacity,
+                last_refill: now,
+                capacity,
+                refill_rate,
+            });
 
-    if bucket.tokens >= 1.0 {
-        bucket.tokens -= 1.0;
-        true
-    } else {
-        false
+            let elapsed = now.duration_since(bucket.last_refill).as_secs_f64();
+            let added = elapsed * refill_rate;
+            bucket.tokens = (bucket.tokens + added).min(capacity);
+            bucket.last_refill = now;
+
+            if bucket.tokens >= 1.0 {
+                bucket.tokens -= 1.0;
+                true
+            } else {
+                false
+            }
+        }
     }
 }
 
@@ -127,7 +147,7 @@ fn resolve_client_ip(req: &Request<Body>) -> String {
 /// Rate limiting middleware with per-endpoint buckets.
 /// - Login:   10 req / 30 min per IP
 /// - Refresh: 30 req / 10 min per IP
-/// - API:    300 req / 60 sec  per IP
+/// - API:    100 req / 60 sec  per IP
 pub async fn rate_limit_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
     // Allow CORS preflight through without consuming tokens
     if req.method() == Method::OPTIONS {
@@ -144,4 +164,3 @@ pub async fn rate_limit_middleware(req: Request<Body>, next: Next) -> Result<Res
 
     Ok(next.run(req).await)
 }
-

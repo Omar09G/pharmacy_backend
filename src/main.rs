@@ -62,6 +62,16 @@ async fn main() {
     // Set SERVER_ADDR=127.0.0.1 in development to reduce attack surface.
     let server_addr = std::env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0".to_string());
     let ctx_bd = get_db_context().await;
+    // Initialize Redis (optional). Use REDIS_URL env or default to local redis.
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379/".to_string());
+    match crate::config::config_redis::init_redis(&redis_url).await {
+        Ok(_) => info!("Redis initialized: {}", redis_url),
+        Err(e) => error!(
+            "Failed to initialize Redis (continuing without Redis): {}",
+            e
+        ),
+    }
     let addr: SocketAddr = format!("{}:{}", server_addr, port)
         .parse()
         .unwrap_or_else(|e| {
@@ -106,9 +116,12 @@ async fn main() {
         }
     };
 
-    if let Err(e) = serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-        .with_graceful_shutdown(shutdown_signal)
-        .await
+    if let Err(e) = serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal)
+    .await
     {
         error!("Server error: {}", e);
         std::process::exit(1);

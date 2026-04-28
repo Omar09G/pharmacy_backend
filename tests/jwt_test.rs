@@ -230,7 +230,7 @@ async fn revoked_access_token_is_rejected_by_validate_token() {
 
     let jti = data.claims.jti.expect("jti must be present");
     revoke_token(&jti);
-    assert!(is_revoked(&jti));
+    assert!(is_revoked(&jti).await);
 
     // validate_token should now return an error
     let result: Result<Claims, String> = validate_token(&token).await;
@@ -269,6 +269,8 @@ async fn revoked_refresh_token_is_rejected_by_validate_token_refresh() {
 
     let jti = data.claims.jti.expect("jti must be present");
     revoke_token(&jti);
+
+    assert!(is_revoked(&jti).await);
 
     let result: Result<Claims, String> = validate_token_refresh(&token).await;
     assert!(

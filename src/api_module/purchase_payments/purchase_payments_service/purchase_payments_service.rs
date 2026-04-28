@@ -45,6 +45,17 @@ pub async fn create_purchase_payment(
         ));
     }
 
+    // enqueue async job for purchase payment processing
+    match new_pp.id.clone() {
+        sea_orm::ActiveValue::Set(id) => {
+            let job = serde_json::json!({"type": "purchase_payment", "id": id});
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::enqueue_json("jobs:payments", &job).await;
+            });
+        }
+        _ => {}
+    }
+
     Ok(Json(ApiResponse::success(
         PurchasePaymentIdResponse::from(new_pp),
         "Purchase payment created successfully".to_string(),

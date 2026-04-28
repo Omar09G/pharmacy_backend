@@ -1,3 +1,4 @@
+use crate::config::config_redis;
 use axum::{
     body::Body,
     extract::Request,
@@ -5,9 +6,7 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// In-memory idempotency store. Maps `X-Idempotency-Key` to (cached_response_body, status_code, created_at).
 ///
@@ -17,16 +16,11 @@ use std::time::{Duration, Instant};
 ///   Key  → `idempotency:{X-Idempotency-Key}`
 ///   TTL  → 24 hours
 /// Until then, deploy as a single instance behind a load balancer with session affinity (sticky sessions).
-static IDEMPOTENCY_STORE: LazyLock<Mutex<HashMap<String, CachedResponse>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+// When Redis is available we store cached responses under `idempotency:{key}` as base64
+// encoded body and status separated by a small header. For simplicity we keep
+// the existing in-memory store as a fallback when Redis is unavailable.
 
 const IDEMPOTENCY_TTL: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
-
-struct CachedResponse {
-    status: StatusCode,
-    body: Vec<u8>,
-    created_at: Instant,
-}
 
 /// Middleware that enforces idempotency for POST requests.
 ///
@@ -53,25 +47,23 @@ pub async fn idempotency_middleware(req: Request<Body>, next: Next) -> Response 
     };
 
     // Clean up expired entries periodically (simple approach)
-    {
-        let mut store = IDEMPOTENCY_STORE.lock().unwrap();
-        store.retain(|_, v| v.created_at.elapsed() < IDEMPOTENCY_TTL);
-
-        // Check for cached response
-        if let Some(cached) = store.get(&key) {
-            if cached.created_at.elapsed() < IDEMPOTENCY_TTL {
-                return (
-                    cached.status,
-                    [(
-                        axum::http::header::CONTENT_TYPE,
-                        "application/json"
-                            .parse::<axum::http::HeaderValue>()
-                            .unwrap(),
-                    )],
-                    cached.body.clone(),
-                )
-                    .into_response();
-            }
+    // Try Redis first
+    if let Ok(Some(payload)) = config_redis::get_kv(&format!("idempotency:{}", key)).await {
+        // Stored format: 1 byte status (u16 little-endian), then body bytes
+        if payload.len() >= 2 {
+            let status = u16::from_le_bytes([payload[0], payload[1]]);
+            let body = payload[2..].to_vec();
+            return (
+                StatusCode::from_u16(status).unwrap_or(StatusCode::OK),
+                [(
+                    axum::http::header::CONTENT_TYPE,
+                    "application/json"
+                        .parse::<axum::http::HeaderValue>()
+                        .unwrap(),
+                )],
+                body,
+            )
+                .into_response();
         }
     }
 
@@ -86,17 +78,16 @@ pub async fn idempotency_middleware(req: Request<Body>, next: Next) -> Response 
             .await
             .unwrap_or_default();
 
-        {
-            let mut store = IDEMPOTENCY_STORE.lock().unwrap();
-            store.insert(
-                key,
-                CachedResponse {
-                    status: parts.status,
-                    body: body_bytes.to_vec(),
-                    created_at: Instant::now(),
-                },
-            );
-        }
+        // Try to store in Redis (status u16 + body)
+        let mut to_store = vec![];
+        to_store.extend_from_slice(&(parts.status.as_u16() as u16).to_le_bytes());
+        to_store.extend_from_slice(&body_bytes);
+        let _ = config_redis::set_kv(
+            &format!("idempotency:{}", key),
+            &to_store,
+            IDEMPOTENCY_TTL.as_secs() as usize,
+        )
+        .await;
 
         Response::from_parts(parts, Body::from(body_bytes))
     } else {

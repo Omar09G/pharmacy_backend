@@ -190,7 +190,7 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
 
     // Reject revoked tokens
     if let Some(ref jti) = decoded.claims.jti {
-        if is_revoked(jti) {
+        if is_revoked(jti).await {
             return Err("Token has been revoked".to_string());
         }
     }
@@ -221,7 +221,7 @@ pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
 
     // Reject revoked tokens
     if let Some(ref jti) = decoded.claims.jti {
-        if is_revoked(jti) {
+        if is_revoked(jti).await {
             return Err("Token has been revoked".to_string());
         }
     }

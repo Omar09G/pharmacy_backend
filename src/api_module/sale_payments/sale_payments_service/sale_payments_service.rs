@@ -45,6 +45,17 @@ pub async fn create_sale_payment(
         ));
     }
 
+    // enqueue async job for payment processing
+    match new_sp.id.clone() {
+        sea_orm::ActiveValue::Set(id) => {
+            let job = serde_json::json!({"type": "sale_payment", "id": id});
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::enqueue_json("jobs:payments", &job).await;
+            });
+        }
+        _ => {}
+    }
+
     Ok(Json(ApiResponse::success(
         SalePaymentIdResponse::from(new_sp),
         "Sale payment created successfully".to_string(),
@@ -185,7 +196,10 @@ pub async fn update_sale_payment(
     Path(id): Path<i64>,
     Json(payload): Json<SalePaymentRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentIdResponse>>, ApiError> {
-    info!("update_sale_payment called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_sale_payment called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

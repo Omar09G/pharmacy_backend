@@ -48,6 +48,17 @@ pub async fn create_product_price(
         ));
     }
 
+    // invalidate product price caches and product cache
+    match new_pp.product_id.clone() {
+        sea_orm::ActiveValue::Set(pid) => {
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
+                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+            });
+        }
+        _ => {}
+    }
+
     Ok(Json(ApiResponse::success(
         ProductPriceIdResponse::from(new_pp),
         "Product price created successfully".to_string(),
@@ -163,9 +174,14 @@ pub async fn delete_product_price(
 
     match pp {
         Some(pp) => {
+            let pid = pp.product_id;
             pp.delete(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
+                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+            });
             Ok(Json(ApiResponse::success(
                 (),
                 "Product price deleted successfully".to_string(),
@@ -207,6 +223,18 @@ pub async fn update_product_price(
                 .save(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            // invalidate product price and product cache
+            match updated.product_id.clone() {
+                sea_orm::ActiveValue::Set(pid) => {
+                    let _ = tokio::spawn(async move {
+                        let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
+                        let _ =
+                            crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+                    });
+                }
+                _ => {}
+            }
 
             Ok(Json(ApiResponse::success(
                 ProductPriceIdResponse::from(updated),

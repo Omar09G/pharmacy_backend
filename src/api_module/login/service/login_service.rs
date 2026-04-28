@@ -127,13 +127,25 @@ pub async fn get_login(
 
     let role = roles.into_iter().next().ok_or(ApiError::Unauthorized)?;
 
-    // Fetch permissions for this role
-    let permission_models = role
-        .find_related(schemas::permissions::Entity)
-        .all(&app_ctx.conn)
-        .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-    let permissions: Vec<String> = permission_models.into_iter().map(|p| p.name).collect();
+    // Fetch permissions for this role — try Redis cache first (cached per role)
+    let cache_key = format!("role_permissions:{}", role.name.clone());
+    let permissions: Vec<String> =
+        match crate::config::config_redis::get_json::<Vec<String>>(&cache_key).await {
+            Ok(Some(cached)) => cached,
+            _ => {
+                let permission_models = role
+                    .find_related(schemas::permissions::Entity)
+                    .all(&app_ctx.conn)
+                    .await
+                    .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+                let permissions_vec: Vec<String> =
+                    permission_models.into_iter().map(|p| p.name).collect();
+                // Best-effort cache for 1 hour
+                let _ =
+                    crate::config::config_redis::set_json(&cache_key, &permissions_vec, 3600).await;
+                permissions_vec
+            }
+        };
 
     let full_name = user.full_name.clone().unwrap_or_default();
 
@@ -258,11 +270,7 @@ pub async fn refresh_token(
         }
     };
 
-    let body = ApiResponse::success(
-        response_dto,
-        "Token refreshed successfully".to_string(),
-        1,
-    );
+    let body = ApiResponse::success(response_dto, "Token refreshed successfully".to_string(), 1);
 
     let mut response = Json(body).into_response();
     response.headers_mut().append(

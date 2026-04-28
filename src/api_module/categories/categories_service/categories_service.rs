@@ -47,6 +47,12 @@ pub async fn create_category(
         ));
     }
 
+    // invalidate category caches
+    let _ = tokio::spawn(async move {
+        let _ = crate::config::config_redis::del_pattern("categories:*").await;
+        let _ = crate::config::config_redis::del_pattern("category:*").await;
+    });
+
     Ok(Json(ApiResponse::success(
         CategoryIdResponse::from(new_category),
         "Category created successfully".to_string(),
@@ -66,11 +72,32 @@ pub async fn get_category_by_id(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     match category {
-        Some(category) => Ok(Json(ApiResponse::success(
-            CategoryDetailResponse::from(category),
-            "Category retrieved successfully".to_string(),
-            1,
-        ))),
+        Some(category) => {
+            let cache_key = format!("category:{}", id);
+            match crate::config::config_redis::get_json::<CategoryDetailResponse>(&cache_key).await
+            {
+                Ok(Some(cached)) => {
+                    return Ok(Json(ApiResponse::success(
+                        cached,
+                        "Category retrieved successfully (cache)".to_string(),
+                        1,
+                    )));
+                }
+                Ok(None) => (),
+                Err(e) => info!("redis get_json error: {}", e),
+            }
+
+            let dto = CategoryDetailResponse::from(category.clone());
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::set_json(&cache_key, &dto, 3600).await;
+            });
+
+            Ok(Json(ApiResponse::success(
+                CategoryDetailResponse::from(category),
+                "Category retrieved successfully".to_string(),
+                1,
+            )))
+        }
         None => Err(ApiError::ValidationError("Category not found".to_string())),
     }
 }
@@ -145,6 +172,11 @@ pub async fn delete_category(
                 .delete(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            // invalidate category caches
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_pattern("categories:*").await;
+                let _ = crate::config::config_redis::del_key(&format!("category:{}", id)).await;
+            });
             Ok(Json(ApiResponse::success(
                 (),
                 "Category deleted successfully".to_string(),
@@ -232,6 +264,13 @@ pub async fn update_category(
                 .save(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            // invalidate caches for this category and lists
+            let cid = id;
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_key(&format!("category:{}", cid)).await;
+                let _ = crate::config::config_redis::del_pattern("categories:*").await;
+            });
 
             Ok(Json(ApiResponse::success(
                 CategoryIdResponse::from(updated_category),

@@ -57,6 +57,11 @@ pub async fn create_role_permissions(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    // invalidate role permissions cache
+    let _ = tokio::spawn(async move {
+        let _ = crate::config::config_redis::del_pattern("role_permissions:*").await;
+    });
+
     Ok(Json(ApiResponse::success(
         RolePermissionsResponse::new(role_id_str, permission_id_str),
         "Role permissions created successfully".to_string(),
@@ -95,10 +100,7 @@ pub async fn get_role_permissions(
 ) -> Result<Json<ApiResponse<Vec<RolePermissionsResponse>>>, ApiError> {
     info!(
         "get_role_permissions called with pagination: page={:?}, limit={:?}, total={:?}, role_id={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.role_id
+        pagination.page, pagination.limit, pagination.total, pagination.role_id
     );
 
     let page_index = to_page_index(pagination.page);
@@ -156,6 +158,10 @@ pub async fn delete_role_permissions(
                 .delete(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            // invalidate role permissions cache
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_pattern("role_permissions:*").await;
+            });
             Ok(Json(ApiResponse::success(
                 (),
                 "Role permission deleted successfully".to_string(),
@@ -205,6 +211,10 @@ pub async fn update_role_permissions(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     let role_permission = role_permission_update.ok_or(ApiError::NotFound)?;
+    // invalidate role permissions cache after update
+    let _ = tokio::spawn(async move {
+        let _ = crate::config::config_redis::del_pattern("role_permissions:*").await;
+    });
 
     Ok(Json(ApiResponse::success(
         RolePermissionsResponse::from(role_permission),

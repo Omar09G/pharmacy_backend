@@ -175,6 +175,19 @@ pub async fn create_add_sale(
             txn.commit()
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            // enqueue async job to process sale (reports/notifications/payments worker)
+            let sale_id_for_job = new_sale_response.id.clone();
+            let _ = tokio::spawn(async move {
+                match sale_id_for_job {
+                    sea_orm::ActiveValue::Set(sid) => {
+                        let job = serde_json::json!({"type": "sale_created", "sale_id": sid});
+                        let _ = crate::config::config_redis::enqueue_json("jobs:sales", &job).await;
+                    }
+                    _ => {}
+                }
+            });
+
             Ok(Json(ApiResponse::success(
                 SaleIdResponse::from(new_sale_response),
                 "Sale created successfully".to_string(),

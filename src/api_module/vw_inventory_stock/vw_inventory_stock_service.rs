@@ -29,6 +29,25 @@ pub async fn get_vw_inventory_stock(
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
+    let cache_key = format!(
+        "vw_inventory_stock:product:{}:page:{}:limit:{}",
+        pagination.product_id.unwrap_or(0),
+        page_index,
+        page_limit
+    );
+    match crate::config::config_redis::get_json::<Vec<VwInventoryStockResponse>>(&cache_key).await {
+        Ok(Some(cached)) => {
+            let total = cached.len() as i32;
+            return Ok(Json(ApiResponse::success(
+                cached,
+                "Inventory stock retrieved successfully (cache)".to_string(),
+                total,
+            )));
+        }
+        Ok(None) => (),
+        Err(e) => info!("redis get_json error: {}", e),
+    }
+
     // Call fn_t_inventory_stock(p_product_id)
     let stmt = Statement::from_sql_and_values(
         DatabaseBackend::Postgres,
@@ -61,11 +80,24 @@ pub async fn get_vw_inventory_stock(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let dto_items: Vec<VwInventoryStockResponse> = items
+        .into_iter()
+        .map(VwInventoryStockResponse::from)
+        .collect();
+
+    // cache inventory view short-term (serialize and move bytes into task)
+    match serde_json::to_vec(&dto_items) {
+        Ok(bytes) => {
+            let key = cache_key.clone();
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::set_kv(&key, &bytes, 30).await;
+            });
+        }
+        Err(e) => info!("failed to serialize inventory dto for cache: {}", e),
+    }
+
     Ok(Json(ApiResponse::success(
-        items
-            .into_iter()
-            .map(VwInventoryStockResponse::from)
-            .collect(),
+        dto_items,
         "Inventory stock retrieved successfully".to_string(),
         total_items as i32,
     )))

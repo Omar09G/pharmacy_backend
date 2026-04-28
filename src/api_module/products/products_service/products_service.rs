@@ -52,6 +52,12 @@ pub async fn create_product(
         ));
     }
 
+    // invalidate product caches
+    let _ = tokio::spawn(async move {
+        let _ = crate::config::config_redis::del_pattern("products:*").await;
+        let _ = crate::config::config_redis::del_pattern("product:*").await;
+    });
+
     Ok(Json(ApiResponse::success(
         ProductIdResponse::from(new_product),
         "Product created successfully".to_string(),
@@ -64,6 +70,18 @@ pub async fn get_product_by_id(
     Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<ProductDetailResponse>>, ApiError> {
     info!("get_product_by_id called with id: {:?}", id);
+    let cache_key = format!("product:{}", id);
+    match crate::config::config_redis::get_json::<ProductDetailResponse>(&cache_key).await {
+        Ok(Some(cached)) => {
+            return Ok(Json(ApiResponse::success(
+                cached,
+                "Product retrieved successfully (cache)".to_string(),
+                1,
+            )));
+        }
+        Ok(None) => (),
+        Err(e) => info!("redis get_json error: {}", e),
+    }
 
     let product = schemas::products::Entity::find_by_id(id)
         .one(&app_ctx.conn)
@@ -71,11 +89,24 @@ pub async fn get_product_by_id(
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
     match product {
-        Some(product) => Ok(Json(ApiResponse::success(
-            ProductDetailResponse::from(product),
-            "Product retrieved successfully".to_string(),
-            1,
-        ))),
+        Some(product) => {
+            let dto = ProductDetailResponse::from(product.clone());
+            // Serialize dto for background caching to avoid moving dto into the task
+            match serde_json::to_vec(&dto) {
+                Ok(bytes) => {
+                    let key = cache_key.clone();
+                    let _ = tokio::spawn(async move {
+                        let _ = crate::config::config_redis::set_kv(&key, &bytes, 3600).await;
+                    });
+                }
+                Err(e) => info!("failed to serialize product dto for cache: {}", e),
+            }
+            Ok(Json(ApiResponse::success(
+                dto,
+                "Product retrieved successfully".to_string(),
+                1,
+            )))
+        }
         None => Err(ApiError::ValidationError("Product not found".to_string())),
     }
 }
@@ -378,6 +409,13 @@ pub async fn update_product(
                 .save(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            // invalidate product caches for this product and lists
+            let pid = id;
+            let _ = tokio::spawn(async move {
+                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+                let _ = crate::config::config_redis::del_pattern("products:*").await;
+            });
 
             Ok(Json(ApiResponse::success(
                 ProductIdResponse::from(updated_product),
