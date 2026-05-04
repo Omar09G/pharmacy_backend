@@ -12,7 +12,7 @@ use crate::config::config_middleware::rate_limit::rate_limit_middleware;
 use crate::config::config_middleware::security_headers::security_headers_middleware;
 
 use super::routes;
-
+//Obtiene las rutas de configuracion para la API
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()

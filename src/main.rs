@@ -58,8 +58,6 @@ async fn main() {
             std::process::exit(1);
         });
 
-    // Bind address: use SERVER_ADDR env var (default: 0.0.0.0 for Docker compatibility).
-    // Set SERVER_ADDR=127.0.0.1 in development to reduce attack surface.
     let server_addr = std::env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0".to_string());
     let ctx_bd = get_db_context().await;
     // Initialize Redis (optional). Use REDIS_URL env or default to local redis.
@@ -97,7 +95,6 @@ async fn main() {
         }
     };
 
-    // Graceful shutdown: wait for SIGINT (Ctrl+C) or SIGTERM (Docker stop)
     let shutdown_signal = async {
         let ctrl_c = tokio::signal::ctrl_c();
         #[cfg(unix)]
