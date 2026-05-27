@@ -5,6 +5,7 @@ use tower_http::timeout::TimeoutLayer;
 
 use crate::config::config_database::config_db_context::AppContext;
 use crate::config::config_middleware::auth_jwt::auth_middleware;
+use crate::config::config_middleware::cache::cache_middleware;
 use crate::config::config_middleware::content_type::content_type_middleware;
 use crate::config::config_middleware::cors::cors_middleware;
 use crate::config::config_middleware::idempotency::idempotency_middleware;
@@ -28,7 +29,8 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .merge(routes::audit_routes::routes())
         .merge(routes::dashboard_routes::routes())
         .with_state(app_ctx.clone())
-        // Layer order (innermost first): idempotency -> auth -> content_type -> rate_limit -> cors -> security_headers
+        // Layer order (innermost first): cache -> idempotency -> auth -> content_type -> rate_limit -> cors -> security_headers
+        .layer(from_fn(cache_middleware))
         .layer(from_fn(idempotency_middleware))
         .layer(from_fn(auth_middleware))
         .layer(from_fn(content_type_middleware))

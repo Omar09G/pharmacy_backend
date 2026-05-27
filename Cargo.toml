@@ -35,6 +35,8 @@ schemas = { path = "schemas" }
 redis = { version = "0.23.3", features = ["aio", "tokio-comp"] }
 base64 = "0.21.0"
 parking_lot = "0.12"
+sha2 = "0.10"
+hex = "0.4"
 
 
 # CORS support for Axum
