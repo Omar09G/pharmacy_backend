@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 
 use crate::config::config_redis;
 
-const DEFAULT_TTL_SECS: usize = 300;
+const DEFAULT_TTL_SECS: usize = 60;
 const CACHE_PREFIX: &str = "http_cache:";
 
 pub async fn cache_middleware(
@@ -89,6 +89,7 @@ fn is_cacheable(method: &str, path: &str) -> bool {
         "/v1/api/payment",
         "/v1/api/checkout",
         "/v1/api/sale",
+        "/v1/api/",
     ];
 
     for prefix in &skip_prefixes {
