@@ -88,7 +88,7 @@ pub async fn get_login(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Response, ApiError> {
-    info!("get_login called with payload: {:?}", payload);
+    info!("get_login called with payload: {}", payload.username);
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -211,8 +211,6 @@ pub async fn get_login(
 }
 
 /// Endpoint: POST /v1/api/auth/refresh
-/// Reads the refresh_token from the HttpOnly cookie (web) or request body (native) and
-/// returns a new token pair as cookies plus body tokens for native clients.
 pub async fn refresh_token(
     headers: axum::http::HeaderMap,
     body: Bytes,

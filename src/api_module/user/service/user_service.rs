@@ -185,6 +185,7 @@ pub async fn get_all_users(
 
     let paginator = select
         .order_by_asc(schemas::users::Column::Id)
+        .filter(schemas::users::Column::DeletedAt.is_null())
         .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
 
     let total_items = if pagination.total > 0 {
