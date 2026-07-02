@@ -75,37 +75,6 @@ docker run --rm -v "$PWD":/work -w /work rust:latest cargo build --release
       }
     }
 
-    stage('Build Docker image (temporary Dockerfile)') {
-      steps {
-        echo 'Step: Creating temporary Dockerfile and building image'
-        sh '''
-set -e
-echo "Creating temporary Dockerfile at Dockerfile.ci"
-cat > Dockerfile.ci <<'DOCK'
-FROM debian:stable-slim
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
-ENV PORT=8081
-ENV SERVER_ADDR=0.0.0.0
-ENV LOG_LEVEL=info
-ENV RUST_LOG=info
-COPY target/release/pharmacy_backend /app/pharmacy_backend
-RUN mkdir -p /app/logs
-EXPOSE 8081
-CMD ["/app/pharmacy_backend"]
-DOCK
-
-echo "Building Docker image ${IMAGE_NAME} using temporary Dockerfile"
-docker build -t ${IMAGE_NAME} -f Dockerfile.ci .
-echo "Built image ${IMAGE_NAME}"
-
-echo "Removing temporary Dockerfile"
-rm -f Dockerfile.ci
-'''
-        echo 'Done: Docker image built'
-      }
-    }
-
     stage('Build Docker image from repository Dockerfile') {
       steps {
         echo 'Step: Building Docker image from repository Dockerfile'
@@ -132,14 +101,30 @@ echo "Workspace: $WORKSPACE"
 export IMAGE_NAME="${IMAGE_NAME:-pharmacy_backend:${BUILD_NUMBER:-latest}}"
 echo "Using IMAGE_NAME=${IMAGE_NAME} for docker-compose"
 
+# Export required environment variables with defaults for CI/development
+export DATABASE_URL="${DATABASE_URL:-postgres://postgres:admin@host.docker.internal:5432/postgres?options=--search_path=pharmacy}"
+export PASSWORD_SALT="${PASSWORD_SALT:-ci-default-salt-value-change-in-production}"
+export API_JWT_SECRET="${API_JWT_SECRET:-ci-default-jwt-secret-key-min-16-chars-for-prod}"
+export API_JWT_SECRET_REFRESH="${API_JWT_SECRET_REFRESH:-ci-default-refresh-secret-min-16-chars-for-prod}"
+
+echo "Environment variables set:"
+echo "  DATABASE_URL: $DATABASE_URL"
+echo "  PASSWORD_SALT: ****"
+echo "  API_JWT_SECRET: ****"
+echo "  API_JWT_SECRET_REFRESH: ****"
+
+echo "Cleaning up previous Docker Compose services and containers..."
+docker compose -f docker-compose.yml down --remove-orphans || true
+docker container prune -f --filter "label!=keep" || true
+
 echo "Starting backend service from docker-compose.yml"
 docker compose -f docker-compose.yml up -d backend
 
-echo "Waiting for the backend to respond on port 8081"
+echo "Waiting for the backend to respond on port 8088"
 RETRIES=30
 for i in $(seq 1 $RETRIES); do
-  if curl -sS http://localhost:8081/ >/dev/null 2>&1; then
-    echo "Backend responded on port 8081"
+  if curl -sS http://localhost:8088/ >/dev/null 2>&1; then
+    echo "Backend responded on port 8088"
     break
   fi
   echo "Waiting for backend (attempt $i/$RETRIES)..."
@@ -147,8 +132,8 @@ for i in $(seq 1 $RETRIES); do
 done
 
 echo "Checking final backend response"
-if ! curl -sS http://localhost:8081/ >/dev/null 2>&1; then
-  echo "Backend did not respond on port 8081"
+if ! curl -sS http://localhost:8088/ >/dev/null 2>&1; then
+  echo "Backend did not respond on port 8088"
   docker compose -f docker-compose.yml ps
   docker compose -f docker-compose.yml logs backend --tail=200 || true
   exit 1
