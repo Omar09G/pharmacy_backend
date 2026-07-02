@@ -44,7 +44,6 @@
 *.csv
 *.json
 *.xml
-*.yml
 *.yaml
 *.lock
 *.log
@@ -79,5 +78,5 @@
 /crt
 /p12
 /pfx
-
+/.github
 .env
