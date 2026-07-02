@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 WORKDIR /app
 
 # Runtime environment defaults
-ENV PORT=8088
+ENV PORT=8081
 ENV SERVER_ADDR=0.0.0.0
 ENV LOG_LEVEL=info
 ENV RUST_LOG=info
@@ -18,6 +18,6 @@ COPY target/release/pharmacy_backend /app/pharmacy_backend
 # Create logs dir
 RUN mkdir -p /app/logs
 
-EXPOSE 8088
+EXPOSE 8081
 
 ENTRYPOINT ["/app/pharmacy_backend"]

@@ -122,7 +122,7 @@ docker container prune -f --filter "label!=keep" || true
 echo "Starting backend service from docker-compose.yml"
 docker compose -f docker-compose.yml up -d backend
 
-RESOLVED_PORT="$(docker compose -f docker-compose.yml port backend 8088 | awk -F: '{print $NF}' | tr -d '[:space:]')"
+RESOLVED_PORT="$(docker compose -f docker-compose.yml port backend 8081 | awk -F: '{print $NF}' | tr -d '[:space:]')"
 if [ -z "$RESOLVED_PORT" ]; then
   echo "Could not resolve mapped backend port from docker compose."
   docker compose -f docker-compose.yml ps
