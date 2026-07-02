@@ -15,14 +15,9 @@ ENV RUST_LOG=info
 # Copy the release binary produced by cargo build --release
 COPY target/release/pharmacy_backend /app/pharmacy_backend
 
-# Copy environment validation script
-COPY validate_env.sh /usr/local/bin/validate_env.sh
-RUN chmod +x /usr/local/bin/validate_env.sh
-
 # Create logs dir
 RUN mkdir -p /app/logs
 
 EXPOSE 8081
 
-ENTRYPOINT ["/usr/local/bin/validate_env.sh"]
 CMD ["/app/pharmacy_backend"]
