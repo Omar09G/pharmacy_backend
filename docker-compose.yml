@@ -8,11 +8,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "8081:8081"
+      - "8088:8088"
     environment:
       DATABASE_URL: "postgres://postgres:admin@host.docker.internal:5432/postgres?options=--search_path=pharmacy"
       CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-      PORT: "8081"
+      PORT: "8088"
       SERVER_ADDR: "0.0.0.0"
       JWT_EXPIRATION: "3600"
       LOG_LEVEL: "off"
