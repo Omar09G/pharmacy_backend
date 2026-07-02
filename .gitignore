@@ -70,8 +70,6 @@
 *.env.local 
 *.md
 *.markdown
-*Dockerfile
-*docker-compose.yml
 *.sh
 /pem
 /key
