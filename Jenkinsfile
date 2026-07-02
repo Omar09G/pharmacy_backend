@@ -106,6 +106,22 @@ rm -f Dockerfile.ci
       }
     }
 
+    stage('Build Docker image from repository Dockerfile') {
+      steps {
+        echo 'Step: Building Docker image from repository Dockerfile'
+        sh '''
+set -e
+cd "$WORKSPACE"
+echo "Workspace: $WORKSPACE"
+export IMAGE_NAME="${IMAGE_NAME:-pharmacy_backend:${BUILD_NUMBER:-latest}}"
+echo "Building image ${IMAGE_NAME} using Dockerfile in repository"
+docker build --pull -t ${IMAGE_NAME} .
+echo "Built image ${IMAGE_NAME}"
+'''
+        echo 'Done: Docker image built from repository Dockerfile'
+      }
+    }
+
     stage('Run docker compose and validate backend') {
       steps {
         echo 'Step: Starting backend via docker compose and validating health'

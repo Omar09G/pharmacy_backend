@@ -1,6 +1,9 @@
 services:
   backend:
-    image: ${IMAGE_NAME}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${IMAGE_NAME:-pharmacy_backend:latest}
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
