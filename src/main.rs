@@ -51,7 +51,7 @@ async fn main() {
     }
 
     let port: u16 = std::env::var("PORT")
-        .unwrap_or_else(|_| "8080".to_string())
+        .unwrap_or_else(|_| "8081".to_string())
         .parse::<u16>()
         .unwrap_or_else(|_| {
             error!("Invalid PORT environment variable value");

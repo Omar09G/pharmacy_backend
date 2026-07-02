@@ -172,12 +172,11 @@ docker push ${TARGET}
   }
 
   post {
-    always {
-      sh '''
-set +e
-cd "$WORKSPACE"
-docker compose -f docker-compose.yml down --remove-orphans
-'''
+    success {
+      echo 'Deploy completado: el contenedor backend queda levantado.'
+    }
+    failure {
+      echo 'Pipeline fallido. No se ejecuta docker compose down para no bajar servicios.'
     }
   }
 }

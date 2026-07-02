@@ -17,6 +17,7 @@ services:
       JWT_EXPIRATION: "3600"
       LOG_LEVEL: "off"
       RUST_LOG: "off"
+      COOKIE_SECURE: "false"
       PASSWORD_SALT: "${PASSWORD_SALT}"
       API_JWT_PRIVATE_PEM_PATH: "./pem/jwt_private.pem"
       API_JWT_PUBLIC_PEM_PATH: "./pem/jwt_public.pem"
