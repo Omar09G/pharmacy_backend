@@ -14,10 +14,10 @@ ENV RUST_LOG=info
 
 # Copy the release binary produced by cargo build --release
 COPY target/release/pharmacy_backend /app/pharmacy_backend
+
 # Create logs dir
 RUN mkdir -p /app/logs
 
 EXPOSE 8088
 
-ENTRYPOINT ["/usr/local/bin/validate_env.sh"]
-CMD ["/app/pharmacy_backend"]
+ENTRYPOINT ["/app/pharmacy_backend"]
