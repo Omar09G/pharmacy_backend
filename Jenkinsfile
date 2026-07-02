@@ -106,12 +106,14 @@ export DATABASE_URL="${DATABASE_URL:-postgres://postgres:admin@host.docker.inter
 export PASSWORD_SALT="${PASSWORD_SALT:-ci-default-salt-value-change-in-production}"
 export API_JWT_SECRET="${API_JWT_SECRET:-ci-default-jwt-secret-key-min-16-chars-for-prod}"
 export API_JWT_SECRET_REFRESH="${API_JWT_SECRET_REFRESH:-ci-default-refresh-secret-min-16-chars-for-prod}"
+export BACKEND_HOST_PORT="${BACKEND_HOST_PORT:-0}"
 
 echo "Environment variables set:"
 echo "  DATABASE_URL: $DATABASE_URL"
 echo "  PASSWORD_SALT: ****"
 echo "  API_JWT_SECRET: ****"
 echo "  API_JWT_SECRET_REFRESH: ****"
+echo "  BACKEND_HOST_PORT: ${BACKEND_HOST_PORT}"
 
 echo "Cleaning up previous Docker Compose services and containers..."
 docker compose -f docker-compose.yml down --remove-orphans || true
@@ -120,11 +122,20 @@ docker container prune -f --filter "label!=keep" || true
 echo "Starting backend service from docker-compose.yml"
 docker compose -f docker-compose.yml up -d backend
 
-echo "Waiting for the backend to respond on port 8088"
+RESOLVED_PORT="$(docker compose -f docker-compose.yml port backend 8088 | awk -F: '{print $NF}' | tr -d '[:space:]')"
+if [ -z "$RESOLVED_PORT" ]; then
+  echo "Could not resolve mapped backend port from docker compose."
+  docker compose -f docker-compose.yml ps
+  docker compose -f docker-compose.yml logs backend --tail=200 || true
+  exit 1
+fi
+echo "Backend mapped to localhost:${RESOLVED_PORT}"
+
+echo "Waiting for the backend to respond on port ${RESOLVED_PORT}"
 RETRIES=30
 for i in $(seq 1 $RETRIES); do
-  if curl -sS http://localhost:8088/ >/dev/null 2>&1; then
-    echo "Backend responded on port 8088"
+  if curl -sS "http://localhost:${RESOLVED_PORT}/" >/dev/null 2>&1; then
+    echo "Backend responded on port ${RESOLVED_PORT}"
     break
   fi
   echo "Waiting for backend (attempt $i/$RETRIES)..."
@@ -132,16 +143,14 @@ for i in $(seq 1 $RETRIES); do
 done
 
 echo "Checking final backend response"
-if ! curl -sS http://localhost:8088/ >/dev/null 2>&1; then
-  echo "Backend did not respond on port 8088"
+if ! curl -sS "http://localhost:${RESOLVED_PORT}/" >/dev/null 2>&1; then
+  echo "Backend did not respond on port ${RESOLVED_PORT}"
   docker compose -f docker-compose.yml ps
   docker compose -f docker-compose.yml logs backend --tail=200 || true
   exit 1
 fi
 
 echo "Backend validated successfully"
-
-echo "Leaving docker compose services running"
 '''
         echo 'Done: Backend validated'
       }
@@ -164,7 +173,11 @@ docker push ${TARGET}
 
   post {
     always {
-      echo 'Skipping teardown to leave Docker Compose services running.'
+      sh '''
+set +e
+cd "$WORKSPACE"
+docker compose -f docker-compose.yml down --remove-orphans
+'''
     }
   }
 }
