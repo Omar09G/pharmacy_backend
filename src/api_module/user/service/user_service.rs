@@ -169,10 +169,7 @@ pub async fn get_all_users(
 ) -> Result<Json<ApiResponse<Vec<UserResponse>>>, ApiError> {
     info!(
         "get_all_users called with pagination: page={:?}, limit={:?}, total={:?}, full_name={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.full_name
+        pagination.page, pagination.limit, pagination.total, pagination.full_name
     );
 
     let mut select = schemas::users::Entity::find();
@@ -320,7 +317,6 @@ pub async fn delete_user(
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
     info!("delete_user called with user_id: {:?}", user_id);
 
-
     let user = schemas::users::Entity::find_by_id(user_id)
         .one(&app_ctx.conn)
         .await
@@ -353,7 +349,10 @@ pub async fn update_user(
     Path(id): Path<i64>,
     Json(payload): Json<UserUpdateRequestDto>,
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
-    info!("update_user called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_user called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

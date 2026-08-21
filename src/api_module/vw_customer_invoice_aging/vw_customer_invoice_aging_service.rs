@@ -24,7 +24,13 @@ pub async fn get_vw_customer_invoice_aging(
 ) -> Result<Json<ApiResponse<Vec<VwCustomerInvoiceAgingResponse>>>, ApiError> {
     info!(
         "get_vw_customer_invoice_aging called with pagination: page={:?}, limit={:?}, total={:?}, customer_id={:?}, name={:?}, status={:?}, invoice_no={:?}",
-        pagination.page, pagination.limit, pagination.total, pagination.customer_id, pagination.name, pagination.status, pagination.invoice_no
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.customer_id,
+        pagination.name,
+        pagination.status,
+        pagination.invoice_no
     );
 
     let page_index = to_page_index(pagination.page);

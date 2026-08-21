@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post};
 use axum::Router;
+use axum::routing::{delete, get, patch, post};
 
 use crate::api_module::inventory_locations::inventory_location_service::inventory_location_service::{
     create_inventory_location, delete_inventory_location, get_inventory_location_by_id,
@@ -40,6 +40,9 @@ pub fn routes() -> Router<AppContext> {
         .route(INVENTORY_LOCATIONS, post(create_inventory_location))
         .route(INVENTORY_LOCATIONS_BY_ID, get(get_inventory_location_by_id))
         .route(INVENTORY_LOCATIONS, get(get_inventory_locations))
-        .route(INVENTORY_LOCATIONS_DELETE, delete(delete_inventory_location))
+        .route(
+            INVENTORY_LOCATIONS_DELETE,
+            delete(delete_inventory_location),
+        )
         .route(INVENTORY_LOCATIONS_UPDATE, patch(update_inventory_location))
 }

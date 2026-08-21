@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
+use axum::routing::{delete, get, patch, post, put};
 
 use crate::api_module::user::service::user_service::{
     change_user_password, change_user_status, create_user, delete_user, get_all_users,

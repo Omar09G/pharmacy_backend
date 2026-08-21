@@ -182,7 +182,10 @@ pub async fn update_audit_log(
     Path(id): Path<i64>,
     Json(payload): Json<AuditLogRequest>,
 ) -> Result<Json<ApiResponse<AuditLogIdResponse>>, ApiError> {
-    info!("update_audit_log called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_audit_log called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

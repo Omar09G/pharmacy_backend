@@ -26,7 +26,10 @@ pub async fn create_sale_payment_allocation(
     State(app_ctx): State<AppContext>,
     Json(payload): Json<SalePaymentAllocationRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentAllocationIdResponse>>, ApiError> {
-    info!("create_sale_payment_allocation called with payload: {:?}", payload);
+    info!(
+        "create_sale_payment_allocation called with payload: {:?}",
+        payload
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -158,7 +161,10 @@ pub async fn update_sale_payment_allocation(
     Path(id): Path<i64>,
     Json(payload): Json<SalePaymentAllocationRequest>,
 ) -> Result<Json<ApiResponse<SalePaymentAllocationIdResponse>>, ApiError> {
-    info!("update_sale_payment_allocation called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_sale_payment_allocation called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

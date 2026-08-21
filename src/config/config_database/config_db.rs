@@ -40,6 +40,7 @@ pub async fn get_db_context() -> AppContext {
         }
         Err(e) => {
             log::error!("Failed to establish database connection: {}", e);
+            log::error!("Exiting application due to database connection failure");
             std::process::exit(1);
         }
     }

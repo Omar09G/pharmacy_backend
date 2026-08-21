@@ -82,11 +82,7 @@ pub async fn get_suppliers(
 ) -> Result<Json<ApiResponse<Vec<SupplierDetailResponse>>>, ApiError> {
     info!(
         "get_suppliers called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}, tax_id={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.name,
-        pagination.username
+        pagination.page, pagination.limit, pagination.total, pagination.name, pagination.username
     );
 
     let page_index = to_page_index(pagination.page);
@@ -112,7 +108,7 @@ pub async fn get_suppliers(
         .order_by_asc(schemas::suppliers::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -167,11 +163,9 @@ pub async fn get_suppliers_by_name(
     State(app_ctx): State<AppContext>,
     Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<ApiResponse<Vec<SupplierDetailResponse>>>, ApiError> {
-    info!("get_suppliers_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.name
+    info!(
+        "get_suppliers_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
+        pagination.page, pagination.limit, pagination.total, pagination.name
     );
 
     let page_index = to_page_index(pagination.page);
@@ -189,7 +183,7 @@ pub async fn get_suppliers_by_name(
         .order_by_asc(schemas::suppliers::Column::Id)
         .paginate(&app_ctx.conn, page_limit);
 
-     let total_items = if pagination.total > 0 {
+    let total_items = if pagination.total > 0 {
         pagination.total
     } else {
         paginator
@@ -218,7 +212,10 @@ pub async fn update_supplier(
     Path(id): Path<i64>,
     Json(payload): Json<SupplierRequest>,
 ) -> Result<Json<ApiResponse<SupplierIdResponse>>, ApiError> {
-    info!("update_supplier called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_supplier called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

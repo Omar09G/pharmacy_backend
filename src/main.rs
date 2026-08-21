@@ -23,6 +23,7 @@ async fn main() {
 
     // Read log level from environment (default: info)
     let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
+    let log_dir = std::env::var("LOG_DIR").unwrap_or_else(|_| "/app/logs".to_string());
     let logger = Logger::try_with_str(&log_level).unwrap_or_else(|e| {
         eprintln!("Logger configuration failed: {}", e);
         std::process::exit(1);
@@ -33,7 +34,7 @@ async fn main() {
         .format_for_stdout(custom_format_colored)
         .log_to_file(
             FileSpec::default()
-                .directory("/tmp/log/pharmacy_backend")
+                .directory(&log_dir)
                 .basename("app")
                 .suffix("log"),
         )

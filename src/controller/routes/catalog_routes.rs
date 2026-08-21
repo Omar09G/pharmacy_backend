@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post};
 use axum::Router;
+use axum::routing::{delete, get, patch, post};
 
 use crate::api_module::customers::customers_service::customers_service::{
     create_customer, delete_customer, get_customer_by_id, get_customers, update_customer,
@@ -64,11 +64,26 @@ pub fn routes() -> Router<AppContext> {
         .route(CUSTOMER_DELETE, delete(delete_customer))
         .route(CUSTOMER_UPDATE, patch(update_customer))
         // Customer Credit Account routes
-        .route(CUSTOMER_CREDIT_ACCOUNT, post(create_customer_credit_account))
-        .route(CUSTOMER_CREDIT_ACCOUNT_BY_ID, get(get_customer_credit_account_by_id))
-        .route(CUSTOMER_CREDIT_ACCOUNTS_LIST, get(get_customer_credit_accounts))
-        .route(CUSTOMER_CREDIT_ACCOUNT_DELETE, delete(delete_customer_credit_account))
-        .route(CUSTOMER_CREDIT_ACCOUNT_UPDATE, patch(update_customer_credit_account))
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT,
+            post(create_customer_credit_account),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT_BY_ID,
+            get(get_customer_credit_account_by_id),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNTS_LIST,
+            get(get_customer_credit_accounts),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT_DELETE,
+            delete(delete_customer_credit_account),
+        )
+        .route(
+            CUSTOMER_CREDIT_ACCOUNT_UPDATE,
+            patch(update_customer_credit_account),
+        )
         // Supplier routes
         .route(SUPPLIER, post(create_supplier))
         .route(SUPPLIER_BY_ID, get(get_supplier_by_id))

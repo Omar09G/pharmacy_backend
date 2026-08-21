@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post};
 use axum::Router;
+use axum::routing::{delete, get, patch, post};
 
 use crate::api_module::add_sale::add_sale_service::add_sale_service::{
     cancel_add_sale, create_add_sale, get_add_sale_by_id, get_add_sales_with_details,

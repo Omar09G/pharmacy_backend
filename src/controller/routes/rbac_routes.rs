@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post};
 use axum::Router;
+use axum::routing::{delete, get, patch, post};
 
 use crate::api_module::permissions::permissions_service::permissions_service::{
     create_permission, delete_permission, get_permission_by_id, get_permissions,

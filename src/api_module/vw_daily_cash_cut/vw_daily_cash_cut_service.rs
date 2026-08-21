@@ -23,7 +23,12 @@ pub async fn get_vw_daily_cash_cut(
 ) -> Result<Json<ApiResponse<Vec<VwDailyCashCutResponse>>>, ApiError> {
     info!(
         "get_vw_daily_cash_cut called with pagination: page={:?}, limit={:?}, total={:?}, date_init={:?}, date_end={:?}, status={:?}",
-        pagination.page, pagination.limit, pagination.total, pagination.date_init, pagination.date_end, pagination.status
+        pagination.page,
+        pagination.limit,
+        pagination.total,
+        pagination.date_init,
+        pagination.date_end,
+        pagination.status
     );
 
     let page_index = to_page_index(pagination.page);

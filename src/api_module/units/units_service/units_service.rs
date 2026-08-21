@@ -142,7 +142,10 @@ pub async fn update_unit(
     Path(id): Path<i64>,
     Json(payload): Json<UnitRequest>,
 ) -> Result<Json<ApiResponse<UnitResponse>>, ApiError> {
-    info!("update_unit called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_unit called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -180,10 +183,7 @@ pub async fn search_units_by_name(
 ) -> Result<Json<ApiResponse<Vec<UnitResponse>>>, ApiError> {
     info!(
         "search_units_by_name called with pagination: page={:?}, limit={:?}, total={:?}, inits_name={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.inits_name
+        pagination.page, pagination.limit, pagination.total, pagination.inits_name
     );
 
     let page_index = to_page_index(pagination.page);

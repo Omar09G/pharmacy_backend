@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post};
 use axum::Router;
+use axum::routing::{delete, get, patch, post};
 
 use crate::api_module::cash_entries::cash_entries_service::cash_entries_service::{
     create_cash_entry, delete_cash_entry, get_cash_entries, get_cash_entry_by_id, update_cash_entry,

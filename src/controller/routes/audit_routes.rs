@@ -1,5 +1,5 @@
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 
 use crate::api_module::audit_log::audit_log_service::audit_log_service::get_audit_logs;
 use crate::config::config_database::config_db_context::AppContext;

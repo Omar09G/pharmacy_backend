@@ -123,10 +123,8 @@ pub async fn get_sale_items(
         .all(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
-    let product_map: std::collections::HashMap<i64, String> = products
-        .into_iter()
-        .map(|p| (p.id, p.name))
-        .collect();
+    let product_map: std::collections::HashMap<i64, String> =
+        products.into_iter().map(|p| (p.id, p.name)).collect();
 
     let items_with_product_name: Vec<SaleItemDetailResponse> = items
         .into_iter()
@@ -179,7 +177,10 @@ pub async fn update_sale_item(
     Path(id): Path<i64>,
     Json(payload): Json<SaleItemRequest>,
 ) -> Result<Json<ApiResponse<SaleItemIdResponse>>, ApiError> {
-    info!("update_sale_item called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_sale_item called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

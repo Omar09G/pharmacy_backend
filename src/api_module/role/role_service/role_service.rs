@@ -82,10 +82,7 @@ pub async fn get_roles(
 ) -> Result<Json<ApiResponse<Vec<RoleDetailResponse>>>, ApiError> {
     info!(
         "get_roles called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.name
+        pagination.page, pagination.limit, pagination.total, pagination.name
     );
 
     let page_index = to_page_index(pagination.page);
@@ -148,10 +145,7 @@ pub async fn get_roles_by_name(
 ) -> Result<Json<ApiResponse<Vec<RoleDetailResponse>>>, ApiError> {
     info!(
         "get_roles_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.name
+        pagination.page, pagination.limit, pagination.total, pagination.name
     );
 
     let page_index = to_page_index(pagination.page);
@@ -195,7 +189,10 @@ pub async fn update_role(
     Path(id): Path<i64>,
     Json(payload): Json<RoleRequest>,
 ) -> Result<Json<ApiResponse<RoleIdResponse>>, ApiError> {
-    info!("update_role called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_role called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

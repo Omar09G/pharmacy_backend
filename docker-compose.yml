@@ -5,18 +5,21 @@ services:
       dockerfile: Dockerfile
     image: ${IMAGE_NAME:-pharmacy_backend:latest}
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "${BACKEND_HOST_PORT:-8081}:8081"
     environment:
       DATABASE_URL: "postgres://postgres:admin@host.docker.internal:5432/postgres?options=--search_path=pharmacy"
-      CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+      CORS_ALLOWED_ORIGINS: "http://localhost:8185"
       PORT: "8081"
       SERVER_ADDR: "0.0.0.0"
       JWT_EXPIRATION: "3600"
-      LOG_LEVEL: "off"
-      RUST_LOG: "off"
+      LOG_LEVEL: "info"
+      RUST_LOG: "info"
       COOKIE_SECURE: "false"
       PASSWORD_SALT: "${PASSWORD_SALT}"
       API_JWT_PRIVATE_PEM_PATH: "./pem/jwt_private.pem"
@@ -24,5 +27,49 @@ services:
       API_JWT_SECRET: "${API_JWT_SECRET}"
       API_JWT_SECRET_REFRESH: "${API_JWT_SECRET_REFRESH}"
       APP_TIMEZONE: "America/Mexico_City"
+      REDIS_URL: "redis://redis:6379/"
     volumes:
       - ./pem:/app/pem:ro
+      - ./logs:/app/logs
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  loki:
+    image: grafana/loki:3.0.0
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    volumes:
+      - ./logs:/var/log/pharmacy:ro
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    restart: unless-stopped
+    depends_on:
+      - loki
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+
+volumes:
+  grafana_data:

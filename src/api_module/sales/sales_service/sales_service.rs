@@ -258,7 +258,10 @@ pub async fn update_sale(
     Path(id): Path<i64>,
     Json(payload): Json<SaleRequest>,
 ) -> Result<Json<ApiResponse<SaleIdResponse>>, ApiError> {
-    info!("update_sale called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_sale called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 

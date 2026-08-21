@@ -143,7 +143,10 @@ pub async fn update_tax_profile(
     Path(id): Path<i64>,
     Json(payload): Json<TaxProfileRequest>,
 ) -> Result<Json<ApiResponse<TaxProfileIdResponse>>, ApiError> {
-    info!("update_tax_profile called with payload: {:?}, id: {:?}", payload, id);
+    info!(
+        "update_tax_profile called with payload: {:?}, id: {:?}",
+        payload, id
+    );
 
     payload.validate().map_err(ApiError::Validation)?;
 
@@ -184,10 +187,7 @@ pub async fn search_tax_profiles_by_name(
 ) -> Result<Json<ApiResponse<Vec<TaxProfileResponse>>>, ApiError> {
     info!(
         "search_tax_profiles_by_name called with pagination: page={:?}, limit={:?}, total={:?}, name={:?}",
-        pagination.page,
-        pagination.limit,
-        pagination.total,
-        pagination.name
+        pagination.page, pagination.limit, pagination.total, pagination.name
     );
 
     let paginator = schemas::tax_profiles::Entity::find()

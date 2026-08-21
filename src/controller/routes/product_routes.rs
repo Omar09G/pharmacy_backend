@@ -1,5 +1,5 @@
-use axum::routing::{delete, get, patch, post};
 use axum::Router;
+use axum::routing::{delete, get, patch, post};
 
 use crate::api_module::add_product::add_product_service::add_product_service::{
     add_product, get_product_by_bar_code, get_products_with_details,
@@ -91,7 +91,10 @@ pub fn routes() -> Router<AppContext> {
         .route(PRODUCT_BARCODE_DELETE, delete(delete_product_barcode))
         .route(PRODUCT_BARCODE, get(get_product_barcodes))
         .route(PRODUCT_BARCODE_UPDATE, patch(update_product_barcode))
-        .route(PRODUCT_BARCODE_BY_BARCODE, get(get_product_barcodes_by_barcode))
+        .route(
+            PRODUCT_BARCODE_BY_BARCODE,
+            get(get_product_barcodes_by_barcode),
+        )
         // Product Price routes
         .route(PRODUCT_PRICE, post(create_product_price))
         .route(PRODUCT_PRICE_BY_ID, get(get_product_price_by_id))

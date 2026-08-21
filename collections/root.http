@@ -1,4 +1,4 @@
-@base = http://localhost:32773/v1/api
+@base = http://localhost:8081/v1/api
 @contentType = application/json;charset=UTF-8
 
 @accessToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJvbWFyMDkwNyIsImV4cCI6MTc3NTgwODE1MCwiaWF0IjoxNzc1NzIxNzUwLCJ1c2VyTmFtZSI6Im9tYXIwOTA3IiwiaWQiOjIsIm5hbWUiOiJPbWFyIEdhcmNpYSIsInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiJQaGFybWFjeSJ9.MQ6zbq468uykNXxQKKW474E9XmJAEmUIvdmt0Nes_jaU8AAjQSz1e-TkjoNvt6XytjnSpn8cgDulqgWwdnduvU6734Pu-YE6cylz21F_gQpurg5qvj1Rfm1QO-TT3tIPexe3_PgxrC4owJLEj_FPdNWE1KaEXBGFGbslu804z6JQZArvCeAU3F5cGtog0OBkd6hxsj3MH3YwHt9ERUD-9IsH0Ro1OUdHFCPKnMMhfRqqEd722IYUDBdfQUgbA1iSZ2WM1RTcPw_MT1Z7zo2aCti0gImOyi-KM9h0ZDH0X4HU5_yEqeSMF7Tx9XQjI3siHR1ny0ohz_5oehttjjE_pg
@@ -7,11 +7,11 @@
 ###LOGIN
 POST {{base}}/auth/login
 Content-Type: application/json;charset=UTF-8
-Cookie: false
+Cookie: JSESSIONID=F1A9B0D3C4E5F6A7B8C9D0E1F2A3B4C5
 
 {
 	"username": "admin",
-	"password": "admin1234"
+	"password": "admin12344"
 }
 
 ###LOGIN
