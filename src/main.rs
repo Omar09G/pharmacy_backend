@@ -16,6 +16,7 @@ use crate::{
     },
     controller::api_controller::get_config_router,
 };
+use migration::MigratorTrait;
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
@@ -61,6 +62,20 @@ async fn main() {
 
     let server_addr = std::env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0".to_string());
     let ctx_bd = get_db_context().await;
+
+    // Optional migrations at startup (ARCH-4). Disabled by default so the
+    // binary never mutates an existing schema implicitly; enable with
+    // RUN_MIGRATIONS=true in environments where that is desired.
+    if std::env::var("RUN_MIGRATIONS")
+        .map(|v| v.to_lowercase() == "true")
+        .unwrap_or(false)
+    {
+        match migration::Migrator::up(&ctx_bd.conn, None).await {
+            Ok(_) => info!("Database migrations applied successfully"),
+            Err(e) => error!("Database migration failed (continuing startup): {}", e),
+        }
+    }
+
     // Initialize Redis (optional). Use REDIS_URL env or default to local redis.
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379/".to_string());
@@ -100,10 +115,16 @@ async fn main() {
         let ctrl_c = tokio::signal::ctrl_c();
         #[cfg(unix)]
         let terminate = async {
-            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                .expect("failed to install SIGTERM handler")
-                .recv()
-                .await;
+            match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+                Ok(mut sig) => {
+                    sig.recv().await;
+                }
+                Err(e) => {
+                    // A failed handler must not panic the process; ctrl_c still works.
+                    error!("failed to install SIGTERM handler: {}", e);
+                    std::future::pending::<()>().await;
+                }
+            }
         };
         #[cfg(not(unix))]
         let terminate = std::future::pending::<()>();
@@ -125,5 +146,6 @@ async fn main() {
         std::process::exit(1);
     }
     close_db_connection(ctx_bd.conn).await;
+    crate::config::config_redis::close_redis().await;
     info!("Server stopped gracefully");
 }

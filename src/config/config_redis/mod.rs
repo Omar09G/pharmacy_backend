@@ -1,11 +1,36 @@
 use redis::AsyncCommands;
 use std::sync::LazyLock;
+use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 
 use base64::Engine;
-use log::info;
+use log::{info, warn};
 
 static REDIS_CLIENT: LazyLock<parking_lot::RwLock<Option<redis::Client>>> =
     LazyLock::new(|| parking_lot::RwLock::new(None));
+
+// ── Circuit breaker ──────────────────────────────────────────────────────────
+// Prevents cascading latency when Redis is down: after N consecutive failures
+// the circuit opens and calls fail fast for a cooldown window, then a single
+// probe is allowed through (half-open). Successful probes close the circuit.
+const CB_FAILURE_THRESHOLD: usize = 3;
+const CB_COOLDOWN_SECS: i64 = 10;
+
+static CB_FAILURES: AtomicUsize = AtomicUsize::new(0);
+static CB_OPENED_AT: AtomicI64 = AtomicI64::new(0);
+
+fn now_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+/// Clears the Redis client so in-flight connections can be released on shutdown.
+pub async fn close_redis() {
+    *REDIS_CLIENT.write() = None;
+    CB_FAILURES.store(0, Ordering::Relaxed);
+    info!("Redis client closed");
+}
 
 pub async fn init_redis(url: &str) -> Result<(), String> {
     info!("Initializing Redis client at {}", url);
@@ -22,13 +47,49 @@ fn client() -> Option<redis::Client> {
     REDIS_CLIENT.read().clone()
 }
 
-pub async fn get_connection() -> Result<redis::aio::Connection, String> {
+async fn try_connection() -> Result<redis::aio::Connection, String> {
     if let Some(c) = client() {
         c.get_async_connection()
             .await
             .map_err(|e| format!("redis connection error: {}", e))
     } else {
         Err("redis client not initialized".to_string())
+    }
+}
+
+/// Returns a Redis connection guarded by the circuit breaker.
+/// All cache operations should go through this function so that a Redis
+/// outage fails fast instead of stalling every request.
+pub async fn get_connection() -> Result<redis::aio::Connection, String> {
+    let failures = CB_FAILURES.load(Ordering::Relaxed);
+    if failures >= CB_FAILURE_THRESHOLD {
+        let remaining = CB_COOLDOWN_SECS - (now_secs() - CB_OPENED_AT.load(Ordering::Relaxed));
+        if remaining > 0 {
+            return Err(format!("redis circuit open (will retry in {}s)", remaining));
+        }
+        // Half-open: allow this call through as a probe.
+    }
+
+    match try_connection().await {
+        Ok(conn) => {
+            if failures > 0 {
+                info!("Redis recovered; circuit closed");
+            }
+            CB_FAILURES.store(0, Ordering::Relaxed);
+            Ok(conn)
+        }
+        Err(e) => {
+            let prev = CB_FAILURES.fetch_add(1, Ordering::Relaxed);
+            if prev + 1 == CB_FAILURE_THRESHOLD {
+                CB_OPENED_AT.store(now_secs(), Ordering::Relaxed);
+                warn!(
+                    "Redis circuit breaker OPEN after {} consecutive failures; \
+                     failing fast for {}s",
+                    CB_FAILURE_THRESHOLD, CB_COOLDOWN_SECS
+                );
+            }
+            Err(e)
+        }
     }
 }
 

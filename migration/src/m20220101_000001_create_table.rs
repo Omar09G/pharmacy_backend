@@ -1,41 +1,26 @@
-use sea_orm_migration::{prelude::*, schema::*};
+use sea_orm_migration::prelude::*;
 
+/// Baseline no-op migration.
+///
+/// The existing schema lives in `pharmacy_bd/` (DDL.sql + schemas.sql) and is
+/// provisioned externally, so this first migration intentionally performs no
+/// changes. It exists to establish the `seaql_migrations` bookkeeping table.
+///
+/// ⚠️ Real schema changes must be added as NEW migration files
+/// (`mYYYYMMDD_HHMMSS_description.rs`) registered in `lib.rs`, never by
+/// editing an already-applied migration.
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
-    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-        todo!();
-
-        manager
-            .create_table(
-                Table::create()
-                    .table(Post::Table)
-                    .if_not_exists()
-                    .col(pk_auto(Post::Id))
-                    .col(string(Post::Title))
-                    .col(string(Post::Text))
-                    .to_owned(),
-            )
-            .await
+    async fn up(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
+        // No-op: baseline for externally-managed schema.
+        Ok(())
     }
 
-    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-        todo!();
-
-        manager
-            .drop_table(Table::drop().table(Post::Table).to_owned())
-            .await
+    async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
+        // No-op: nothing to roll back.
+        Ok(())
     }
-}
-
-#[derive(DeriveIden)]
-enum Post {
-    Table,
-    Id,
-    Title,
-    Text,
 }

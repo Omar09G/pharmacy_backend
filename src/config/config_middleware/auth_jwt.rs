@@ -16,10 +16,12 @@ use crate::config::config_jwt::validate_jwt::validate_token;
 pub async fn auth_middleware(mut req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
     let path = req.uri().path().to_string();
 
-    // Public endpoints: login, refresh, and logout
+    // Public endpoints: login, refresh, logout, and health checks
     if path == "/v1/api/auth/login"
         || path == "/v1/api/auth/refresh"
         || path == "/v1/api/auth/logout"
+        || path == "/v1/api/health"
+        || path == "/v1/api/health/ready"
     {
         return Ok(next.run(req).await);
     }

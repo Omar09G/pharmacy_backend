@@ -1,0 +1,11 @@
+# Exclude everything not needed to build the release binary
+target/
+logs/
+collections/
+observability/
+pem/
+tests/
+*.md
+.git/
+Dockerfile
+.dockerignore

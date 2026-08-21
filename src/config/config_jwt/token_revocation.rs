@@ -9,11 +9,19 @@ const MAX_TOKEN_AGE: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 static REVOCATION_STORE: LazyLock<Mutex<HashMap<String, Instant>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
+/// Locks the revocation store, recovering gracefully if the mutex was
+/// poisoned by a panic in another thread (the map itself stays consistent).
+fn lock_store() -> std::sync::MutexGuard<'static, HashMap<String, Instant>> {
+    REVOCATION_STORE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 /// Mark a token JTI as revoked. We insert into the local store immediately
 /// and attempt to persist to Redis asynchronously so other instances see it.
 pub fn revoke_token(jti: &str) {
     {
-        let mut store = REVOCATION_STORE.lock().unwrap();
+        let mut store = lock_store();
         store.retain(|_, revoked_at| revoked_at.elapsed() < MAX_TOKEN_AGE);
         store.insert(jti.to_string(), Instant::now());
     }
@@ -40,7 +48,7 @@ pub async fn is_revoked(jti: &str) -> bool {
         Err(_) => {}
     }
 
-    let store = REVOCATION_STORE.lock().unwrap();
+    let store = lock_store();
     store
         .get(jti)
         .map(|revoked_at| revoked_at.elapsed() < MAX_TOKEN_AGE)

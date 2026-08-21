@@ -1,6 +1,7 @@
 use axum::extract::DefaultBodyLimit;
 use axum::{Router, middleware::from_fn};
 use log::info;
+use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 
 use crate::config::config_database::config_db_context::AppContext;
@@ -18,6 +19,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
     let router = Router::new()
         .merge(routes::auth_routes::routes())
+        .merge(routes::health_routes::routes())
         .merge(routes::user_routes::routes())
         .merge(routes::rbac_routes::routes())
         .merge(routes::product_routes::routes())
@@ -29,7 +31,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .merge(routes::audit_routes::routes())
         .merge(routes::dashboard_routes::routes())
         .with_state(app_ctx.clone())
-        // Layer order (innermost first): cache -> idempotency -> auth -> content_type -> rate_limit -> cors -> security_headers
+        // Layer order (innermost first): cache -> idempotency -> auth -> content_type -> rate_limit -> cors -> security_headers -> compression
         .layer(from_fn(cache_middleware))
         .layer(from_fn(idempotency_middleware))
         .layer(from_fn(auth_middleware))
@@ -37,6 +39,8 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .layer(from_fn(rate_limit_middleware))
         .layer(from_fn(cors_middleware))
         .layer(from_fn(security_headers_middleware))
+        // Compress JSON responses (gzip) for clients that advertise it (outermost data layer)
+        .layer(CompressionLayer::new().gzip(true))
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024)) // 2 MB max request body
         .layer(TimeoutLayer::with_status_code(
             axum::http::StatusCode::REQUEST_TIMEOUT,

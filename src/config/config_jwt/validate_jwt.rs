@@ -16,9 +16,17 @@ static JWT_DECODING_RS: LazyLock<Mutex<Option<Arc<DecodingKey>>>> =
     LazyLock::new(|| Mutex::new(None));
 static JWT_ALGO: LazyLock<Mutex<Option<Algorithm>>> = LazyLock::new(|| Mutex::new(None));
 
+/// Locks a possibly-poisoned mutex, recovering the inner data instead of
+/// panicking (the guarded values are always structurally valid).
+fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 pub fn init_jwt_keys_if_needed() -> Result<(), String> {
     // Fast path
-    if JWT_ALGO.lock().unwrap().is_some() {
+    if lock(&JWT_ALGO).is_some() {
         return Ok(());
     }
     info!("Initializing JWT keys if needed...");
@@ -30,9 +38,9 @@ pub fn init_jwt_keys_if_needed() -> Result<(), String> {
             EncodingKey::from_rsa_pem(private_pem.as_bytes()).map_err(|e| e.to_string())?;
         let decoding =
             DecodingKey::from_rsa_pem(public_pem.as_bytes()).map_err(|e| e.to_string())?;
-        *JWT_ENCODING_RS.lock().unwrap() = Some(Arc::new(encoding));
-        *JWT_DECODING_RS.lock().unwrap() = Some(Arc::new(decoding));
-        *JWT_ALGO.lock().unwrap() = Some(Algorithm::RS256);
+        *lock(&JWT_ENCODING_RS) = Some(Arc::new(encoding));
+        *lock(&JWT_DECODING_RS) = Some(Arc::new(decoding));
+        *lock(&JWT_ALGO) = Some(Algorithm::RS256);
         return Ok(());
     }
 
@@ -48,9 +56,9 @@ pub fn init_jwt_keys_if_needed() -> Result<(), String> {
             EncodingKey::from_rsa_pem(private_pem.as_bytes()).map_err(|e| e.to_string())?;
         let decoding =
             DecodingKey::from_rsa_pem(public_pem.as_bytes()).map_err(|e| e.to_string())?;
-        *JWT_ENCODING_RS.lock().unwrap() = Some(Arc::new(encoding));
-        *JWT_DECODING_RS.lock().unwrap() = Some(Arc::new(decoding));
-        *JWT_ALGO.lock().unwrap() = Some(Algorithm::RS256);
+        *lock(&JWT_ENCODING_RS) = Some(Arc::new(encoding));
+        *lock(&JWT_DECODING_RS) = Some(Arc::new(decoding));
+        *lock(&JWT_ALGO) = Some(Algorithm::RS256);
         return Ok(());
     }
     info!("No RSA keys found for JWT; falling back to HMAC secrets");
@@ -125,7 +133,7 @@ pub async fn get_jwt_token_with_role(
 
     let expiration = Utc::now()
         .checked_add_signed(duration)
-        .expect("valid timestamp")
+        .ok_or_else(|| "failed to compute token expiration timestamp".to_string())?
         .timestamp();
 
     let claims = Claims {
@@ -133,7 +141,8 @@ pub async fn get_jwt_token_with_role(
         exp: expiration as usize,
         iat: Utc::now().timestamp() as usize,
         jti: Some(Uuid::new_v4().to_string()), // unique ID for revocation support
-        company: "Pharmacy".to_string(),
+        // Configurable app identity (ARCH-5); falls back to the historical value.
+        company: std::env::var("APP_NAME").unwrap_or_else(|_| "Pharmacy".to_string()),
         role: role.clone(),
         permissions,
         user_name: username.clone(),
@@ -146,7 +155,7 @@ pub async fn get_jwt_token_with_role(
 
     // Prefer RSA (RS256) if RSA env keys are present; otherwise fallback to HMAC secret
     init_jwt_keys_if_needed()?;
-    let token = if let Some(enc_arc) = JWT_ENCODING_RS.lock().unwrap().as_ref().cloned() {
+    let token = if let Some(enc_arc) = lock(&JWT_ENCODING_RS).as_ref().cloned() {
         let header = Header::new(Algorithm::RS256);
         encode(&header, &claims, &*enc_arc).map_err(|e| e.to_string())?
     } else {
@@ -170,7 +179,7 @@ pub async fn get_jwt_token_with_role(
 //Validar Token — solo acepta access tokens
 pub async fn validate_token(token: &str) -> Result<Claims, String> {
     init_jwt_keys_if_needed()?;
-    let decoded = if let Some(dec_arc) = JWT_DECODING_RS.lock().unwrap().as_ref().cloned() {
+    let decoded = if let Some(dec_arc) = lock(&JWT_DECODING_RS).as_ref().cloned() {
         decode::<Claims>(token, &*dec_arc, &Validation::new(Algorithm::RS256))
             .map_err(|e| e.to_string())?
     } else {
@@ -201,7 +210,7 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
 //Validar Token Refresh — solo acepta refresh tokens
 pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
     init_jwt_keys_if_needed()?;
-    let decoded = if let Some(dec_arc) = JWT_DECODING_RS.lock().unwrap().as_ref().cloned() {
+    let decoded = if let Some(dec_arc) = lock(&JWT_DECODING_RS).as_ref().cloned() {
         decode::<Claims>(token, &*dec_arc, &Validation::new(Algorithm::RS256))
             .map_err(|e| e.to_string())?
     } else {

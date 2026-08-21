@@ -51,16 +51,14 @@ pub async fn idempotency_middleware(req: Request<Body>, next: Next) -> Response 
     if let Ok(Some(payload)) = config_redis::get_kv(&format!("idempotency:{}", key)).await {
         // Stored format: 1 byte status (u16 little-endian), then body bytes
         if payload.len() >= 2 {
-            let status = u16::from_le_bytes([payload[0], payload[1]]);
+            let status = StatusCode::from_u16(u16::from_le_bytes([payload[0], payload[1]]))
+                .unwrap_or(StatusCode::OK);
             let body = payload[2..].to_vec();
+            // Static literal: parse is infallible, but avoid `unwrap()` (ROBUST-1)
+            let content_type = axum::http::HeaderValue::from_static("application/json");
             return (
-                StatusCode::from_u16(status).unwrap_or(StatusCode::OK),
-                [(
-                    axum::http::header::CONTENT_TYPE,
-                    "application/json"
-                        .parse::<axum::http::HeaderValue>()
-                        .unwrap(),
-                )],
+                status,
+                [(axum::http::header::CONTENT_TYPE, content_type)],
                 body,
             )
                 .into_response();

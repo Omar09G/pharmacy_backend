@@ -30,6 +30,21 @@ fn deserialize_limit<'de, D: Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
     Ok(val)
 }
 
+/// Classification of errors so the frontend can distinguish the source.
+/// - `BUSINESS`    → regla de negocio violada (ej: stock insuficiente, crédito excedido)
+/// - `VALIDATION`  → datos de entrada inválidos (campos, formato, rango)
+/// - `AUTH`        → autenticación/autorización (token inválido, permisos)
+/// - `SYSTEM`      → error interno del servidor (DB, Redis, panic recuperado)
+/// - `NETWORK`     → timeout o indisponibilidad de un servicio downstream
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ErrorType {
+    Business,
+    Validation,
+    Auth,
+    System,
+    Network,
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiResponse<T> {
@@ -39,6 +54,9 @@ pub struct ApiResponse<T> {
     pub status: String,
     pub code_error: u16,
     pub timestamp: String,
+    /// Present only on error responses; omitted (null) on success.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_type: Option<ErrorType>,
 }
 
 impl<T> ApiResponse<T> {
@@ -57,6 +75,7 @@ impl<T> ApiResponse<T> {
             status,
             code_error,
             timestamp,
+            error_type: None,
         }
     }
 }
@@ -106,6 +125,7 @@ impl IntoResponse for BadRequest {
             status: "error".to_string(),
             code_error: 400,
             timestamp: chrono::Utc::now().to_rfc3339(),
+            error_type: Some(api_response::ErrorType::Validation),
         };
 
         (StatusCode::BAD_REQUEST, Json(api_response)).into_response()
@@ -154,6 +174,7 @@ impl<T> ApiResponse<T> {
             status: "success".to_string(),
             code_error: 200,
             timestamp: chrono::Utc::now().to_rfc3339(),
+            error_type: None,
         }
     }
 
@@ -165,8 +186,35 @@ impl<T> ApiResponse<T> {
             status: "error".to_string(),
             code_error,
             timestamp: chrono::Utc::now().to_rfc3339(),
+            // Infer error type from HTTP status code when not explicitly set
+            error_type: Some(match code_error {
+                401 | 403 => crate::api_utils::api_response::ErrorType::Auth,
+                400 | 422 => crate::api_utils::api_response::ErrorType::Validation,
+                404 => crate::api_utils::api_response::ErrorType::Business,
+                _ => crate::api_utils::api_response::ErrorType::System,
+            }),
         }
     }
+
+    /// Like `with_error_details` but lets the caller specify the exact `ErrorType`.
+    /// Use this for business-rule violations (e.g. stock insuficiente, crédito excedido).
+    pub fn with_error_type(
+        data: T,
+        message: String,
+        code_error: u16,
+        error_type: crate::api_utils::api_response::ErrorType,
+    ) -> Self {
+        Self {
+            data,
+            total: 0,
+            message,
+            status: "error".to_string(),
+            code_error,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            error_type: Some(error_type),
+        }
+    }
+
     pub fn with_custom_status(data: T, message: String, status: String, code_error: u16) -> Self {
         Self {
             data,
@@ -175,6 +223,7 @@ impl<T> ApiResponse<T> {
             status,
             code_error,
             timestamp: chrono::Utc::now().to_rfc3339(),
+            error_type: None,
         }
     }
     pub fn warring(data: T, message: String) -> Self {
@@ -185,6 +234,7 @@ impl<T> ApiResponse<T> {
             status: "warning".to_string(),
             code_error: 200,
             timestamp: chrono::Utc::now().to_rfc3339(),
+            error_type: None,
         }
     }
 }
