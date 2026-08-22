@@ -93,7 +93,7 @@ async fn main() {
             std::process::exit(1);
         });
 
-    info!("Starting server on {}", addr);
+    info!("Starting server Pharmacy Backend API on {}", addr);
 
     let listener = match tokio::net::TcpListener::bind(addr).await {
         Ok(l) => l,
