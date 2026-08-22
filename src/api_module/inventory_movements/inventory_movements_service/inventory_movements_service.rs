@@ -159,7 +159,7 @@ pub async fn get_inventory_movements(
     }
 
     let paginator = select
-        .order_by_asc(schemas::inventory_movements::Column::Id)
+        .order_by_desc(schemas::inventory_movements::Column::ReferenceId)
         .paginate(&app_ctx.conn, page_limit);
 
     let total_items = if pagination.total > 0 {
@@ -195,6 +195,10 @@ pub async fn get_inventory_movements(
             detail
         })
         .collect();
+
+    //Ordenar los items por ReferenceId Desc
+    let mut items: Vec<InventoryMovementDetailResponse> = items;
+    items.sort_by(|a, b| b.reference_id.cmp(&a.reference_id));
 
     Ok(Json(ApiResponse::success(
         items,

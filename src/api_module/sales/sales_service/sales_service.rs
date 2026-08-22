@@ -195,6 +195,10 @@ pub async fn get_sales(
         }
     }
 
+    //Ordenar los items por ID sale desc
+    let mut sale_details: Vec<SaleDetailResponse> = sale_details;
+    sale_details.sort_by(|a, b| b.id.cmp(&a.id));
+
     Ok(Json(ApiResponse::success(
         sale_details,
         "Sales retrieved successfully".to_string(),
