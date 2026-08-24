@@ -37,10 +37,11 @@ pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response,
     // Preflight handling
     if req.method() == Method::OPTIONS {
         // If origin is present and not in the allow-list, reject (unless allow_all)
-        if let Some(ref origin) = origin_header {
-            if !allow_all && !allowed_list.iter().any(|a| a == &origin.as_str()) {
-                return Err(StatusCode::FORBIDDEN);
-            }
+        if let Some(ref origin) = origin_header
+            && !allow_all
+            && !allowed_list.iter().any(|a| a == &origin.as_str())
+        {
+            return Err(StatusCode::FORBIDDEN);
         }
 
         let mut res = Response::new(Body::empty());
@@ -70,20 +71,21 @@ pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response,
     }
 
     // For non-preflight requests, if origin is present and not allowed, reject
-    if let Some(ref origin) = origin_header {
-        if !allow_all && !allowed_list.iter().any(|a| a == &origin.as_str()) {
-            return Err(StatusCode::FORBIDDEN);
-        }
+    if let Some(ref origin) = origin_header
+        && !allow_all
+        && !allowed_list.iter().any(|a| a == &origin.as_str())
+    {
+        return Err(StatusCode::FORBIDDEN);
     }
 
     // Call the next handler and then attach CORS headers
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
 
-    if let Some(origin) = origin_header {
-        if let Ok(val) = HeaderValue::from_str(&origin) {
-            headers.insert("access-control-allow-origin", val);
-        }
+    if let Some(origin) = origin_header
+        && let Ok(val) = HeaderValue::from_str(&origin)
+    {
+        headers.insert("access-control-allow-origin", val);
     }
     headers.insert(
         "access-control-allow-credentials",

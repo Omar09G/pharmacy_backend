@@ -1,3 +1,7 @@
+// See lib.rs for the rationale of these crate-level allowances.
+#![allow(clippy::module_inception)]
+#![allow(clippy::let_underscore_future)]
+
 pub mod api_module;
 pub mod api_utils;
 pub mod config;

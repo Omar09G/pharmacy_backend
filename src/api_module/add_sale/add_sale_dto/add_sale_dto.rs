@@ -13,7 +13,6 @@ use crate::api_module::{
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
-
 pub struct SaleAddRequest {
     pub customer_id: Option<i64>,
     pub user_id: Option<i64>,
@@ -34,7 +33,6 @@ pub struct SaleAddRequest {
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
-
 pub struct SaleAddItemRequest {
     pub id: i64,
     pub product_id: i64,
@@ -54,7 +52,6 @@ pub struct SaleAddIdResponse {
 
 #[derive(Deserialize, Serialize, Debug, Validate)]
 #[serde(rename_all = "camelCase")]
-
 pub struct SaleAddDetailResponse {
     pub id: i64,
     pub customer_id: Option<i64>,
@@ -110,7 +107,7 @@ impl From<(&SaleAddRequest, i64)> for SalePaymentRequest {
 impl From<(&SaleAddRequest, i64, i64)> for SalePaymentAllocationRequest {
     fn from((request, payment_id, sale_id): (&SaleAddRequest, i64, i64)) -> Self {
         Self {
-            payment_id: payment_id, // Usamos el mismo ID para el pago y la asignación
+            payment_id,                       // Usamos el mismo ID para el pago y la asignación
             credit_invoice_id: Some(sale_id), // Usamos el ID de la venta como referencia para la factura de crédito
             amount: request.total,
         }
@@ -124,7 +121,7 @@ impl From<(&SaleAddItemRequest, i64)>
     fn from((request, sale_id): (&SaleAddItemRequest, i64)) -> Self {
         Self {
             id: request.id,
-            sale_id: sale_id,
+            sale_id,
             product_id: request.product_id,
             lot_id: request.lot_id,
             qty: request.qty,
@@ -167,15 +164,9 @@ impl
             status: sale_detail.status,
             is_credit: sale_detail.is_credit,
             created_at: sale_detail.created_at,
-            method_id: payment_detail.as_ref().map(|p| p.method_id).flatten(),
-            reference: payment_detail
-                .as_ref()
-                .map(|p| p.reference.clone())
-                .flatten(),
-            credit_invoice_id: allocation_detail
-                .as_ref()
-                .map(|a| a.credit_invoice_id)
-                .flatten(),
+            method_id: payment_detail.as_ref().and_then(|p| p.method_id),
+            reference: payment_detail.as_ref().and_then(|p| p.reference.clone()),
+            credit_invoice_id: allocation_detail.as_ref().and_then(|a| a.credit_invoice_id),
             items: items_detail,
         }
     }

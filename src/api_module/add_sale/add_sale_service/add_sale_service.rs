@@ -170,7 +170,7 @@ pub async fn create_add_sale(
     .await;
 
     // Manejar commit/rollback según resultado y devolver respuesta
-    return match op_result {
+    match op_result {
         Ok(new_sale_response) => {
             txn.commit()
                 .await
@@ -179,12 +179,9 @@ pub async fn create_add_sale(
             // enqueue async job to process sale (reports/notifications/payments worker)
             let sale_id_for_job = new_sale_response.id.clone();
             let _ = tokio::spawn(async move {
-                match sale_id_for_job {
-                    sea_orm::ActiveValue::Set(sid) => {
-                        let job = serde_json::json!({"type": "sale_created", "sale_id": sid});
-                        let _ = crate::config::config_redis::enqueue_json("jobs:sales", &job).await;
-                    }
-                    _ => {}
+                if let sea_orm::ActiveValue::Set(sid) = sale_id_for_job {
+                    let job = serde_json::json!({"type": "sale_created", "sale_id": sid});
+                    let _ = crate::config::config_redis::enqueue_json("jobs:sales", &job).await;
                 }
             });
 
@@ -199,7 +196,7 @@ pub async fn create_add_sale(
             let _ = txn.rollback().await;
             Err(err)
         }
-    };
+    }
 }
 
 pub async fn get_add_sale_by_id(
@@ -308,7 +305,7 @@ pub async fn get_add_sales_with_details(
 
     let paginator = select
         .order_by_asc(schemas::sales::Column::Id)
-        .paginate(&app_ctx.conn, pagination.limit as u64);
+        .paginate(&app_ctx.conn, pagination.limit);
     let total_items = if pagination.total > 0 {
         pagination.total
     } else {

@@ -11,6 +11,7 @@ use crate::config::config_middleware::content_type::content_type_middleware;
 use crate::config::config_middleware::cors::cors_middleware;
 use crate::config::config_middleware::idempotency::idempotency_middleware;
 use crate::config::config_middleware::rate_limit::rate_limit_middleware;
+use crate::config::config_middleware::request_id::request_id_middleware;
 use crate::config::config_middleware::security_headers::security_headers_middleware;
 
 use super::routes;
@@ -43,7 +44,9 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .layer(TimeoutLayer::with_status_code(
             axum::http::StatusCode::REQUEST_TIMEOUT,
             std::time::Duration::from_secs(30),
-        )); // 30s request timeout
+        )) // 30s request timeout
+        // Outermost: every call gets a correlation id even on early failures.
+        .layer(from_fn(request_id_middleware));
 
     Ok(router)
 }

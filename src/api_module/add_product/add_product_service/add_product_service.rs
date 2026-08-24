@@ -114,7 +114,7 @@ pub async fn add_product(
     .await;
 
     // Manejar commit/rollback según resultado y devolver respuesta
-    return match op_result {
+    match op_result {
         Ok(saved_product) => {
             txn.commit()
                 .await
@@ -130,7 +130,7 @@ pub async fn add_product(
             let _ = txn.rollback().await;
             Err(err)
         }
-    };
+    }
 }
 
 pub async fn get_product_by_bar_code(
@@ -181,7 +181,7 @@ pub async fn get_product_by_bar_code(
 
     let mut total_qty = Decimal::new(0, 0);
     for lot in &lots {
-        total_qty = total_qty + lot.qty_on_hand;
+        total_qty += lot.qty_on_hand;
     }
 
     // Obtener precio vigente (el más reciente por starts_at/created_at)

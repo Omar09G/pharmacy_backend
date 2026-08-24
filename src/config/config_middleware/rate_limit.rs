@@ -53,21 +53,17 @@ fn bucket_config(path: &str) -> (&'static str, f64, f64) {
 
 async fn allow_request(ip: &str, bucket_label: &str, capacity: f64, window_secs: f64) -> bool {
     // First try distributed Redis counter (fixed window). If Redis fails, fallback to local token bucket.
+    // INCR + conditional EXPIRE run atomically (Lua) so a crash between them
+    // can never leave a key without TTL (which would lock the client out forever).
     let key = format!("ratelimit:{}:{}", bucket_label, ip);
     let cap_i = capacity as i64;
     let win_secs = window_secs as usize;
 
-    match crate::config::config_redis::incr_by(&key, 1).await {
-        Ok(cnt) => {
-            if cnt == 1 {
-                let _ = crate::config::config_redis::expire(&key, win_secs).await;
-            }
-            // allow when counter <= capacity
-            cnt <= cap_i
-        }
+    match crate::config::config_redis::incr_with_expire(&key, win_secs).await {
+        Ok(cnt) => cnt <= cap_i,
         Err(e) => {
             // Redis failed — fallback to in-memory token bucket
-            let _ = log::warn!(
+            log::warn!(
                 "redis rate limit error, falling back to local bucket: {}",
                 e
             );
@@ -148,6 +144,17 @@ fn resolve_client_ip(req: &Request<Body>) -> String {
 /// - Login:   10 req / 30 min per IP
 /// - Refresh: 30 req / 10 min per IP
 /// - API:    100 req / 60 sec  per IP
+// Test-only helper used by `src/test/api_test.rs`. `#[allow(dead_code)]`
+// covers the `--bin pharmacy_backend` test target, which compiles this module
+// under `cfg(test)` without ever calling it.
+#[cfg(test)]
+#[allow(dead_code)]
+pub(crate) async fn reset_in_memory_buckets_for_tests() {
+    // Clears the in-memory fallback buckets so rate-limit tests always start
+    // from a pristine, deterministic state.
+    RATE_BUCKETS.lock().await.clear();
+}
+
 pub async fn rate_limit_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
     // Allow CORS preflight through without consuming tokens
     if req.method() == Method::OPTIONS {

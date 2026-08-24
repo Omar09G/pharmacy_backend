@@ -59,27 +59,25 @@ pub async fn get_vw_customer_invoice_aging(
             select.filter(schemas::vw_t_customer_invoice_aging::Column::CustomerId.eq(customer_id));
     }
 
-    if let Some(ref name) = pagination.name {
-        if !name.is_empty() {
-            select = select
-                .filter(schemas::vw_t_customer_invoice_aging::Column::CustomerName.contains(name));
-        }
+    if let Some(ref name) = pagination.name
+        && !name.is_empty()
+    {
+        select = select
+            .filter(schemas::vw_t_customer_invoice_aging::Column::CustomerName.contains(name));
     }
 
-    if let Some(ref status) = pagination.status {
-        if !status.is_empty() {
-            select = select.filter(
-                schemas::vw_t_customer_invoice_aging::Column::InvoiceStatus.eq(status.clone()),
-            );
-        }
+    if let Some(ref status) = pagination.status
+        && !status.is_empty()
+    {
+        select = select
+            .filter(schemas::vw_t_customer_invoice_aging::Column::InvoiceStatus.eq(status.clone()));
     }
 
-    if let Some(ref invoice_no) = pagination.invoice_no {
-        if !invoice_no.is_empty() {
-            select = select.filter(
-                schemas::vw_t_customer_invoice_aging::Column::InvoiceNo.eq(invoice_no.clone()),
-            );
-        }
+    if let Some(ref invoice_no) = pagination.invoice_no
+        && !invoice_no.is_empty()
+    {
+        select = select
+            .filter(schemas::vw_t_customer_invoice_aging::Column::InvoiceNo.eq(invoice_no.clone()));
     }
 
     let paginator = select

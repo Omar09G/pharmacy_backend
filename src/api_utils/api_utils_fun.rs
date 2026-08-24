@@ -156,7 +156,7 @@ pub fn parse_date_str_to_date_time_with_timezone_local(
 /// APP_TIMEZONE, converting to UTC for database queries.
 /// - `date_init` → local 00:00:00 → UTC
 /// - `date_end`  → local 23:59:59 → UTC
-/// Handles DST automatically via `chrono_tz`.
+///   Handles DST automatically via `chrono_tz`.
 pub fn parse_local_date_range_to_utc(
     date_init: &str,
     date_end: &str,
@@ -164,12 +164,12 @@ pub fn parse_local_date_range_to_utc(
     let start = parse_local_date_to_utc(date_init, 0, 0, 0)?;
     let end = parse_local_date_to_utc(date_end, 23, 59, 59)?;
 
-    if let (Some(s), Some(e)) = (start, end) {
-        if s > e {
-            return Err(ApiError::ValidationError(
-                "Start date cannot be after end date".to_string(),
-            ));
-        }
+    if let (Some(s), Some(e)) = (start, end)
+        && s > e
+    {
+        return Err(ApiError::ValidationError(
+            "Start date cannot be after end date".to_string(),
+        ));
     }
     Ok((start, end))
 }

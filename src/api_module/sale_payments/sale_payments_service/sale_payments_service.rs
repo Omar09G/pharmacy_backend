@@ -46,14 +46,11 @@ pub async fn create_sale_payment(
     }
 
     // enqueue async job for payment processing
-    match new_sp.id.clone() {
-        sea_orm::ActiveValue::Set(id) => {
-            let job = serde_json::json!({"type": "sale_payment", "id": id});
-            let _ = tokio::spawn(async move {
-                let _ = crate::config::config_redis::enqueue_json("jobs:payments", &job).await;
-            });
-        }
-        _ => {}
+    if let sea_orm::ActiveValue::Set(id) = new_sp.id.clone() {
+        let job = serde_json::json!({"type": "sale_payment", "id": id});
+        let _ = tokio::spawn(async move {
+            let _ = crate::config::config_redis::enqueue_json("jobs:payments", &job).await;
+        });
     }
 
     Ok(Json(ApiResponse::success(

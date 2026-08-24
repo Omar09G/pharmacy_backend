@@ -10,10 +10,10 @@
 /// in this file through `JWT_ENV_LOCK` so they see a consistent env-var state.
 use std::sync::OnceLock;
 
-use pharmacy_backend::api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH};
-use pharmacy_backend::config::config_jwt::dto_jwt::Claims;
-use pharmacy_backend::config::config_jwt::token_revocation::{is_revoked, revoke_token};
-use pharmacy_backend::config::config_jwt::validate_jwt::{
+use crate::api_utils::api_const::{JWT_TYPE_ACCESS, JWT_TYPE_REFRESH};
+use crate::config::config_jwt::dto_jwt::Claims;
+use crate::config::config_jwt::token_revocation::{is_revoked, revoke_token};
+use crate::config::config_jwt::validate_jwt::{
     generate_jwt, validate_token, validate_token_refresh,
 };
 use tokio::sync::Mutex;

@@ -49,14 +49,11 @@ pub async fn create_product_price(
     }
 
     // invalidate product price caches and product cache
-    match new_pp.product_id.clone() {
-        sea_orm::ActiveValue::Set(pid) => {
-            let _ = tokio::spawn(async move {
-                let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
-                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
-            });
-        }
-        _ => {}
+    if let sea_orm::ActiveValue::Set(pid) = new_pp.product_id.clone() {
+        let _ = tokio::spawn(async move {
+            let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
+            let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+        });
     }
 
     Ok(Json(ApiResponse::success(
@@ -225,15 +222,11 @@ pub async fn update_product_price(
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
             // invalidate product price and product cache
-            match updated.product_id.clone() {
-                sea_orm::ActiveValue::Set(pid) => {
-                    let _ = tokio::spawn(async move {
-                        let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
-                        let _ =
-                            crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
-                    });
-                }
-                _ => {}
+            if let sea_orm::ActiveValue::Set(pid) = updated.product_id.clone() {
+                let _ = tokio::spawn(async move {
+                    let _ = crate::config::config_redis::del_pattern("product_prices:*").await;
+                    let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+                });
             }
 
             Ok(Json(ApiResponse::success(

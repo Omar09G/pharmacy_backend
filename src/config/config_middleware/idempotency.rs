@@ -8,18 +8,18 @@ use axum::{
 };
 use std::time::Duration;
 
-/// In-memory idempotency store. Maps `X-Idempotency-Key` to (cached_response_body, status_code, created_at).
-///
-/// ⚠️  LIMITATION: This store is local to the process. In multi-instance (horizontal scale)
-/// deployments, idempotency keys will NOT be shared across instances.
-/// For distributed deployments, replace with Redis:
-///   Key  → `idempotency:{X-Idempotency-Key}`
-///   TTL  → 24 hours
-/// Until then, deploy as a single instance behind a load balancer with session affinity (sticky sessions).
+// In-memory idempotency store. Maps `X-Idempotency-Key` to (cached_response_body, status_code, created_at).
+//
+// ⚠️  LIMITATION: This store is local to the process. In multi-instance (horizontal scale)
+// deployments, idempotency keys will NOT be shared across instances.
+// For distributed deployments, replace with Redis:
+//   Key  → `idempotency:{X-Idempotency-Key}`
+//   TTL  → 24 hours
+// Until then, deploy as a single instance behind a load balancer with session affinity (sticky sessions).
+//
 // When Redis is available we store cached responses under `idempotency:{key}` as base64
 // encoded body and status separated by a small header. For simplicity we keep
 // the existing in-memory store as a fallback when Redis is unavailable.
-
 const IDEMPOTENCY_TTL: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
 
 /// Middleware that enforces idempotency for POST requests.
@@ -78,7 +78,7 @@ pub async fn idempotency_middleware(req: Request<Body>, next: Next) -> Response 
 
         // Try to store in Redis (status u16 + body)
         let mut to_store = vec![];
-        to_store.extend_from_slice(&(parts.status.as_u16() as u16).to_le_bytes());
+        to_store.extend_from_slice(&parts.status.as_u16().to_le_bytes());
         to_store.extend_from_slice(&body_bytes);
         let _ = config_redis::set_kv(
             &format!("idempotency:{}", key),

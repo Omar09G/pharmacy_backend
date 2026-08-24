@@ -2,8 +2,7 @@
 ///
 /// These tests ensure the custom `deserialize_page` / `deserialize_limit`
 /// validators enforce their boundaries correctly via `serde_json`.
-use pharmacy_backend::api_utils::api_response::PaginationParams;
-use serde_json;
+use crate::api_utils::api_response::PaginationParams;
 
 // ── happy-path deserialisation ────────────────────────────────────────────────
 

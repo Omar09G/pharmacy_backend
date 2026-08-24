@@ -174,10 +174,10 @@ pub async fn get_all_users(
 
     let mut select = schemas::users::Entity::find();
 
-    if let Some(full_name) = pagination.full_name.clone() {
-        if !full_name.is_empty() {
-            select = select.filter(schemas::users::Column::FullName.contains(full_name));
-        }
+    if let Some(full_name) = pagination.full_name.clone()
+        && !full_name.is_empty()
+    {
+        select = select.filter(schemas::users::Column::FullName.contains(full_name));
     }
 
     let paginator = select

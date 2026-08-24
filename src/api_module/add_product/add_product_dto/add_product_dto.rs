@@ -53,14 +53,14 @@ impl From<&ProductAddRequest> for ProductRequest {
             is_sellable: request.is_sellable,
             track_batches: request.track_batches,
             tax_profile_id: request.tax_profile_id,
-            default_cost: request.default_cost.clone(),
-            purchase_price: request.purchase_price.clone(),
-            wholesale_price: request.wholesale_price.clone(),
-            sale_price: request.sale_price.clone(),
-            default_price: request.default_price.clone(),
-            created_at: request.created_at.clone(),
-            updated_at: request.updated_at.clone(),
-            deleted_at: request.deleted_at.clone(),
+            default_cost: request.default_cost,
+            purchase_price: request.purchase_price,
+            wholesale_price: request.wholesale_price,
+            sale_price: request.sale_price,
+            default_price: request.default_price,
+            created_at: request.created_at,
+            updated_at: request.updated_at,
+            deleted_at: request.deleted_at,
         }
     }
 }
@@ -71,7 +71,7 @@ impl From<(&ProductAddRequest, i64)> for ProductBarcodeRequest {
             product_id,
             barcode: request.barcode.clone(),
             barcode_type: request.barcode_type.clone(),
-            created_at: request.created_at.clone(),
+            created_at: request.created_at,
         }
     }
 }
@@ -81,10 +81,10 @@ impl From<(&ProductAddRequest, i64)> for ProductLotRequest {
         Self {
             product_id,
             lot_number: request.lot_number.clone(),
-            qty_on_hand: request.qty_on_hand.clone(),
-            expiry_date: request.expiry_date.clone(),
+            qty_on_hand: request.qty_on_hand,
+            expiry_date: request.expiry_date,
             purchase_id: request.purchase_id,
-            created_at: request.created_at.clone(),
+            created_at: request.created_at,
         }
     }
 }
@@ -94,9 +94,9 @@ impl From<(&ProductAddRequest, i64)> for ProductPriceRequest {
         Self {
             product_id,
             price_type: request.price_type.clone(),
-            price: request.price.clone(),
-            created_at: request.created_at.clone(),
-            starts_at: Some(request.created_at.clone()),
+            price: request.price,
+            created_at: request.created_at,
+            starts_at: Some(request.created_at),
             ends_at: None,
         }
     }

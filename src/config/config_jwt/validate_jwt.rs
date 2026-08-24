@@ -157,7 +157,7 @@ pub async fn get_jwt_token_with_role(
     init_jwt_keys_if_needed()?;
     let token = if let Some(enc_arc) = lock(&JWT_ENCODING_RS).as_ref().cloned() {
         let header = Header::new(Algorithm::RS256);
-        encode(&header, &claims, &*enc_arc).map_err(|e| e.to_string())?
+        encode(&header, &claims, &enc_arc).map_err(|e| e.to_string())?
     } else {
         let jwt_secret = if jwt_type == JWT_TYPE_ACCESS {
             get_jwt_secret()?
@@ -180,7 +180,7 @@ pub async fn get_jwt_token_with_role(
 pub async fn validate_token(token: &str) -> Result<Claims, String> {
     init_jwt_keys_if_needed()?;
     let decoded = if let Some(dec_arc) = lock(&JWT_DECODING_RS).as_ref().cloned() {
-        decode::<Claims>(token, &*dec_arc, &Validation::new(Algorithm::RS256))
+        decode::<Claims>(token, &dec_arc, &Validation::new(Algorithm::RS256))
             .map_err(|e| e.to_string())?
     } else {
         let jwt_secret = get_jwt_secret()?;
@@ -198,10 +198,10 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
     }
 
     // Reject revoked tokens
-    if let Some(ref jti) = decoded.claims.jti {
-        if is_revoked(jti).await {
-            return Err("Token has been revoked".to_string());
-        }
+    if let Some(ref jti) = decoded.claims.jti
+        && is_revoked(jti).await
+    {
+        return Err("Token has been revoked".to_string());
     }
 
     Ok(decoded.claims)
@@ -211,7 +211,7 @@ pub async fn validate_token(token: &str) -> Result<Claims, String> {
 pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
     init_jwt_keys_if_needed()?;
     let decoded = if let Some(dec_arc) = lock(&JWT_DECODING_RS).as_ref().cloned() {
-        decode::<Claims>(token, &*dec_arc, &Validation::new(Algorithm::RS256))
+        decode::<Claims>(token, &dec_arc, &Validation::new(Algorithm::RS256))
             .map_err(|e| e.to_string())?
     } else {
         let jwt_secret = get_jwt_secret_refresh()?;
@@ -229,10 +229,10 @@ pub async fn validate_token_refresh(token: &str) -> Result<Claims, String> {
     }
 
     // Reject revoked tokens
-    if let Some(ref jti) = decoded.claims.jti {
-        if is_revoked(jti).await {
-            return Err("Token has been revoked".to_string());
-        }
+    if let Some(ref jti) = decoded.claims.jti
+        && is_revoked(jti).await
+    {
+        return Err("Token has been revoked".to_string());
     }
 
     Ok(decoded.claims)

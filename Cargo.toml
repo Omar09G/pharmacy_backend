@@ -32,7 +32,10 @@ serde_json = "1"
 schemas = { path = "schemas" }
 
 # Redis client + helpers
-redis = { version = "0.23.3", features = ["aio", "tokio-comp"] }
+redis = { version = "0.24", features = ["aio", "tokio-comp"] }
+# Connection pool for Redis (robust & scalable under concurrency)
+# 0.14.x targets redis 0.24.x — keep in sync with the direct redis dependency
+deadpool-redis = { version = "0.14", features = ["rt_tokio_1"] }
 base64 = "0.21.0"
 parking_lot = "0.12"
 sha2 = "0.10"

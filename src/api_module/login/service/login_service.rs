@@ -65,11 +65,8 @@ fn extract_cookie(headers: &axum::http::HeaderMap, name: &str) -> Option<String>
         .and_then(|cookies| {
             cookies.split(';').find_map(|c| {
                 let c = c.trim();
-                if let Some(val) = c.strip_prefix(&format!("{}=", name)) {
-                    Some(val.to_string())
-                } else {
-                    None
-                }
+                c.strip_prefix(&format!("{}=", name))
+                    .map(|val| val.to_string())
             })
         })
 }

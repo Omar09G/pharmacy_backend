@@ -51,16 +51,13 @@ pub async fn create_inventory_movement(
     }
 
     // invalidate inventory caches related to this product
-    match new_im.product_id.clone() {
-        sea_orm::ActiveValue::Set(pid) => {
-            let _ = tokio::spawn(async move {
-                let _ = crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
-                let _ = crate::config::config_redis::del_key(&format!("inventory:product:{}", pid))
-                    .await;
-                let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
-            });
-        }
-        _ => {}
+    if let sea_orm::ActiveValue::Set(pid) = new_im.product_id.clone() {
+        let _ = tokio::spawn(async move {
+            let _ = crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
+            let _ =
+                crate::config::config_redis::del_key(&format!("inventory:product:{}", pid)).await;
+            let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+        });
     }
 
     Ok(Json(ApiResponse::success(
@@ -279,21 +276,14 @@ pub async fn update_inventory_movement(
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-            match updated.product_id.clone() {
-                sea_orm::ActiveValue::Set(pid) => {
-                    let _ = tokio::spawn(async move {
-                        let _ =
-                            crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
-                        let _ = crate::config::config_redis::del_key(&format!(
-                            "inventory:product:{}",
-                            pid
-                        ))
-                        .await;
-                        let _ =
-                            crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
-                    });
-                }
-                _ => {}
+            if let sea_orm::ActiveValue::Set(pid) = updated.product_id.clone() {
+                let _ = tokio::spawn(async move {
+                    let _ = crate::config::config_redis::del_pattern("vw_inventory_stock:*").await;
+                    let _ =
+                        crate::config::config_redis::del_key(&format!("inventory:product:{}", pid))
+                            .await;
+                    let _ = crate::config::config_redis::del_key(&format!("product:{}", pid)).await;
+                });
             }
 
             Ok(Json(ApiResponse::success(

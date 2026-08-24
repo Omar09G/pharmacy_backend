@@ -7,10 +7,11 @@
 //! - Redis helpers fail fast when the client is uninitialized, so the rate
 //!   limiter exercises its in-memory fallback path.
 
+use crate::config::config_database::config_db_context::AppContext;
+use crate::controller::api_controller::get_config_router;
+use crate::test::redis_state_lock;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use pharmacy_backend::config::config_database::config_db_context::AppContext;
-use pharmacy_backend::controller::api_controller::get_config_router;
 use sea_orm::DatabaseConnection;
 use tower::ServiceExt;
 
@@ -29,6 +30,10 @@ async fn send(router: axum::Router, req: Request<Body>) -> axum::response::Respo
 
 #[tokio::test]
 async fn liveness_returns_200_up() {
+    let _redis_guard = redis_state_lock().lock().await;
+    // Fresh rate-limit buckets: earlier tests may have exhausted them and
+    // buckets persist across tests within this process.
+    crate::config::config_middleware::rate_limit::reset_in_memory_buckets_for_tests().await;
     let res = send(
         test_router(),
         Request::get("/v1/api/health").body(Body::empty()).unwrap(),
@@ -46,6 +51,10 @@ async fn liveness_returns_200_up() {
 
 #[tokio::test]
 async fn readiness_with_disconnected_db_returns_503_down() {
+    let _redis_guard = redis_state_lock().lock().await;
+    // Fresh rate-limit buckets: earlier tests may have exhausted them and
+    // buckets persist across tests within this process.
+    crate::config::config_middleware::rate_limit::reset_in_memory_buckets_for_tests().await;
     let res = send(
         test_router(),
         Request::get("/v1/api/health/ready")
@@ -72,6 +81,10 @@ async fn readiness_with_disconnected_db_returns_503_down() {
 
 #[tokio::test]
 async fn responses_include_security_headers() {
+    let _redis_guard = redis_state_lock().lock().await;
+    // Fresh rate-limit buckets: earlier tests may have exhausted them and
+    // buckets persist across tests within this process.
+    crate::config::config_middleware::rate_limit::reset_in_memory_buckets_for_tests().await;
     let res = send(
         test_router(),
         Request::get("/v1/api/health").body(Body::empty()).unwrap(),
@@ -91,6 +104,10 @@ async fn responses_include_security_headers() {
 
 #[tokio::test]
 async fn login_with_malformed_json_is_rejected_without_panic() {
+    let _redis_guard = redis_state_lock().lock().await;
+    // Fresh rate-limit buckets: earlier tests may have exhausted them and
+    // buckets persist across tests within this process.
+    crate::config::config_middleware::rate_limit::reset_in_memory_buckets_for_tests().await;
     // Invalid JSON must be rejected by the extractor (4xx) before touching
     // the (disconnected) database — no panic, no 500.
     let res = send(
@@ -113,6 +130,10 @@ async fn login_with_malformed_json_is_rejected_without_panic() {
 
 #[tokio::test]
 async fn login_rate_limit_eventually_returns_429() {
+    let _redis_guard = redis_state_lock().lock().await;
+    // Fresh rate-limit buckets: earlier tests may have exhausted them and
+    // buckets persist across tests within this process.
+    crate::config::config_middleware::rate_limit::reset_in_memory_buckets_for_tests().await;
     // Login bucket allows 10 requests / 30 min per IP. All tests share the
     // same process-wide bucket ("unknown" IP), and tests may run in parallel,
     // so fire enough requests that the cap MUST be exceeded regardless of order.

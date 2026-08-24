@@ -30,8 +30,7 @@ pub async fn create_payment_method(
 
     payload.validate().map_err(ApiError::Validation)?;
 
-    let payment_method_create = schemas::payment_methods::ActiveModel::try_from(payload)
-        .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
+    let payment_method_create = schemas::payment_methods::ActiveModel::from(payload);
 
     if payment_method_create.name.is_not_set() || payment_method_create.method_type.is_not_set() {
         return Err(ApiError::Validation(validator::ValidationErrors::new()));
