@@ -61,7 +61,9 @@ pub async fn cors_middleware(req: Request<Body>, next: Next) -> Result<Response,
         );
         headers.insert(
             "access-control-allow-headers",
-            HeaderValue::from_static("authorization,content-type,x-client-platform"),
+            // x-request-id: origin-correlation id sent by the frontend
+            // (`src/api/requestId.ts`) and echoed back by request_id_middleware.
+            HeaderValue::from_static("authorization,content-type,x-client-platform,x-request-id"),
         );
         headers.insert(
             "access-control-allow-credentials",
