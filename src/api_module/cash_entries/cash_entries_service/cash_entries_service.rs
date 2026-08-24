@@ -24,11 +24,24 @@ use log::info;
 
 pub async fn create_cash_entry(
     State(app_ctx): State<AppContext>,
-    Json(payload): Json<CashEntryRequest>,
+    Json(mut payload): Json<CashEntryRequest>,
 ) -> Result<Json<ApiResponse<CashEntryIdResponse>>, ApiError> {
     info!("create_cash_entry called with payload: {:?}", payload);
 
     payload.validate().map_err(ApiError::Validation)?;
+
+    // Canonical entry types: 'inflow'/'sale' count as money in,
+    // 'outflow'/'expense' as money out. Anything else would silently
+    // disappear from the cash cut and journal balance.
+    payload.entry_type = payload.entry_type.to_lowercase();
+    if !matches!(
+        payload.entry_type.as_str(),
+        "inflow" | "sale" | "outflow" | "expense"
+    ) {
+        return Err(ApiError::ValidationError(
+            "entryType must be one of: inflow, sale, outflow, expense".to_string(),
+        ));
+    }
 
     let ce_create = schemas::cash_entries::ActiveModel::from(payload);
 

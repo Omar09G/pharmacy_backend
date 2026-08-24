@@ -89,15 +89,19 @@ pub async fn get_login(
 
     payload.validate().map_err(ApiError::Validation)?;
 
-    // Verify user exists, is active, and not soft-deleted
+    // Verify user exists and is not soft-deleted. Status is compared
+    // case-insensitively because the DB default is lowercase 'active'.
     let user = schemas::users::Entity::find()
         .filter(schemas::users::Column::Username.eq(payload.username.clone()))
-        .filter(schemas::users::Column::Status.eq("ACTIVE"))
         .filter(schemas::users::Column::DeletedAt.is_null())
         .one(&app_ctx.conn)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?
         .ok_or(ApiError::Unauthorized)?;
+
+    if !user.status.eq_ignore_ascii_case("active") {
+        return Err(ApiError::Unauthorized);
+    }
 
     let pwd = payload.password.clone();
     let user_hash = user.password_hash.clone();
@@ -163,14 +167,15 @@ pub async fn get_login(
         JWT_TYPE_REFRESH.to_string(),
         user.id,
         full_name.clone(),
-        permissions,
+        permissions.clone(),
     )
     .await
     .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
 
     let response_body = ApiResponse::success(
         {
-            let dto = LoginResponseDTO::new(user.id, full_name, user.username, role.name.clone());
+            let dto = LoginResponseDTO::new(user.id, full_name, user.username, role.name.clone())
+                .with_permissions(permissions.clone());
             // For native clients (Capacitor/Android), also include tokens in the body.
             // Web clients receive tokens exclusively via HttpOnly cookies.
             if is_native_client(&headers) {
@@ -248,7 +253,7 @@ pub async fn refresh_token(
         JWT_TYPE_REFRESH.to_string(),
         claims.id,
         claims.name.clone(),
-        claims.permissions,
+        claims.permissions.clone(),
     )
     .await
     .map_err(|e| ApiError::Unexpected(Box::new(std::io::Error::other(e))))?;
@@ -257,7 +262,8 @@ pub async fn refresh_token(
     let refresh_cookie = build_cookie("refresh_token", &new_refresh, "/v1/api/auth", 604_800);
 
     let response_dto = {
-        let dto = LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role);
+        let dto = LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role)
+            .with_permissions(claims.permissions);
         if is_native_client(&headers) {
             dto.with_tokens(new_access.clone(), new_refresh.clone())
         } else {
@@ -343,7 +349,8 @@ pub async fn get_profile(
     info!("get_profile called");
 
     let token_validate =
-        LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role);
+        LoginResponseDTO::new(claims.id, claims.name, claims.user_name, claims.role)
+            .with_permissions(claims.permissions);
 
     Ok(Json(ApiResponse::success(
         token_validate,

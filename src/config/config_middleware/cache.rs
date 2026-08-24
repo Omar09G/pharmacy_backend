@@ -368,6 +368,9 @@ async fn invalidate_for_mutation(path: &str) {
         r if r.starts_with("sale") || r == "add_sale" => {
             push("_v1_api_sale");
             push("_v1_api_add_sale");
+            // Sales consume lot stock; keep the product listing truthful.
+            push("_v1_api_product");
+            push("_v1_api_add_product");
         }
         r if r.starts_with("purchase") => push("_v1_api_purchase"),
         r if r.starts_with("cash") => push("_v1_api_cash"),

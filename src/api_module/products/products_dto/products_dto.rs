@@ -197,25 +197,25 @@ pub struct ProductResponse {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: Option<DateTimeWithTimeZone>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
-    pub lots_detail: ProductLotDetailResponse,
-    pub prices_detail: ProductPriceDetailResponse,
-    pub barcodes_detail: ProductBarcodeDetailResponse,
+    pub lots_detail: Option<ProductLotDetailResponse>,
+    pub prices_detail: Option<ProductPriceDetailResponse>,
+    pub barcodes_detail: Option<ProductBarcodeDetailResponse>,
 }
 
 impl
     From<(
         schemas::products::Model,
-        schemas::product_barcodes::Model,
-        schemas::product_lots::Model,
-        schemas::product_prices::Model,
+        Option<schemas::product_barcodes::Model>,
+        Option<schemas::product_lots::Model>,
+        Option<schemas::product_prices::Model>,
     )> for ProductResponse
 {
     fn from(
         (product_model, barcode_model, lot_model, price_model): (
             schemas::products::Model,
-            schemas::product_barcodes::Model,
-            schemas::product_lots::Model,
-            schemas::product_prices::Model,
+            Option<schemas::product_barcodes::Model>,
+            Option<schemas::product_lots::Model>,
+            Option<schemas::product_prices::Model>,
         ),
     ) -> Self {
         Self {
@@ -237,9 +237,9 @@ impl
             created_at: product_model.created_at,
             updated_at: product_model.updated_at,
             deleted_at: product_model.deleted_at,
-            lots_detail: ProductLotDetailResponse::from(lot_model),
-            prices_detail: ProductPriceDetailResponse::from(price_model),
-            barcodes_detail: ProductBarcodeDetailResponse::from(barcode_model),
+            lots_detail: lot_model.map(ProductLotDetailResponse::from),
+            prices_detail: price_model.map(ProductPriceDetailResponse::from),
+            barcodes_detail: barcode_model.map(ProductBarcodeDetailResponse::from),
         }
     }
 }

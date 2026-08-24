@@ -100,6 +100,48 @@ pub async fn create_add_sale(
         );
         let payment_id = new_payment.id.clone().unwrap();
 
+        // Cash ledger: when the sale is paid with a cash method, record an
+        // entry so the daily cash cut and journal balance reflect it.
+        if let Some(method_id) = payload.method_id {
+            let is_cash = schemas::payment_methods::Entity::find_by_id(method_id)
+                .one(&txn)
+                .await
+                .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+                .map(|m| {
+                    m.method_type
+                        .as_deref()
+                        .unwrap_or_default()
+                        .eq_ignore_ascii_case("cash")
+                })
+                .unwrap_or(false);
+
+            if is_cash {
+                let cash_entry = schemas::cash_entries::ActiveModel {
+                    id: ActiveValue::NotSet,
+                    name: ActiveValue::Set(format!(
+                        "Venta {}",
+                        payload
+                            .invoice_no
+                            .clone()
+                            .unwrap_or_else(|| sale_id.to_string())
+                    )),
+                    entry_type: ActiveValue::Set("sale".to_string()),
+                    amount: ActiveValue::Set(payload.total),
+                    method_id: ActiveValue::Set(Some(method_id)),
+                    related_type: ActiveValue::Set(Some("sale".to_string())),
+                    related_id: ActiveValue::Set(Some(sale_id)),
+                    description: ActiveValue::Set(Some("Cobro de venta en efectivo".to_string())),
+                    recorded_at: ActiveValue::Set(payload.created_at),
+                    recorded_by: ActiveValue::Set(payload.user_id),
+                };
+                cash_entry
+                    .insert(&txn)
+                    .await
+                    .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+                info!("Cash ledger entry created for sale {}", sale_id);
+            }
+        }
+
         let payment_allocation_request =
             SalePaymentAllocationRequest::from((&payload, payment_id, sale_id));
         let item_requests: Vec<SaleItemRequest> = payload

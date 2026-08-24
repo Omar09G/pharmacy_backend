@@ -43,7 +43,7 @@ impl TryFrom<ProductLotRequest> for schemas::product_lots::ActiveModel {
             product_id: ActiveValue::Set(request.product_id),
             lot_number: ActiveValue::Set(request.lot_number),
             qty_on_hand: ActiveValue::Set(request.qty_on_hand),
-            expiry_date: ActiveValue::NotSet,
+            expiry_date: ActiveValue::Set(request.expiry_date),
             purchase_id: ActiveValue::Set(request.purchase_id),
             created_at: ActiveValue::Set(get_current_timestamp_now()),
         })

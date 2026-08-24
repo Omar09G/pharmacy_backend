@@ -30,6 +30,8 @@ pub struct LoginResponseDTO {
     pub full_name: String,
     pub username: String,
     pub role: String,
+    /// Permission names granted to the user's role (from role_permissions).
+    pub permissions: Vec<String>,
     /// Only populated for native clients (`X-Client-Platform: native`).
     /// Web clients receive tokens exclusively via HttpOnly cookies.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -46,9 +48,15 @@ impl LoginResponseDTO {
             full_name,
             username,
             role,
+            permissions: Vec::new(),
             access_token: None,
             refresh_token: None,
         }
+    }
+
+    pub fn with_permissions(mut self, permissions: Vec<String>) -> Self {
+        self.permissions = permissions;
+        self
     }
 
     /// Attach tokens to the response body (native clients only).

@@ -1,4 +1,5 @@
 pub mod auth_jwt;
+pub mod authz;
 pub mod cache;
 pub mod content_type;
 pub mod cors;

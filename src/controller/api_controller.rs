@@ -9,6 +9,7 @@ use tower_http::timeout::TimeoutLayer;
 
 use crate::config::config_database::config_db_context::AppContext;
 use crate::config::config_middleware::auth_jwt::auth_middleware;
+use crate::config::config_middleware::authz::authz_middleware;
 use crate::config::config_middleware::cache::cache_middleware;
 use crate::config::config_middleware::content_type::content_type_middleware;
 use crate::config::config_middleware::cors::cors_middleware;
@@ -47,6 +48,7 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
         .merge(routes::dashboard_routes::routes())
         .with_state(app_ctx.clone())
         .layer(from_fn(cache_middleware))
+        .layer(from_fn(authz_middleware))
         .layer(from_fn(idempotency_middleware))
         .layer(from_fn(auth_middleware))
         .layer(from_fn(content_type_middleware))

@@ -229,9 +229,33 @@ pub async fn get_products(
             barcodes_map.entry(b.product_id).or_insert(b);
         }
 
-        let mut lots_map: HashMap<i64, schemas::product_lots::Model> = HashMap::new();
+        // Aggregate stock across ALL lots of a product. The lot carried in the
+        // response is the FEFO pick (earliest expiry, then earliest id) so POS
+        // sells from the right batch, while qty_on_hand reflects total stock.
+        let mut lots_agg: HashMap<
+            i64,
+            (
+                sea_orm::prelude::Decimal,
+                Option<schemas::product_lots::Model>,
+            ),
+        > = HashMap::new();
         for l in product_lots_list {
-            lots_map.entry(l.product_id).or_insert(l);
+            let entry = lots_agg
+                .entry(l.product_id)
+                .or_insert((sea_orm::prelude::Decimal::ZERO, None));
+            entry.0 += l.qty_on_hand;
+            let better = match &entry.1 {
+                None => true,
+                Some(cur) => match (l.expiry_date, cur.expiry_date) {
+                    (Some(a), Some(b)) => a < b || (a == b && l.id < cur.id),
+                    (Some(_), None) => true,
+                    (None, Some(_)) => false,
+                    (None, None) => l.id < cur.id,
+                },
+            };
+            if better {
+                entry.1 = Some(l);
+            }
         }
 
         let mut prices_map: HashMap<i64, schemas::product_prices::Model> = HashMap::new();
@@ -242,20 +266,26 @@ pub async fn get_products(
         for product in products.iter() {
             let id_product = product.id;
 
-            let barcode_opt = barcodes_map.get(&id_product);
-            let lot_opt = lots_map.get(&id_product);
-            let price_opt = prices_map.get(&id_product);
+            let barcode_opt = barcodes_map.get(&id_product).cloned();
+            let price_opt = prices_map.get(&id_product).cloned();
+            let sale_lot = lots_agg
+                .get(&id_product)
+                .and_then(|(total, lot)| {
+                    lot.clone().map(|mut l| {
+                        l.qty_on_hand = *total;
+                        l
+                    })
+                });
 
-            if barcode_opt.is_none() || lot_opt.is_none() || price_opt.is_none() {
+            if barcode_opt.is_none() && sale_lot.is_none() && price_opt.is_none() {
                 info!("Related data not found for product ID {}", id_product);
-                continue;
             }
 
             let product_response_detail = ProductResponse::from((
                 product.clone(),
-                barcode_opt.unwrap().clone(),
-                lot_opt.unwrap().clone(),
-                price_opt.unwrap().clone(),
+                barcode_opt,
+                sale_lot,
+                price_opt,
             ));
 
             products_detail_responses.push(product_response_detail);

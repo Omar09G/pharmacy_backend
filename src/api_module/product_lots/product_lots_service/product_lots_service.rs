@@ -17,7 +17,7 @@ use crate::{
     api_utils::{
         api_error::ApiError,
         api_response::{ApiResponse, PaginationParams},
-        api_utils_fun::{to_page_index, to_page_limit},
+        api_utils_fun::{get_current_timestamp_now, to_page_index, to_page_limit},
     },
     config::config_database::config_db_context::AppContext,
 };
@@ -179,24 +179,57 @@ pub async fn update_product_lot(
 
     match pl {
         Some(pl) => {
+            // Stock itself is mutated exclusively by trg_update_lot_after_insert
+            // when a movement row lands; here we only compute and validate.
+            let qyt_on_hand_current = pl.qty_on_hand;
             let mut pl_active = pl.into_active_model();
 
             let qty_on_hand_update = payload.qty_on_hand;
-            let qyt_on_hand_current = pl_active.qty_on_hand.unwrap();
             let qty_on_hand_final = qyt_on_hand_current + qty_on_hand_update;
+
+            if qty_on_hand_final < sea_orm::prelude::Decimal::ZERO {
+                return Err(ApiError::ValidationError(
+                    "Resulting quantity cannot be negative".to_string(),
+                ));
+            }
 
             info!(
                 "Current qty_on_hand: {}, Update: {}, Final qty_on_hand: {}",
                 qyt_on_hand_current, qty_on_hand_update, qty_on_hand_final
             );
 
-            pl_active.lot_number = ActiveValue::Set(payload.lot_number);
-            pl_active.qty_on_hand = ActiveValue::Set(qty_on_hand_final);
-
+            if let Some(lot_number) = payload.lot_number.clone() {
+                pl_active.lot_number = ActiveValue::Set(Some(lot_number));
+            }
+            if let Some(expiry_date) = payload.expiry_date {
+                pl_active.expiry_date = ActiveValue::Set(Some(expiry_date));
+            }
             let updated = pl_active
                 .save(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            // Keep the movements ledger in sync; the trigger applies the delta.
+            if qty_on_hand_update != sea_orm::prelude::Decimal::ZERO {
+                let lot_id = updated.id.clone().unwrap();
+                let movement = schemas::inventory_movements::ActiveModel {
+                    id: sea_orm::ActiveValue::NotSet,
+                    product_id: sea_orm::ActiveValue::Set(updated.product_id.clone().unwrap()),
+                    lot_id: sea_orm::ActiveValue::Set(Some(lot_id)),
+                    location_id: sea_orm::ActiveValue::NotSet,
+                    change_qty: sea_orm::ActiveValue::Set(qty_on_hand_update),
+                    reason: sea_orm::ActiveValue::Set("restock".to_string()),
+                    reference_type: sea_orm::ActiveValue::Set(Some("manual".to_string())),
+                    reference_id: sea_orm::ActiveValue::NotSet,
+                    cost: sea_orm::ActiveValue::NotSet,
+                    created_at: sea_orm::ActiveValue::Set(get_current_timestamp_now()),
+                    created_by: sea_orm::ActiveValue::NotSet,
+                };
+                movement
+                    .insert(&app_ctx.conn)
+                    .await
+                    .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            }
 
             Ok(Json(ApiResponse::success(
                 ProductLotIdResponse::from(updated),
@@ -231,22 +264,55 @@ pub async fn adjust_product_lot(
 
     match pl {
         Some(pl) => {
+            // The trigger trg_update_lot_after_insert owns qty_on_hand; we
+            // compute the delta, validate, and let the movement apply it.
+            let qyt_on_hand_current = pl.qty_on_hand;
             let mut pl_active = pl.into_active_model();
 
-            let qyt_on_hand_current = pl_active.qty_on_hand.unwrap();
+            if payload.qty_on_hand < sea_orm::prelude::Decimal::ZERO {
+                return Err(ApiError::ValidationError(
+                    "Quantity cannot be negative".to_string(),
+                ));
+            }
 
             info!(
                 "Current qty_on_hand: {}, Adjusting to: {}",
                 qyt_on_hand_current, payload.qty_on_hand
             );
 
-            pl_active.lot_number = ActiveValue::Set(payload.lot_number);
-            pl_active.qty_on_hand = ActiveValue::Set(payload.qty_on_hand);
-
+            let delta = payload.qty_on_hand - qyt_on_hand_current;
+            if let Some(lot_number) = payload.lot_number.clone() {
+                pl_active.lot_number = ActiveValue::Set(Some(lot_number));
+            }
+            if let Some(expiry_date) = payload.expiry_date {
+                pl_active.expiry_date = ActiveValue::Set(Some(expiry_date));
+            }
             let updated = pl_active
                 .save(&app_ctx.conn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            // Keep the movements ledger in sync; the trigger applies the delta.
+            if delta != sea_orm::prelude::Decimal::ZERO {
+                let lot_id = updated.id.clone().unwrap();
+                let movement = schemas::inventory_movements::ActiveModel {
+                    id: ActiveValue::NotSet,
+                    product_id: ActiveValue::Set(updated.product_id.clone().unwrap()),
+                    lot_id: ActiveValue::Set(Some(lot_id)),
+                    location_id: ActiveValue::NotSet,
+                    change_qty: ActiveValue::Set(delta),
+                    reason: ActiveValue::Set("adjustment".to_string()),
+                    reference_type: ActiveValue::Set(Some("manual".to_string())),
+                    reference_id: ActiveValue::NotSet,
+                    cost: ActiveValue::NotSet,
+                    created_at: ActiveValue::Set(get_current_timestamp_now()),
+                    created_by: ActiveValue::NotSet,
+                };
+                movement
+                    .insert(&app_ctx.conn)
+                    .await
+                    .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            }
 
             Ok(Json(ApiResponse::success(
                 ProductLotIdResponse::from(updated),
