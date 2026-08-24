@@ -107,24 +107,28 @@ pub async fn get_payment_methods(
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
+    let fetch_limit = page_limit + 1;
     let paginator = schemas::payment_methods::Entity::find()
         .order_by_asc(schemas::payment_methods::Column::Id)
-        .paginate(&app_ctx.conn, page_limit);
+        .paginate(&app_ctx.conn, fetch_limit);
 
-    let total_items = if pagination.total > 0 {
-        pagination.total
-    } else {
-        paginator
-            .num_items()
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-    };
-
-    let payment_methods = paginator
+    let payment_methods_raw = paginator
         .fetch_page(page_index)
         .await
-        .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let has_more = payment_methods_raw.len() as u64 > page_limit;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else if has_more {
+        page_index * page_limit + page_limit + 1
+    } else {
+        page_index * page_limit + payment_methods_raw.len() as u64
+    };
+
+    let payment_methods: Vec<PaymentMethodResponse> = payment_methods_raw
         .into_iter()
+        .take(page_limit as usize)
         .map(PaymentMethodResponse::from)
         .collect();
 

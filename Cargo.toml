@@ -45,6 +45,10 @@ hex = "0.4"
 # CORS support for Axum
 tower-http = { version = "0.6", features = ["cors", "timeout", "compression-gzip"] }
 
+# Load-shedding + concurrency limit: reject excess traffic early instead of
+# queueing it into the DB pool when saturated.
+tower = { version = "0.5", features = ["limit", "load-shed"] }
+
 # SeaORM migrations (run at startup when RUN_MIGRATIONS=true)
 migration = { path = "migration" }
 flexi_logger = "0.31.8"

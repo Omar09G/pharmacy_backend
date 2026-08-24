@@ -4,6 +4,11 @@ use axum::middleware::Next;
 use axum::response::Response;
 
 /// Middleware that adds security headers to every response.
+///
+/// NOTE: `Cache-Control` is intentionally omitted here. Caching policy is
+/// managed by the dedicated cache middleware (`cache.rs`) which applies
+/// per-endpoint TTLs. Setting `no-store` here would override those TTLs
+/// and effectively disable the entire HTTP cache layer.
 pub async fn security_headers_middleware(req: Request<Body>, next: Next) -> Response {
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
@@ -25,7 +30,6 @@ pub async fn security_headers_middleware(req: Request<Body>, next: Next) -> Resp
         "content-security-policy",
         HeaderValue::from_static("default-src 'none'; frame-ancestors 'none'"),
     );
-    headers.insert("cache-control", HeaderValue::from_static("no-store"));
     // 2 years, with preload directive for HSTS preload list registration
     headers.insert(
         "strict-transport-security",

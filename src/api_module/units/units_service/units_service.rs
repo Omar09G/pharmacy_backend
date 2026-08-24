@@ -83,25 +83,30 @@ pub async fn list_units(
     let page_index = to_page_index(pagination.page);
     let page_limit = to_page_limit(pagination.limit);
 
+    let fetch_limit = page_limit + 1;
     let paginator = schemas::units::Entity::find()
         .order_by_asc(schemas::units::Column::Id)
-        .paginate(&app_ctx.conn, page_limit);
+        .paginate(&app_ctx.conn, fetch_limit);
 
-    let total_items = if pagination.total > 0 {
-        pagination.total
-    } else {
-        paginator
-            .num_items()
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-    };
-
-    let units = paginator
+    let units_raw = paginator
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    let unit_responses: Vec<UnitResponse> = units.into_iter().map(UnitResponse::from).collect();
+    let has_more = units_raw.len() as u64 > page_limit;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else if has_more {
+        page_index * page_limit + page_limit + 1
+    } else {
+        page_index * page_limit + units_raw.len() as u64
+    };
+
+    let unit_responses: Vec<UnitResponse> = units_raw
+        .into_iter()
+        .take(page_limit as usize)
+        .map(UnitResponse::from)
+        .collect();
 
     Ok(Json(ApiResponse::success(
         unit_responses,

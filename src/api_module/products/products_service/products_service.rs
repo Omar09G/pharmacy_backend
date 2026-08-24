@@ -175,23 +175,33 @@ pub async fn get_products(
         select = select.filter(schemas::products::Column::DefaultPrice.lte(max));
     }
 
+    // Fetch one extra row to detect if there are more pages without a COUNT(*).
+    let fetch_limit = page_limit + 1;
     let paginator = select
         .order_by_asc(schemas::products::Column::Id)
-        .paginate(&app_ctx.conn, page_limit);
-
-    let total_items = if pagination.total > 0 {
-        pagination.total
-    } else {
-        paginator
-            .num_items()
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-    };
+        .paginate(&app_ctx.conn, fetch_limit);
 
     let products = paginator
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+    let has_more = products.len() as u64 > page_limit;
+    let products: Vec<_> = products
+        .into_iter()
+        .take(page_limit as usize)
+        .collect();
+
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else if has_more {
+        // Signal "unknown total, use hasMore" to the frontend.
+        // A negative value is not a valid count; the frontend should
+        // rely on the page having `limit` items as the hasMore indicator.
+        page_index * page_limit + page_limit + 1
+    } else {
+        page_index * page_limit + products.len() as u64
+    };
     // Batch load related records to avoid N+1 queries
     let product_ids: Vec<i64> = products.iter().map(|p| p.id).collect();
 

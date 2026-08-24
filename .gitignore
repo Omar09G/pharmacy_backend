@@ -78,3 +78,7 @@
 /pfx
 /.github
 .env
+.claude/
+.agents/
+.md
+docs/

@@ -1,6 +1,9 @@
+use axum::error_handling::HandleErrorLayer;
 use axum::extract::DefaultBodyLimit;
+use axum::http::StatusCode;
 use axum::{Router, middleware::from_fn};
 use log::info;
+use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 
@@ -15,6 +18,17 @@ use crate::config::config_middleware::request_id::request_id_middleware;
 use crate::config::config_middleware::security_headers::security_headers_middleware;
 
 use super::routes;
+
+/// Upper bound of in-flight requests per replica. Requests beyond this are
+/// shed with 503 instead of piling up on the DB pool (env-configurable).
+fn max_concurrent_requests() -> usize {
+    std::env::var("API_MAX_CONCURRENCY")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|&v| v > 0 && v <= 10_000)
+        .unwrap_or(256)
+}
+
 //Obtiene las rutas de configuracion para la API
 pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
     info!("Configuring API routes...");
@@ -45,6 +59,16 @@ pub fn get_config_router(app_ctx: &AppContext) -> Result<Router, String> {
             axum::http::StatusCode::REQUEST_TIMEOUT,
             std::time::Duration::from_secs(30),
         )) // 30s request timeout
+        // Saturation guard: shed overload with 503 before it queues into the
+        // DB pool / Redis. Inner to request_id so rejections stay correlated.
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(|_: axum::BoxError| async {
+                    StatusCode::SERVICE_UNAVAILABLE
+                }))
+                .load_shed()
+                .concurrency_limit(max_concurrent_requests()),
+        )
         // Outermost: every call gets a correlation id even on early failures.
         .layer(from_fn(request_id_middleware));
 

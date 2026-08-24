@@ -80,27 +80,29 @@ pub async fn get_vw_customer_invoice_aging(
             .filter(schemas::vw_t_customer_invoice_aging::Column::InvoiceNo.eq(invoice_no.clone()));
     }
 
+    let fetch_limit = page_limit + 1;
     let paginator = select
         .order_by_desc(schemas::vw_t_customer_invoice_aging::Column::DaysOverdue)
-        .paginate(&app_ctx.conn, page_limit);
+        .paginate(&app_ctx.conn, fetch_limit);
 
-    let total_items = if pagination.total > 0 {
-        pagination.total
-    } else {
-        paginator
-            .num_items()
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-    };
-
-    let items = paginator
+    let items_raw = paginator
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let has_more = items_raw.len() as u64 > page_limit;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else if has_more {
+        page_index * page_limit + page_limit + 1
+    } else {
+        page_index * page_limit + items_raw.len() as u64
+    };
+
     Ok(Json(ApiResponse::success(
-        items
+        items_raw
             .into_iter()
+            .take(page_limit as usize)
             .map(VwCustomerInvoiceAgingResponse::from)
             .collect(),
         "Customer invoice aging retrieved successfully".to_string(),

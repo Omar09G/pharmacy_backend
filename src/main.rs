@@ -29,12 +29,27 @@ async fn main() {
     // Read log level from environment (default: info)
     let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
     let log_dir = std::env::var("LOG_DIR").unwrap_or_else(|_| "/app/logs".to_string());
-    let logger = Logger::try_with_str(&log_level).unwrap_or_else(|e| {
-        eprintln!("Logger configuration failed: {}", e);
-        std::process::exit(1);
-    });
-
-    logger
+    // Rotation keeps disk usage bounded under sustained traffic.
+    let rotate_mb: u64 = std::env::var("LOG_ROTATE_MB")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|&v| v > 0 && v <= 1024)
+        .unwrap_or(50);
+    let keep_files: usize = std::env::var("LOG_KEEP_FILES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|&v| v > 0 && v <= 365)
+        .unwrap_or(7);
+    // Duplicating every line to stdout doubles I/O; disable in production
+    // when the platform already collects container stdout.
+    let duplicate_stdout = std::env::var("LOG_STDOUT")
+        .map(|v| v.to_lowercase() != "false")
+        .unwrap_or(true);
+    let logger = Logger::try_with_str(&log_level)
+        .unwrap_or_else(|e| {
+            eprintln!("Logger configuration failed: {}", e);
+            std::process::exit(1);
+        })
         .format_for_files(custom_format)
         .format_for_stdout(custom_format_colored)
         .log_to_file(
@@ -43,7 +58,17 @@ async fn main() {
                 .basename("app")
                 .suffix("log"),
         )
-        .duplicate_to_stdout(Duplicate::All)
+        .rotate(
+            flexi_logger::Criterion::Size(rotate_mb * 1024 * 1024),
+            flexi_logger::Naming::Timestamps,
+            flexi_logger::Cleanup::KeepLogFiles(keep_files),
+        );
+    let logger = if duplicate_stdout {
+        logger.duplicate_to_stdout(Duplicate::All)
+    } else {
+        logger
+    };
+    logger
         .start()
         .unwrap_or_else(|e| {
             eprintln!("Logger start failed: {}", e);

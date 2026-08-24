@@ -62,26 +62,28 @@ pub async fn get_vw_inventory_stock(
 
     let select = schemas::vw_t_inventory_stock::Entity::find();
 
+    let fetch_limit = page_limit + 1;
     let paginator = select
         .order_by_asc(schemas::vw_t_inventory_stock::Column::ProductName)
-        .paginate(&app_ctx.conn, page_limit);
+        .paginate(&app_ctx.conn, fetch_limit);
 
-    let total_items = if pagination.total > 0 {
-        pagination.total
-    } else {
-        paginator
-            .num_items()
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-    };
-
-    let items = paginator
+    let items_raw = paginator
         .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-    let dto_items: Vec<VwInventoryStockResponse> = items
+    let has_more = items_raw.len() as u64 > page_limit;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else if has_more {
+        page_index * page_limit + page_limit + 1
+    } else {
+        page_index * page_limit + items_raw.len() as u64
+    };
+
+    let dto_items: Vec<VwInventoryStockResponse> = items_raw
         .into_iter()
+        .take(page_limit as usize)
         .map(VwInventoryStockResponse::from)
         .collect();
 

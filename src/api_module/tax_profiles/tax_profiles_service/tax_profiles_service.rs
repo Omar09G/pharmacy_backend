@@ -81,27 +81,32 @@ pub async fn list_tax_profiles(
         pagination.page, pagination.limit, pagination.total
     );
 
+    let page_index = to_page_index(pagination.page);
+    let page_limit = to_page_limit(pagination.limit);
+    let fetch_limit = page_limit + 1;
+
     let paginator = schemas::tax_profiles::Entity::find()
         .order_by_asc(schemas::tax_profiles::Column::Id)
-        .paginate(&app_ctx.conn, to_page_limit(pagination.limit));
+        .paginate(&app_ctx.conn, fetch_limit);
 
-    let total_items = if pagination.total > 0 {
-        pagination.total
-    } else {
-        paginator
-            .num_items()
-            .await
-            .map_err(|e| ApiError::Unexpected(Box::new(e)))?
-    };
-
-    let tax_profiles = paginator
-        .fetch_page(to_page_index(pagination.page))
+    let tax_profiles_raw = paginator
+        .fetch_page(page_index)
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+    let has_more = tax_profiles_raw.len() as u64 > page_limit;
+    let total_items = if pagination.total > 0 {
+        pagination.total
+    } else if has_more {
+        page_index * page_limit + page_limit + 1
+    } else {
+        page_index * page_limit + tax_profiles_raw.len() as u64
+    };
+
     Ok(Json(ApiResponse::success(
-        tax_profiles
+        tax_profiles_raw
             .into_iter()
+            .take(page_limit as usize)
             .map(TaxProfileResponse::from)
             .collect(),
         "Tax profiles retrieved successfully".to_string(),

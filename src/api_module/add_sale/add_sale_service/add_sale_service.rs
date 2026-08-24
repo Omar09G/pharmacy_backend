@@ -7,7 +7,7 @@ use log::info;
 
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel, LoaderTrait,
-    ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, TransactionTrait,
+    ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use validator::Validate;
 
@@ -398,53 +398,82 @@ pub async fn cancel_add_sale(
         .await
         .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
     match sale {
-        Some(sale) => {
-            if sale.status == "CANCEL" {
-                return Err(ApiError::ValidationError(
-                    "Sale is already cancelled".to_string(),
-                ));
-            }
-
+        Some(_) => {
             let txn = app_ctx
                 .conn
                 .begin()
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
+            // Re-read under a row lock so two concurrent cancels cannot both
+            // pass the status check (check-then-act race).
+            let sale_locked = schemas::sales::Entity::find_by_id(id)
+                .lock_exclusive()
+                .one(&txn)
+                .await
+                .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+
+            let sale = sale_locked
+                .ok_or_else(|| ApiError::ValidationError("Sale not found".to_string()))?;
+
+            if sale.status == "CANCEL" {
+                return Err(ApiError::ValidationError(
+                    "Sale is already cancelled".to_string(),
+                ));
+            }
+
             // Marcar la venta como CANCEL
-            let mut sale_active = sale.clone().into_active_model();
+            let mut sale_active = sale.into_active_model();
             sale_active.status = ActiveValue::Set("CANCEL".to_string());
             sale_active
                 .save(&txn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-            // Revert inventory: add back quantities from sale items to their lots
+            // Revert inventory through the movements ledger: the DB triggers
+            // fn_check_lot_stock_before_insert / fn_update_lot_on_movement apply
+            // the same row locking and stock validation used when selling, and
+            // the entry leaves an auditable trail.
             let items = schemas::sale_items::Entity::find()
                 .filter(schemas::sale_items::Column::SaleId.eq(id))
                 .all(&txn)
                 .await
                 .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
-            for item in items {
-                if let Some(lot_id) = item.lot_id {
-                    let lot = schemas::product_lots::Entity::find_by_id(lot_id)
-                        .one(&txn)
-                        .await
-                        .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
+            // Idempotency guard (mirrors fn_revert_stock_on_sale_cancel).
+            let already_reverted = schemas::inventory_movements::Entity::find()
+                .filter(schemas::inventory_movements::Column::Reason.eq("sale_cancel"))
+                .filter(schemas::inventory_movements::Column::ReferenceType.eq("sale"))
+                .filter(schemas::inventory_movements::Column::ReferenceId.eq(Some(id)))
+                .one(&txn)
+                .await
+                .map_err(|e| ApiError::Unexpected(Box::new(e)))?
+                .is_some();
 
-                    if let Some(lot) = lot {
-                        let mut lot_active = lot.into_active_model();
-                        let restored_qty = lot_active.qty_on_hand.clone().unwrap() + item.qty;
-                        lot_active.qty_on_hand = ActiveValue::Set(restored_qty);
-                        lot_active
+            if !already_reverted {
+                for item in items {
+                    if let Some(lot_id) = item.lot_id {
+                        let movement = schemas::inventory_movements::ActiveModel {
+                            id: ActiveValue::NotSet,
+                            product_id: ActiveValue::Set(item.product_id),
+                            lot_id: ActiveValue::Set(Some(lot_id)),
+                            location_id: ActiveValue::NotSet,
+                            change_qty: ActiveValue::Set(item.qty),
+                            reason: ActiveValue::Set("sale_cancel".to_string()),
+                            reference_type: ActiveValue::Set(Some("sale".to_string())),
+                            reference_id: ActiveValue::Set(Some(id)),
+                            cost: ActiveValue::Set(Some(item.unit_price)),
+                            created_at: ActiveValue::Set(chrono::Utc::now().into()),
+                            created_by: ActiveValue::NotSet,
+                        };
+                        movement
                             .save(&txn)
                             .await
                             .map_err(|e| ApiError::Unexpected(Box::new(e)))?;
 
                         info!(
-                            "Inventory restored: lot_id={}, qty_returned={}, new_qty={}",
-                            lot_id, item.qty, restored_qty
+                            "Inventory reverted via ledger: lot_id={}, qty_returned={}",
+                            lot_id, item.qty
                         );
                     }
                 }
