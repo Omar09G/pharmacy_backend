@@ -68,12 +68,10 @@ async fn main() {
     } else {
         logger
     };
-    logger
-        .start()
-        .unwrap_or_else(|e| {
-            eprintln!("Logger start failed: {}", e);
-            std::process::exit(1);
-        });
+    logger.start().unwrap_or_else(|e| {
+        eprintln!("Logger start failed: {}", e);
+        std::process::exit(1);
+    });
 
     info!("Starting Pharmacy Backend API...");
 
@@ -105,7 +103,6 @@ async fn main() {
         }
     }
 
-    // Initialize Redis (optional). Use REDIS_URL env or default to local redis.
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379/".to_string());
     match crate::config::config_redis::init_redis(&redis_url).await {
